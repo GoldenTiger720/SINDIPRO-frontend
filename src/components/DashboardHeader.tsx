@@ -1,16 +1,25 @@
 import { Menu, User, Globe, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { useTranslation } from 'react-i18next';
-import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DashboardHeaderProps {
   userName?: string;
   onMenuClick?: () => void;
 }
 
-export const DashboardHeader = ({ userName = "Administrador", onMenuClick }: DashboardHeaderProps) => {
+export const DashboardHeader = ({
+  userName = "Administrador",
+  onMenuClick,
+}: DashboardHeaderProps) => {
   const { t } = useTranslation();
   const { language, changeLanguage } = useLanguage();
   return (
@@ -25,13 +34,9 @@ export const DashboardHeader = ({ userName = "Administrador", onMenuClick }: Das
           >
             <Menu className="w-6 h-6" />
           </Button>
-          
+
           <div className="flex items-center gap-3">
-            <img 
-              src="/lovable-uploads/aaef9a1b-fa14-4ed7-bc3e-4dddf24e75b9.png" 
-              alt="SINDIPRO"
-              className="h-8 w-auto"
-            />
+            <img src="/logo.png" alt="SINDIPRO" className="h-8 w-auto" />
           </div>
         </div>
 
@@ -42,16 +47,16 @@ export const DashboardHeader = ({ userName = "Administrador", onMenuClick }: Das
               <Button variant="ghost" size="sm" className="gap-2">
                 <Globe className="w-4 h-4" />
                 <span className="hidden sm:block">
-                  {language === 'pt' ? 'PT' : 'EN'}
+                  {language === "pt" ? "PT" : "EN"}
                 </span>
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => changeLanguage('en')}>
+              <DropdownMenuItem onClick={() => changeLanguage("en")}>
                 🇺🇸 English
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => changeLanguage('pt')}>
+              <DropdownMenuItem onClick={() => changeLanguage("pt")}>
                 🇧🇷 Português (Brasil)
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -76,15 +81,15 @@ export const DashboardHeader = ({ userName = "Administrador", onMenuClick }: Das
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem>
                 <User className="w-4 h-4 mr-2" />
-                {t('myProfile')}
+                {t("myProfile")}
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <Menu className="w-4 h-4 mr-2" />
-                {t('settings')}
+                {t("settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive">
-                {t('logout')}
+                {t("logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
