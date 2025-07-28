@@ -16,64 +16,66 @@ import { DashboardCard } from "./DashboardCard";
 import { DashboardHeader } from "./DashboardHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const dashboardItems = [
     {
       id: "buildings",
-      title: "Registro Básico do Condomínio",
+      title: t("basicCondominiumRegistry"),
       icon: Building2,
       color: "bg-dashboard-gray",
       route: "/buildings"
     },
     {
       id: "obligations",
-      title: "Obrigações Legais e Documentos",
+      title: t("legalObligationsDocuments"),
       icon: AlertTriangle,
       color: "bg-dashboard-red",
       route: "/legal-obligations"
     },
     {
       id: "equipment",
-      title: "Equipamentos e Manutenção",
+      title: t("equipmentMaintenance"),
       icon: Wrench,
       color: "bg-dashboard-green",
       route: "/equipment"
     },
     {
       id: "financial",
-      title: "Gestão Financeira/Orçamentária",
+      title: t("financialBudgetManagement"),
       icon: BarChart3,
       color: "bg-dashboard-orange",
       route: "/financial"
     },
     {
       id: "consumption",
-      title: "Módulo de Consumo",
+      title: t("consumptionManagement"),
       icon: Calculator,
       color: "bg-dashboard-blue",
       route: "/consumption"
     },
     {
       id: "field-management",
-      title: "Gestão de Campo/Solicitações",
+      title: t("fieldManagementSurveys"),
       icon: MessageSquare,
       color: "bg-dashboard-purple",
       route: "/field-management"
     },
     {
       id: "reports",
-      title: "Geração e Exportação de Relatórios",
+      title: t("reports"),
       icon: FileText,
       color: "bg-dashboard-teal",
       route: "/reports"
     },
     {
       id: "users",
-      title: "Gestão de Usuários e Permissões",
+      title: t("userManagement"),
       icon: Settings,
       color: "bg-dashboard-pink",
       route: "/users"
@@ -86,15 +88,15 @@ export const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName="Administrador SINDIPRO" />
+      <DashboardHeader userName={t("adminSindipro")} />
       
       <main className="max-w-7xl mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Sistema de Gestão Condominial
+            {t("condominiumManagementSystem")}
           </h1>
           <p className="text-muted-foreground">
-            Plataforma completa para administração de condomínios
+            {t("completeCondominiumPlatform")}
           </p>
         </div>
 

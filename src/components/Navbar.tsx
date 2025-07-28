@@ -1,24 +1,34 @@
-import { Building2, Menu, X } from "lucide-react";
+import { Building2, Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
+  const { language, changeLanguage } = useLanguage();
 
   const navigation = [
-    { name: "Dashboard", href: "/" },
-    { name: "Edifícios", href: "/buildings" },
-    { name: "Obrigações", href: "/legal-obligations" },
-    { name: "Equipamentos", href: "/equipment" },
-    { name: "Financeiro", href: "/financial" },
-    { name: "Consumo", href: "/consumption" },
-    { name: "Solicitações", href: "/field-management" },
-    { name: "Relatórios", href: "/reports" },
-    { name: "Usuários", href: "/users" },
+    { name: t("dashboard"), href: "/" },
+    { name: t("buildings"), href: "/buildings" },
+    { name: t("legalObligations"), href: "/legal-obligations" },
+    { name: t("equipment"), href: "/equipment" },
+    { name: t("financial"), href: "/financial" },
+    { name: t("consumption"), href: "/consumption" },
+    { name: t("fieldManagement"), href: "/field-management" },
+    { name: t("reports"), href: "/reports" },
+    { name: t("users"), href: "/users" },
   ];
 
   return (
@@ -44,12 +54,45 @@ export const Navbar = () => {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Language Switcher */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-2">
+                    <Globe className="h-4 w-4 mr-2" />
+                    {language === 'en' ? 'EN' : 'PT'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => changeLanguage('en')}>
+                    English
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => changeLanguage('pt')}>
+                    Português
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button and language switcher */}
           {isMobile && (
-            <div className="md:hidden flex items-center">
+            <div className="md:hidden flex items-center space-x-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Globe className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => changeLanguage('en')}>
+                    English
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => changeLanguage('pt')}>
+                    Português
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="ghost"
                 size="sm"
