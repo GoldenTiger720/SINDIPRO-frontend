@@ -5,23 +5,25 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, MessageSquare, Camera, MapPin, Clock, Mail, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { useTranslation } from "react-i18next";
 
 export default function FieldManagement() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName="Administrador SINDIPRO" />
+      <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao Dashboard
+{t("backToDashboard")}
           </Button>
           <div className="flex items-center gap-2">
             <MessageSquare className="w-6 h-6 text-purple-500" />
-            <h1 className="text-3xl font-bold">Gestão de Campo/Solicitações</h1>
+            <h1 className="text-3xl font-bold">{t("fieldManagementRequests")}</h1>
           </div>
         </div>
 
@@ -30,31 +32,31 @@ export default function FieldManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="w-5 h-5" />
-                Registro de Campo
+{t("fieldRegistration")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="photo-upload">Foto do Problema/Solicitação</Label>
+                <Label htmlFor="photo-upload">{t("problemPhoto")}</Label>
                 <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
                   <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">Clique para tirar foto ou fazer upload</p>
+                  <p className="text-muted-foreground">{t("clickToTakePhoto")}</p>
                   <Button variant="outline" className="mt-2">
                     <Camera className="w-4 h-4 mr-2" />
-                    Adicionar Foto
+{t("addPhoto")}
                   </Button>
                 </div>
               </div>
               <div>
-                <Label htmlFor="request-title">Título da Solicitação</Label>
-                <Input id="request-title" placeholder="Ex: Vazamento no banheiro do 3º andar" />
+                <Label htmlFor="request-title">{t("requestTitle")}</Label>
+                <Input id="request-title" placeholder={t("requestTitlePlaceholder")} />
               </div>
               <div>
-                <Label htmlFor="request-description">Descrição do Problema</Label>
+                <Label htmlFor="request-description">{t("problemDescription")}</Label>
                 <textarea 
                   className="w-full p-2 border rounded resize-none" 
                   rows={4}
-                  placeholder="Descreva detalhadamente o problema encontrado..."
+                  placeholder={t("describeProblem")}
                 ></textarea>
               </div>
             </CardContent>
@@ -64,42 +66,42 @@ export default function FieldManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MapPin className="w-5 h-5" />
-                Localização e Timestamp
+{t("locationAndTimestamp")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4 text-blue-500" />
-                  <span className="font-semibold">Localização Automática</span>
+                  <span className="font-semibold">{t("automaticLocation")}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Lat: -23.5505, Long: -46.6333<br/>
-                  Endereço: Rua das Flores, 123 - São Paulo, SP
+                  {t("address")}: Rua das Flores, 123 - São Paulo, SP
                 </p>
               </div>
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-4 h-4 text-green-500" />
-                  <span className="font-semibold">Registro Automático de Tempo</span>
+                  <span className="font-semibold">{t("automaticTimeRegistry")}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Data: 15/03/2024<br/>
+                  {t("date")}: 15/03/2024<br/>
                   Horário: 14:32:15
                 </p>
               </div>
               <div>
-                <Label htmlFor="priority">Prioridade</Label>
+                <Label htmlFor="priority">{t("priority")}</Label>
                 <select className="w-full p-2 border rounded">
-                  <option value="low">Baixa</option>
-                  <option value="medium">Média</option>
-                  <option value="high">Alta</option>
-                  <option value="urgent">Urgente</option>
+                  <option value="low">{t("low")}</option>
+                  <option value="medium">{t("medium")}</option>
+                  <option value="high">{t("high")}</option>
+                  <option value="urgent">{t("urgent")}</option>
                 </select>
               </div>
               <Button className="w-full gap-2">
                 <Plus className="w-4 h-4" />
-                Criar Solicitação
+{t("createRequest")}
               </Button>
             </CardContent>
           </Card>
@@ -109,24 +111,23 @@ export default function FieldManagement() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="w-5 h-5" />
-              Envio Automático de Solicitações
+{t("automaticRequestSending")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="internal-email">Email Interno (Administração)</Label>
+                <Label htmlFor="internal-email">{t("internalEmailAdmin")}</Label>
                 <Input id="internal-email" type="email" placeholder="admin@condominio.com" />
               </div>
               <div>
-                <Label htmlFor="contractor-email">Email da Construtora/Fornecedor</Label>
+                <Label htmlFor="contractor-email">{t("contractorSupplierEmail")}</Label>
                 <Input id="contractor-email" type="email" placeholder="manutencao@empresa.com" />
               </div>
             </div>
             <div className="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-700">
-                📧 As solicitações serão enviadas automaticamente por email para os responsáveis, 
-                incluindo fotos, localização e todos os detalhes registrados.
+                📧 {t("requestsAutomaticallySent")}
               </p>
             </div>
           </CardContent>
@@ -134,36 +135,36 @@ export default function FieldManagement() {
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Solicitações Recentes</CardTitle>
+            <CardTitle>{t("recentRequests")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="p-4 border rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="font-semibold">Vazamento no banheiro - Apto 302</h3>
-                    <p className="text-sm text-muted-foreground">Criado por: João Silva (Zelador)</p>
+                    <h3 className="font-semibold">{t("bathroomLeak")} - {t("apartment")} 302</h3>
+                    <p className="text-sm text-muted-foreground">{t("createdBy")}: João Silva ({t("janitor")})</p>
                   </div>
-                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">Alta Prioridade</span>
+                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">{t("highPriority")}</span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span><MapPin className="w-3 h-3 inline mr-1" />3º Andar - Bloco A</span>
+                  <span><MapPin className="w-3 h-3 inline mr-1" />3º {t("floor")} - {t("block")} A</span>
                   <span><Clock className="w-3 h-3 inline mr-1" />15/03/2024 14:32</span>
-                  <span><Mail className="w-3 h-3 inline mr-1" />Enviado para manutenção</span>
+                  <span><Mail className="w-3 h-3 inline mr-1" />{t("sentForMaintenance")}</span>
                 </div>
               </div>
               <div className="p-4 border rounded-lg">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="font-semibold">Lâmpada queimada - Hall principal</h3>
-                    <p className="text-sm text-muted-foreground">Criado por: Maria Santos (Portaria)</p>
+                    <h3 className="font-semibold">{t("burnedOutBulb")} - Hall principal</h3>
+                    <p className="text-sm text-muted-foreground">{t("createdBy")}: Maria Santos ({t("reception")})</p>
                   </div>
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">Média Prioridade</span>
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">{t("mediumPriority")}</span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span><MapPin className="w-3 h-3 inline mr-1" />Térreo - Hall</span>
+                  <span><MapPin className="w-3 h-3 inline mr-1" />{t("lobby")} - Hall</span>
                   <span><Clock className="w-3 h-3 inline mr-1" />14/03/2024 09:15</span>
-                  <span><Mail className="w-3 h-3 inline mr-1" />Aguardando resposta</span>
+                  <span><Mail className="w-3 h-3 inline mr-1" />{t("awaitingResponse")}</span>
                 </div>
               </div>
             </div>
@@ -172,26 +173,26 @@ export default function FieldManagement() {
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Funcionalidades Relacionadas</CardTitle>
+            <CardTitle>{t("relatedFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Controle de Papel Baseado em Permissões</h3>
+                <h3 className="font-semibold mb-2">{t("roleBasedAccessControl")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Sistema de permissões para master/gerente/campo com diferentes níveis de acesso.
+                  {t("roleBasedAccessControlDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Gestão de Histórico de Solicitações</h3>
+                <h3 className="font-semibold mb-2">{t("requestHistoryManagement")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Mantenha um histórico completo de todas as solicitações e seu status de resolução.
+                  {t("requestHistoryManagementDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Relatório de Registro de Inspeção</h3>
+                <h3 className="font-semibold mb-2">{t("inspectionRegistryReport")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Gere relatórios detalhados das inspeções de campo e solicitações registradas.
+                  {t("inspectionRegistryReportDesc")}
                 </p>
               </div>
             </div>
