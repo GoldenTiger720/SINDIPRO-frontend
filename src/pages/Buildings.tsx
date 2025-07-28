@@ -6,23 +6,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Building2, Plus, Calculator } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { useTranslation } from "react-i18next";
 
 export default function Buildings() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader userName="Administrador SINDIPRO" />
+      <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao Dashboard
+            {t("backToDashboard")}
           </Button>
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-primary" />
-            <h1 className="text-3xl font-bold">Registro Básico do Condomínio</h1>
+            <h1 className="text-3xl font-bold">{t("basicCondominiumRegistry")}</h1>
           </div>
         </div>
 
@@ -31,33 +33,33 @@ export default function Buildings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="w-5 h-5" />
-                Informações Básicas do Edifício
+                {t("basicBuildingInfo")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="building-name">Nome do Edifício</Label>
-                <Input id="building-name" placeholder="Digite o nome do edifício" />
+                <Label htmlFor="building-name">{t("buildingName")}</Label>
+                <Input id="building-name" placeholder={t("enterBuildingName")} />
               </div>
               <div>
-                <Label htmlFor="building-type">Tipo</Label>
+                <Label htmlFor="building-type">{t("buildingType")}</Label>
                 <Select>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder={t("selectType")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="residential">Residencial</SelectItem>
-                    <SelectItem value="commercial">Comercial</SelectItem>
-                    <SelectItem value="mixed">Misto</SelectItem>
+                    <SelectItem value="residential">{t("residential")}</SelectItem>
+                    <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                    <SelectItem value="mixed">{t("mixed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="total-area">Área Total (m²)</Label>
+                <Label htmlFor="total-area">{t("totalArea")}</Label>
                 <Input id="total-area" type="number" placeholder="0.00" />
               </div>
               <div>
-                <Label htmlFor="total-units">Número de Unidades</Label>
+                <Label htmlFor="total-units">{t("numberOfUnits")}</Label>
                 <Input id="total-units" type="number" placeholder="0" />
               </div>
             </CardContent>
@@ -67,34 +69,34 @@ export default function Buildings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="w-5 h-5" />
-                Configurações Avançadas
+                {t("advancedSettings")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="area-unit">Área por Unidade (m²)</Label>
+                <Label htmlFor="area-unit">{t("areaPerUnit")}</Label>
                 <Input id="area-unit" type="number" placeholder="0.00" />
               </div>
               <div>
-                <Label htmlFor="allocation-ratio">Proporção de Rateio (%)</Label>
+                <Label htmlFor="allocation-ratio">{t("allocationRatio")}</Label>
                 <Input id="allocation-ratio" type="number" placeholder="0.00" />
               </div>
               <div>
-                <Label htmlFor="parking">Vagas de Estacionamento</Label>
+                <Label htmlFor="parking">{t("parkingSpaces")}</Label>
                 <Select>
                   <SelectTrigger>
-                    <SelectValue placeholder="Disponibilidade" />
+                    <SelectValue placeholder={t("availability")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="available">Disponível</SelectItem>
-                    <SelectItem value="not-available">Não Disponível</SelectItem>
-                    <SelectItem value="limited">Limitado</SelectItem>
+                    <SelectItem value="available">{t("available")}</SelectItem>
+                    <SelectItem value="not-available">{t("notAvailable")}</SelectItem>
+                    <SelectItem value="limited">{t("limited")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <Button className="w-full gap-2">
                 <Plus className="w-4 h-4" />
-                Salvar Configurações
+                {t("saveSettings")}
               </Button>
             </CardContent>
           </Card>
@@ -102,20 +104,20 @@ export default function Buildings() {
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Funcionalidades Relacionadas</CardTitle>
+            <CardTitle>{t("relatedFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Automação de Distribuição de Taxas</h3>
+                <h3 className="font-semibold mb-2">{t("automaticFeeDistribution")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Distribua automaticamente as taxas de administração por unidade baseado na proporção configurada.
+                  {t("automaticFeeDistributionDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">Seleção de Configuração Inicial</h3>
+                <h3 className="font-semibold mb-2">{t("initialConfigSelection")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Configure facilmente as configurações iniciais através de uma matriz de seleção intuitiva.
+                  {t("initialConfigSelectionDesc")}
                 </p>
               </div>
             </div>
