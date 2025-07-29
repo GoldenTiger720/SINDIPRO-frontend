@@ -2,7 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthGuard } from "@/components/AuthGuard";
+import { isAuthenticated } from "@/lib/auth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -18,6 +20,11 @@ import Users from "./pages/Users";
 
 const queryClient = new QueryClient();
 
+// Component to handle public routes (login, signup)
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  return isAuthenticated() ? <Navigate to="/" replace /> : <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -25,18 +32,66 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/buildings" element={<Buildings />} />
-          <Route path="/legal-obligations" element={<LegalObligations />} />
-          <Route path="/equipment" element={<Equipment />} />
-          <Route path="/financial" element={<Financial />} />
-          <Route path="/consumption" element={<Consumption />} />
-          <Route path="/field-management" element={<FieldManagement />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/users" element={<Users />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          {/* Public routes - redirect to dashboard if already authenticated */}
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/signup" element={
+            <PublicRoute>
+              <SignUp />
+            </PublicRoute>
+          } />
+          
+          {/* Protected routes - require authentication */}
+          <Route path="/" element={
+            <AuthGuard>
+              <Index />
+            </AuthGuard>
+          } />
+          <Route path="/buildings" element={
+            <AuthGuard>
+              <Buildings />
+            </AuthGuard>
+          } />
+          <Route path="/legal-obligations" element={
+            <AuthGuard>
+              <LegalObligations />
+            </AuthGuard>
+          } />
+          <Route path="/equipment" element={
+            <AuthGuard>
+              <Equipment />
+            </AuthGuard>
+          } />
+          <Route path="/financial" element={
+            <AuthGuard>
+              <Financial />
+            </AuthGuard>
+          } />
+          <Route path="/consumption" element={
+            <AuthGuard>
+              <Consumption />
+            </AuthGuard>
+          } />
+          <Route path="/field-management" element={
+            <AuthGuard>
+              <FieldManagement />
+            </AuthGuard>
+          } />
+          <Route path="/reports" element={
+            <AuthGuard>
+              <Reports />
+            </AuthGuard>
+          } />
+          <Route path="/users" element={
+            <AuthGuard>
+              <Users />
+            </AuthGuard>
+          } />
+          
+          {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

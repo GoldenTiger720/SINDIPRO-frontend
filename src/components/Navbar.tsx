@@ -1,14 +1,16 @@
-import { Building2, Menu, X, Globe } from "lucide-react";
+import { Building2, Menu, X, Globe, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { logoutUser, getStoredUser } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -18,6 +20,12 @@ export const Navbar = () => {
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { language, changeLanguage } = useLanguage();
+  const user = getStoredUser();
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
 
   const navigation = [
     { name: t("dashboard"), href: "/" },
@@ -72,10 +80,26 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="ml-2">
+                    <User className="h-4 w-4 mr-2" />
+                    {user?.fullName || user?.email || 'User'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
-          {/* Mobile menu button and language switcher */}
+          {/* Mobile menu button and dropdowns */}
           {isMobile && (
             <div className="md:hidden flex items-center space-x-2">
               <DropdownMenu>
@@ -93,6 +117,21 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Button
                 variant="ghost"
                 size="sm"

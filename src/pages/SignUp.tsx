@@ -3,12 +3,16 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { registerUser, type RegisterCredentials } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -18,10 +22,39 @@ const SignUp = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle sign-up logic here
-    console.log("Sign-up attempt:", formData);
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await registerUser(formData as RegisterCredentials);
+      
+      toast({
+        title: "Success",
+        description: "Account created successfully! Redirecting...",
+      });
+      
+      // Navigate to main page after successful signup
+      setTimeout(() => navigate("/"), 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 
@@ -56,9 +89,9 @@ const SignUp = () => {
             <div>
               <Input
                 type="text"
-                placeholder={t("fullName")}
-                value={formData.fullName}
-                onChange={(e) => handleInputChange("fullName", e.target.value)}
+                placeholder="Username"
+                value={formData.username}
+                onChange={(e) => handleInputChange("username", e.target.value)}
                 required
                 className="w-full"
               />
@@ -102,8 +135,9 @@ const SignUp = () => {
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700"
               size="lg"
+              disabled={isLoading}
             >
-              Criar Conta
+              {isLoading ? "Creating Account..." : "Criar Conta"}
             </Button>
           </form>
 

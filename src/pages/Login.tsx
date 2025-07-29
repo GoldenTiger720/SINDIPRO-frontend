@@ -2,16 +2,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { loginUser, type LoginCredentials } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", { email, password });
+    
+    setIsLoading(true);
+    
+    try {
+      await loginUser({ email, password } as LoginCredentials);
+      
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting...",
+      });
+      
+      // Navigate to main page after successful login
+      setTimeout(() => navigate("/"), 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Login failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreateAccount = () => {
@@ -86,8 +110,9 @@ const Login = () => {
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700"
               size="lg"
+              disabled={isLoading}
             >
-              Log in
+              {isLoading ? "Logging in..." : "Log in"}
             </Button>
           </form>
 
