@@ -3,13 +3,6 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -17,7 +10,6 @@ const SignUp = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    role: "",
     password: "",
     confirmPassword: ""
   });
@@ -81,20 +73,6 @@ const SignUp = () => {
                 required
                 className="w-full"
               />
-            </div>
-
-            <div>
-              <Select onValueChange={(value) => handleInputChange("role", value)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("userRole")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="master">{t("masterFullAccess")}</SelectItem>
-                  <SelectItem value="manager">{t("managerAdminAccess")}</SelectItem>
-                  <SelectItem value="field">{t("fieldLimitedAccess")}</SelectItem>
-                  <SelectItem value="readonly">{t("readOnlyAccess")}</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div>
