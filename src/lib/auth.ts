@@ -8,7 +8,7 @@ export interface LoginResponse {
   user?: {
     id: number;
     email: string;
-    fullName?: string;
+    username?: string;
   };
 }
 
@@ -18,7 +18,7 @@ export interface RegisterResponse {
   user: {
     id: number;
     email: string;
-    fullName?: string;
+    username?: string;
   };
 }
 

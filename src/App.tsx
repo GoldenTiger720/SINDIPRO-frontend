@@ -17,6 +17,8 @@ import Consumption from "./pages/Consumption";
 import FieldManagement from "./pages/FieldManagement";
 import Reports from "./pages/Reports";
 import Users from "./pages/Users";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,16 @@ const App = () => (
           <Route path="/users" element={
             <AuthGuard>
               <Users />
+            </AuthGuard>
+          } />
+          <Route path="/profile" element={
+            <AuthGuard>
+              <Profile />
+            </AuthGuard>
+          } />
+          <Route path="/settings" element={
+            <AuthGuard>
+              <Settings />
             </AuthGuard>
           } />
           

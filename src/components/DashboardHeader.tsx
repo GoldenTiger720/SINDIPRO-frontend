@@ -1,4 +1,4 @@
-import { Menu, User, Globe, ChevronDown, Home, Building2, AlertTriangle, Wrench, BarChart3, Calculator, MessageSquare, FileText, Users } from "lucide-react";
+import { Menu, User, Globe, ChevronDown, Home, Building2, AlertTriangle, Wrench, BarChart3, Calculator, MessageSquare, FileText, Users, LogOut, Settings } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getStoredUser, logoutUser } from "@/lib/auth";
 
 interface DashboardHeaderProps {
   userName?: string;
@@ -20,7 +21,7 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader = ({
-  userName = "Administrador",
+  userName,
   onMenuClick,
 }: DashboardHeaderProps) => {
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
@@ -28,6 +29,16 @@ export const DashboardHeader = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, changeLanguage } = useLanguage();
+  const user = getStoredUser();
+  
+  // Use stored user data or fallback to prop or default
+  const displayName = user?.username || userName || "User";
+
+  const handleLogout = () => {
+    logoutUser();
+    // Force page reload to ensure clean state
+    window.location.href = '/login';
+  };
 
   // Close submenu when clicking outside
   useEffect(() => {
@@ -104,7 +115,7 @@ export const DashboardHeader = ({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2 px-2">
                 <span className="text-sm font-medium text-muted-foreground hidden sm:block">
-                  {userName}
+                  {displayName}
                 </span>
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="" />
@@ -116,17 +127,18 @@ export const DashboardHeader = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="w-4 h-4 mr-2" />
-                {t("myProfile")}
+                My Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Menu className="w-4 h-4 mr-2" />
-                {t("settings")}
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                {t("logout")}
+              <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

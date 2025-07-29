@@ -1,6 +1,6 @@
 import { Building2, Menu, X, Globe, LogOut, User } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
@@ -16,7 +16,6 @@ import {
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { language, changeLanguage } = useLanguage();
@@ -24,7 +23,8 @@ export const Navbar = () => {
 
   const handleLogout = () => {
     logoutUser();
-    navigate('/login');
+    // Force page reload to ensure clean state
+    window.location.href = '/login';
   };
 
   const navigation = [
