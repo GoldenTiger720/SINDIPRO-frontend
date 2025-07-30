@@ -10,6 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { logoutUser } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 type SettingsType = {
   notifications: {
@@ -35,6 +36,7 @@ type SettingsType = {
 };
 
 const Settings = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { language, changeLanguage } = useLanguage();
   const navigate = useNavigate();
@@ -95,13 +97,13 @@ const Settings = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Success",
-        description: "Settings saved successfully!",
+        title: t("success"),
+        description: t("settingsSavedSuccessfully"),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save settings",
+        title: t("error"),
+        description: t("failedToSaveSettings"),
         variant: "destructive",
       });
     } finally {
@@ -111,15 +113,15 @@ const Settings = () => {
 
   const handleExportData = () => {
     toast({
-      title: "Export Started",
-      description: "Your data export will be ready for download shortly.",
+      title: t("exportStarted"),
+      description: t("dataExportReady"),
     });
   };
 
   const handleDeleteAccount = () => {
     toast({
-      title: "Account Deletion",
-      description: "Please contact support to delete your account.",
+      title: t("accountDeletion"),
+      description: t("contactSupportToDelete"),
       variant: "destructive",
     });
   };
@@ -137,13 +139,13 @@ const Settings = () => {
       });
       
       toast({
-        title: "Success",
-        description: "Cache cleared successfully!",
+        title: t("success"),
+        description: t("cacheClearedSuccessfully"),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to clear cache",
+        title: t("error"),
+        description: t("failedToClearCache"),
         variant: "destructive",
       });
     }
@@ -157,8 +159,8 @@ const Settings = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Page Header */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600">Manage your application preferences and account settings</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t("settings")}</h1>
+            <p className="text-gray-600">{t("manageApplicationPreferences")}</p>
           </div>
 
           {/* Language & Localization */}
@@ -166,14 +168,14 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="h-5 w-5" />
-                Language & Localization
+                {t("languageLocalization")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Interface Language</Label>
-                  <p className="text-sm text-gray-600">Choose your preferred language for the interface</p>
+                  <Label className="text-base font-medium">{t("interfaceLanguage")}</Label>
+                  <p className="text-sm text-gray-600">{t("choosePreferredLanguage")}</p>
                 </div>
                 <Select value={language} onValueChange={changeLanguage}>
                   <SelectTrigger className="w-40">
@@ -193,14 +195,14 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bell className="h-5 w-5" />
-                Notifications
+                {t("notificationsSettings")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Email Notifications</Label>
-                  <p className="text-sm text-gray-600">Receive notifications via email</p>
+                  <Label className="text-base font-medium">{t("emailNotifications")}</Label>
+                  <p className="text-sm text-gray-600">{t("receiveNotificationsViaEmail")}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.email}
@@ -210,8 +212,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Push Notifications</Label>
-                  <p className="text-sm text-gray-600">Receive push notifications in your browser</p>
+                  <Label className="text-base font-medium">{t("pushNotifications")}</Label>
+                  <p className="text-sm text-gray-600">{t("receivePushNotifications")}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.push}
@@ -221,8 +223,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Report Notifications</Label>
-                  <p className="text-sm text-gray-600">Get notified when reports are ready</p>
+                  <Label className="text-base font-medium">{t("reportNotifications")}</Label>
+                  <p className="text-sm text-gray-600">{t("getNotifiedWhenReportsReady")}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.reports}
@@ -232,8 +234,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Maintenance Alerts</Label>
-                  <p className="text-sm text-gray-600">Receive maintenance and system alerts</p>
+                  <Label className="text-base font-medium">{t("maintenanceAlerts")}</Label>
+                  <p className="text-sm text-gray-600">{t("receiveMaintenanceAlerts")}</p>
                 </div>
                 <Switch
                   checked={settings.notifications.maintenance}
@@ -248,14 +250,14 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Privacy & Security
+                {t("privacySecurity")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Profile Visibility</Label>
-                  <p className="text-sm text-gray-600">Control who can see your profile</p>
+                  <Label className="text-base font-medium">{t("profileVisibility")}</Label>
+                  <p className="text-sm text-gray-600">{t("controlWhoCanSeeProfile")}</p>
                 </div>
                 <Select 
                   value={settings.privacy.profileVisibility} 
@@ -265,17 +267,17 @@ const Settings = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="public">Public</SelectItem>
-                    <SelectItem value="private">Private</SelectItem>
-                    <SelectItem value="team">Team Only</SelectItem>
+                    <SelectItem value="public">{t("public")}</SelectItem>
+                    <SelectItem value="private">{t("private")}</SelectItem>
+                    <SelectItem value="team">{t("teamOnly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Data Sharing</Label>
-                  <p className="text-sm text-gray-600">Allow sharing anonymized usage data</p>
+                  <Label className="text-base font-medium">{t("dataSharing")}</Label>
+                  <p className="text-sm text-gray-600">{t("allowSharingAnonymizedData")}</p>
                 </div>
                 <Switch
                   checked={settings.privacy.dataSharing}
@@ -285,8 +287,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Analytics</Label>
-                  <p className="text-sm text-gray-600">Help improve the app with usage analytics</p>
+                  <Label className="text-base font-medium">{t("analyticsSettings")}</Label>
+                  <p className="text-sm text-gray-600">{t("helpImproveAppAnalytics")}</p>
                 </div>
                 <Switch
                   checked={settings.privacy.analytics}
@@ -301,14 +303,14 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
-                Appearance
+                {t("appearance")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Theme</Label>
-                  <p className="text-sm text-gray-600">Choose your preferred theme</p>
+                  <Label className="text-base font-medium">{t("theme")}</Label>
+                  <p className="text-sm text-gray-600">{t("choosePreferredTheme")}</p>
                 </div>
                 <Select 
                   value={settings.appearance.theme} 
@@ -318,17 +320,17 @@ const Settings = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="light">{t("light")}</SelectItem>
+                    <SelectItem value="dark">{t("dark")}</SelectItem>
+                    <SelectItem value="auto">{t("auto")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Compact Mode</Label>
-                  <p className="text-sm text-gray-600">Use more compact interface layout</p>
+                  <Label className="text-base font-medium">{t("compactMode")}</Label>
+                  <p className="text-sm text-gray-600">{t("useCompactInterfaceLayout")}</p>
                 </div>
                 <Switch
                   checked={settings.appearance.compactMode}
@@ -343,14 +345,14 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />
-                System
+                {t("system")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Auto Save</Label>
-                  <p className="text-sm text-gray-600">Automatically save changes as you work</p>
+                  <Label className="text-base font-medium">{t("autoSave")}</Label>
+                  <p className="text-sm text-gray-600">{t("automaticallySaveChanges")}</p>
                 </div>
                 <Switch
                   checked={settings.system.autoSave}
@@ -360,8 +362,8 @@ const Settings = () => {
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Backup Frequency</Label>
-                  <p className="text-sm text-gray-600">How often to backup your data</p>
+                  <Label className="text-base font-medium">{t("backupFrequency")}</Label>
+                  <p className="text-sm text-gray-600">{t("howOftenBackupData")}</p>
                 </div>
                 <Select 
                   value={settings.system.backupFrequency} 
@@ -371,16 +373,16 @@ const Settings = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="daily">{t("daily")}</SelectItem>
+                    <SelectItem value="weekly">{t("weekly")}</SelectItem>
+                    <SelectItem value="monthly">{t("monthly")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               
               <div className="pt-4 border-t">
                 <Button onClick={handleClearCache} variant="outline" className="w-full">
-                  Clear Cache
+                  {t("clearCache")}
                 </Button>
               </div>
             </CardContent>
@@ -391,29 +393,29 @@ const Settings = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
-                Data Management
+                {t("dataManagement")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium">Export Data</Label>
-                  <p className="text-sm text-gray-600">Download a copy of your data</p>
+                  <Label className="text-base font-medium">{t("exportData")}</Label>
+                  <p className="text-sm text-gray-600">{t("downloadCopyOfData")}</p>
                 </div>
                 <Button onClick={handleExportData} variant="outline">
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  {t("export")}
                 </Button>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-base font-medium text-red-600">Delete Account</Label>
-                  <p className="text-sm text-gray-600">Permanently delete your account and all data</p>
+                  <Label className="text-base font-medium text-red-600">{t("deleteAccount")}</Label>
+                  <p className="text-sm text-gray-600">{t("permanentlyDeleteAccount")}</p>
                 </div>
                 <Button onClick={handleDeleteAccount} variant="destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                  {t("delete")}
                 </Button>
               </div>
             </CardContent>
@@ -427,7 +429,7 @@ const Settings = () => {
               className="flex-1"
             >
               <SettingsIcon className="h-4 w-4 mr-2" />
-              {isLoading ? "Saving..." : "Save Settings"}
+              {isLoading ? t("saving") : t("saveSettings")}
             </Button>
           </div>
         </div>

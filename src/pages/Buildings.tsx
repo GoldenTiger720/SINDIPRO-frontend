@@ -86,11 +86,11 @@ export default function Buildings() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="building-info" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
-              Building Information
+              {t("buildingInformation")}
             </TabsTrigger>
             <TabsTrigger value="unit-management" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
-              Unit Management
+              {t("unitManagement")}
             </TabsTrigger>
           </TabsList>
 
@@ -155,7 +155,7 @@ export default function Buildings() {
                         <SelectValue placeholder={t("availability")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="available">{t("available")}</SelectItem>
+                        <SelectItem value="available">{t("availableCommon")}</SelectItem>
                         <SelectItem value="not-available">{t("notAvailable")}</SelectItem>
                         <SelectItem value="limited">{t("limited")}</SelectItem>
                       </SelectContent>
@@ -176,80 +176,80 @@ export default function Buildings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="w-5 h-5" />
-                  Register New Unit
+                  {t("registerNewUnit")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="unit-number">Unit Number</Label>
+                    <Label htmlFor="unit-number">{t("unitNumber")}</Label>
                     <Input 
                       id="unit-number" 
-                      placeholder="e.g., 101, 102..." 
+                      placeholder={t("unitNumberPlaceholder")} 
                       value={newUnit.number}
                       onChange={(e) => setNewUnit({...newUnit, number: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="unit-floor">Floor</Label>
+                    <Label htmlFor="unit-floor">{t("floorBuildings")}</Label>
                     <Input 
                       id="unit-floor" 
                       type="number" 
-                      placeholder="1, 2, 3..." 
+                      placeholder={t("floorPlaceholder")} 
                       value={newUnit.floor}
                       onChange={(e) => setNewUnit({...newUnit, floor: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="unit-area">Area (m²)</Label>
+                    <Label htmlFor="unit-area">{t("area")}</Label>
                     <Input 
                       id="unit-area" 
                       type="number" 
                       step="0.1" 
-                      placeholder="85.5" 
+                      placeholder={t("areaPlaceholder")} 
                       value={newUnit.area}
                       onChange={(e) => setNewUnit({...newUnit, area: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="unit-type">Type</Label>
+                    <Label htmlFor="unit-type">{t("type")}</Label>
                     <Select value={newUnit.type} onValueChange={(value) => setNewUnit({...newUnit, type: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="residential">Residential</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                        <SelectItem value="parking">Parking</SelectItem>
+                        <SelectItem value="residential">{t("residential")}</SelectItem>
+                        <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                        <SelectItem value="parking">{t("parking")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="unit-owner">Owner/Tenant</Label>
+                    <Label htmlFor="unit-owner">{t("ownerTenant")}</Label>
                     <Input 
                       id="unit-owner" 
-                      placeholder="Owner name (optional)" 
+                      placeholder={t("ownerNameOptional")} 
                       value={newUnit.owner}
                       onChange={(e) => setNewUnit({...newUnit, owner: e.target.value})}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="unit-status">Status</Label>
+                    <Label htmlFor="unit-status">{t("status")}</Label>
                     <Select value={newUnit.status} onValueChange={(value) => setNewUnit({...newUnit, status: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="occupied">Occupied</SelectItem>
-                        <SelectItem value="vacant">Vacant</SelectItem>
-                        <SelectItem value="maintenance">Under Maintenance</SelectItem>
+                        <SelectItem value="occupied">{t("occupied")}</SelectItem>
+                        <SelectItem value="vacant">{t("vacant")}</SelectItem>
+                        <SelectItem value="maintenance">{t("underMaintenance")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <Button onClick={handleAddUnit} className="mt-4 gap-2">
                   <Plus className="w-4 h-4" />
-                  Add Unit
+                  {t("addUnit")}
                 </Button>
               </CardContent>
             </Card>
@@ -259,13 +259,13 @@ export default function Buildings() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Home className="w-5 h-5" />
-                  Registered Units ({units.length})
+                  {t("registeredUnits")} ({units.length})
                 </CardTitle>
                 <div className="flex items-center gap-2 mt-2">
                   <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search units or owners..."
+                      placeholder={t("searchUnitsOrOwners")}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-8"
@@ -280,13 +280,13 @@ export default function Buildings() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <Home className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold">Unit {unit.number}</span>
+                          <span className="font-semibold">{t("unit")} {unit.number}</span>
                         </div>
                         <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'}>
                           {unit.status}
                         </Badge>
                         <div className="text-sm text-muted-foreground">
-                          Floor {unit.floor} • {unit.area}m² • {unit.type}
+                          {t("floorBuildings")} {unit.floor} • {unit.area}m² • {unit.type}
                         </div>
                         {unit.owner && (
                           <div className="flex items-center gap-1 text-sm">
@@ -307,7 +307,7 @@ export default function Buildings() {
                   ))}
                   {filteredUnits.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
-                      {searchTerm ? "No units found matching your search." : "No units registered yet."}
+                      {searchTerm ? t("noUnitsFoundSearch") : t("noUnitsRegisteredYet")}
                     </div>
                   )}
                 </div>
@@ -325,10 +325,10 @@ export default function Buildings() {
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Home className="w-4 h-4" />
-                  Unit Registration System
+                  {t("unitRegistrationSystem")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Comprehensive unit management with registration, tracking, and owner/tenant information.
+                  {t("comprehensiveUnitManagement")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">

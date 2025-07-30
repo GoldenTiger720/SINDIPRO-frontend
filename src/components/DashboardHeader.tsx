@@ -64,7 +64,7 @@ export const DashboardHeader = ({
     { name: t("financial"), href: "/financial", icon: BarChart3 },
     { name: t("consumption"), href: "/consumption", icon: Calculator },
     { name: t("fieldManagement"), href: "/field-management", icon: MessageSquare },
-    { name: t("reports"), href: "/reports", icon: FileText },
+    { name: t("reportsNavbar"), href: "/reports", icon: FileText },
     { name: t("users"), href: "/users", icon: Users },
   ];
   return (
@@ -129,16 +129,16 @@ export const DashboardHeader = ({
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="w-4 h-4 mr-2" />
-                My Profile
+                {t("myProfile")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
-                Settings
+                {t("settings")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                {t("logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -8,8 +8,10 @@ import { User, Mail, Key, Save, Camera } from "lucide-react";
 import { getStoredUser } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { useTranslation } from "react-i18next";
 
 const Profile = () => {
+  const { t } = useTranslation();
   const user = getStoredUser();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -35,15 +37,15 @@ const Profile = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Success",
-        description: "Profile updated successfully!",
+        title: t("success"),
+        description: t("profileUpdatedSuccessfully"),
       });
       
       setIsEditing(false);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: t("error"),
+        description: t("failedToUpdateProfile"),
         variant: "destructive",
       });
     } finally {
@@ -54,8 +56,8 @@ const Profile = () => {
   const handlePasswordChange = async () => {
     if (formData.newPassword !== formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "New passwords do not match",
+        title: t("error"),
+        description: t("newPasswordsDoNotMatch"),
         variant: "destructive",
       });
       return;
@@ -63,8 +65,8 @@ const Profile = () => {
 
     if (!formData.currentPassword || !formData.newPassword) {
       toast({
-        title: "Error",
-        description: "Please fill in all password fields",
+        title: t("error"),
+        description: t("pleaseFillAllPasswordFields"),
         variant: "destructive",
       });
       return;
@@ -77,8 +79,8 @@ const Profile = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Success",
-        description: "Password changed successfully!",
+        title: t("success"),
+        description: t("passwordChangedSuccessfully"),
       });
       
       // Clear password fields
@@ -90,8 +92,8 @@ const Profile = () => {
       }));
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to change password",
+        title: t("error"),
+        description: t("failedToChangePassword"),
         variant: "destructive",
       });
     } finally {
@@ -107,8 +109,8 @@ const Profile = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Page Header */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-            <p className="text-gray-600">Manage your account settings and preferences</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t("myProfile")}</h1>
+            <p className="text-gray-600">{t("manageAccountSettings")}</p>
           </div>
 
           {/* Profile Overview Card */}
@@ -116,7 +118,7 @@ const Profile = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Profile Information
+                {t("profileInformation")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -135,8 +137,8 @@ const Profile = () => {
                     className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
                     onClick={() => {
                       toast({
-                        title: "Coming Soon",
-                        description: "Profile picture upload will be available soon!",
+                        title: t("comingSoon"),
+                        description: t("profilePictureUploadSoon"),
                       });
                     }}
                   >
@@ -144,16 +146,16 @@ const Profile = () => {
                   </Button>
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">{user?.username || "User"}</h3>
+                  <h3 className="text-lg font-semibold">{user?.username || t("user")}</h3>
                   <p className="text-gray-600">{user?.email}</p>
-                  <p className="text-sm text-gray-500">Member since {new Date().toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-500">{t("memberSince")} {new Date().toLocaleDateString()}</p>
                 </div>
               </div>
 
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="username">{t("username")}</Label>
                   <Input
                     id="username"
                     value={formData.username}
@@ -163,7 +165,7 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t("emailForm")}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -179,7 +181,7 @@ const Profile = () => {
               <div className="flex gap-2">
                 {!isEditing ? (
                   <Button onClick={() => setIsEditing(true)}>
-                    Edit Profile
+                    {t("editProfile")}
                   </Button>
                 ) : (
                   <>
@@ -188,7 +190,7 @@ const Profile = () => {
                       disabled={isLoading}
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {isLoading ? "Saving..." : "Save Changes"}
+                      {isLoading ? t("saving") : t("saveChanges")}
                     </Button>
                     <Button 
                       variant="outline" 
@@ -204,7 +206,7 @@ const Profile = () => {
                         });
                       }}
                     >
-                      Cancel
+                      {t("cancel")}
                     </Button>
                   </>
                 )}
@@ -217,39 +219,39 @@ const Profile = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Key className="h-5 w-5" />
-                Change Password
+                {t("changePassword")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Label htmlFor="currentPassword">{t("currentPassword")}</Label>
                   <Input
                     id="currentPassword"
                     type="password"
                     value={formData.currentPassword}
                     onChange={(e) => handleInputChange("currentPassword", e.target.value)}
-                    placeholder="Enter current password"
+                    placeholder={t("enterCurrentPassword")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">{t("newPassword")}</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={formData.newPassword}
                     onChange={(e) => handleInputChange("newPassword", e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={t("enterNewPassword")}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">{t("confirmNewPassword")}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t("confirmNewPasswordPlaceholder")}
                   />
                 </div>
               </div>
@@ -260,7 +262,7 @@ const Profile = () => {
                 className="w-full md:w-auto"
               >
                 <Key className="h-4 w-4 mr-2" />
-                {isLoading ? "Changing..." : "Change Password"}
+                {isLoading ? t("changing") : t("changePassword")}
               </Button>
             </CardContent>
           </Card>
@@ -268,21 +270,21 @@ const Profile = () => {
           {/* Account Statistics Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Account Statistics</CardTitle>
+              <CardTitle>{t("accountStatistics")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">0</div>
-                  <div className="text-sm text-gray-600">Buildings Managed</div>
+                  <div className="text-sm text-gray-600">{t("buildingsManaged")}</div>
                 </div>
                 <div className="p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">0</div>
-                  <div className="text-sm text-gray-600">Reports Generated</div>
+                  <div className="text-sm text-gray-600">{t("reportsGenerated")}</div>
                 </div>
                 <div className="p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">0</div>
-                  <div className="text-sm text-gray-600">Tasks Completed</div>
+                  <div className="text-sm text-gray-600">{t("tasksCompleted")}</div>
                 </div>
               </div>
             </CardContent>

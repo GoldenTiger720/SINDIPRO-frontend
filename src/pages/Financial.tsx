@@ -168,12 +168,12 @@ export default function Financial() {
 
   const exportToExcel = () => {
     // This would generate an Excel file with the current budget structure
-    alert("Excel export functionality would be implemented here");
+    alert(t("excelExportMessage"));
   };
 
   const importFromExcel = () => {
     // This would allow importing Excel files to update budget data
-    alert("Excel import functionality would be implemented here");
+    alert(t("excelImportMessage"));
   };
 
   return (
@@ -196,15 +196,15 @@ export default function Financial() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="budget-management" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
-              Budget Management
+              {t("budgetManagement")}
             </TabsTrigger>
             <TabsTrigger value="condominium-calculations" className="flex items-center gap-2">
               <Calculator className="w-4 h-4" />
-              Condominium Calculations
+              {t("condominiumCalculations")}
             </TabsTrigger>
             <TabsTrigger value="brazilian-system" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Brazilian System
+              {t("brazilianSystem")}
             </TabsTrigger>
           </TabsList>
 
@@ -364,13 +364,13 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="w-5 h-5" />
-                  Expense Distribution Calculator
+                  {t("expenseDistributionCalculator")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="total-expense">Total Expense Amount (R$)</Label>
+                    <Label htmlFor="total-expense">{t("totalExpenseAmount")}</Label>
                     <Input
                       id="total-expense"
                       type="number"
@@ -380,15 +380,15 @@ export default function Financial() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="calculation-type">Calculation Method</Label>
+                    <Label htmlFor="calculation-type">{t("calculationMethod")}</Label>
                     <Select value={calculationData.calculationType} onValueChange={(value) => setCalculationData({...calculationData, calculationType: value})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="area">By Unit Area</SelectItem>
-                        <SelectItem value="equal">Equal Distribution</SelectItem>
-                        <SelectItem value="custom">Custom Percentage</SelectItem>
+                        <SelectItem value="area">{t("byUnitArea")}</SelectItem>
+                        <SelectItem value="equal">{t("equalDistribution")}</SelectItem>
+                        <SelectItem value="custom">{t("customPercentage")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -401,11 +401,11 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChart className="w-5 h-5" />
-                  Cost Distribution by Unit
+                  {t("costDistributionByUnit")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
                   Total: R$ {parseFloat(calculationData.totalExpense || "0").toFixed(2)} | 
-                  Method: {calculationData.calculationType === "area" ? "By Area" : calculationData.calculationType === "equal" ? "Equal Split" : "Custom"}
+                  {t("method")}: {calculationData.calculationType === "area" ? t("byArea") : calculationData.calculationType === "equal" ? t("equalSplit") : t("custom")}
                 </div>
               </CardHeader>
               <CardContent>
@@ -423,7 +423,7 @@ export default function Financial() {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <Home className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-semibold">Unit {unit.number}</span>
+                            <span className="font-semibold">{t("unit")} {unit.number}</span>
                           </div>
                           <Badge variant="outline">
                             {unit.area}m²
@@ -437,7 +437,7 @@ export default function Financial() {
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
-                                placeholder="8.5"
+                                placeholder={t("percentagePlaceholder")}
                                 value={calculationData.customPercentages[unit.id]}
                                 onChange={(e) => handleCustomPercentageChange(unit.id, e.target.value)}
                                 className="w-20 text-center"
@@ -460,7 +460,7 @@ export default function Financial() {
                 </div>
                 <div className="mt-4 p-4 bg-muted rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">Total Distributed:</span>
+                    <span className="font-semibold">{t("totalDistributed")}:</span>
                     <span className="font-bold text-lg">
                       R$ {mockUnits.reduce((sum, unit) => sum + calculateUnitShare(unit), 0).toFixed(2)}
                     </span>
@@ -472,18 +472,18 @@ export default function Financial() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle>{t("quickActions")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2">
                   <Button variant="outline" className="flex-1">
-                    Export to Excel
+                    {t("exportExcel")}
                   </Button>
                   <Button variant="outline" className="flex-1">
-                    Generate Invoices
+                    {t("generateInvoices")}
                   </Button>
                   <Button className="flex-1">
-                    Send to Units
+                    {t("sendToUnits")}
                   </Button>
                 </div>
               </CardContent>
@@ -496,24 +496,24 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Home className="w-5 h-5" />
-                  Ideal Fractions Management (Fração Ideal)
+                  {t("idealFractionsManagement")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Configure the percentage of total condominium expenses each unit is responsible for
+                  {t("configureIdealFractions")}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">Current Annual Budget: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
+                    <h4 className="font-semibold">{t("currentAnnualBudget")}: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={importFromExcel}>
                         <Upload className="w-4 h-4 mr-2" />
-                        Import Excel
+                        {t("importExcel")}
                       </Button>
                       <Button variant="outline" onClick={exportToExcel}>
                         <Download className="w-4 h-4 mr-2" />
-                        Export Excel
+                        {t("exportExcelBrazilian")}
                       </Button>
                     </div>
                   </div>
@@ -521,12 +521,12 @@ export default function Financial() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Unit</TableHead>
-                        <TableHead>Owner</TableHead>
-                        <TableHead>Area (m²)</TableHead>
-                        <TableHead>Ideal Fraction</TableHead>
-                        <TableHead>Monthly Fee</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead>{t("unit")}</TableHead>
+                        <TableHead>{t("owner")}</TableHead>
+                        <TableHead>{t("area")}</TableHead>
+                        <TableHead>{t("idealFraction")}</TableHead>
+                        <TableHead>{t("monthlyFee")}</TableHead>
+                        <TableHead>{t("actions")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -564,11 +564,11 @@ export default function Financial() {
                   
                   <div className="p-4 bg-muted rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span>Total Ideal Fractions:</span>
+                      <span>{t("totalIdealFractions")}:</span>
                       <span className="font-bold">
                         {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0).toFixed(3)}
                         {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0) !== 1.0 && 
-                          <span className="text-red-500 ml-2">(Should equal 1.0)</span>
+                          <span className="text-red-500 ml-2">{t("shouldEqualOne")}</span>
                         }
                       </span>
                     </div>
@@ -582,10 +582,10 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileSpreadsheet className="w-5 h-5" />
-                  Annual Budget Matrix
+                  {t("annualBudgetMatrix")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Main accounts and sub-accounts structure as approved in Assembly
+                  {t("mainAccountsSubaccounts")}
                 </div>
               </CardHeader>
               <CardContent>
@@ -605,7 +605,7 @@ export default function Financial() {
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm">
                             <Plus className="w-3 h-3 mr-1" />
-                            Add Sub-account
+                            {t("addSubAccount")}
                           </Button>
                           <Button variant="outline" size="sm">
                             <Edit className="w-3 h-3" />
@@ -645,10 +645,10 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
-                  Monthly Tracking vs Forecast
+                  {t("monthlyTrackingForecast")}
                 </CardTitle>
                 <div className="flex items-center gap-4">
-                  <Label>Select Month:</Label>
+                  <Label>{t("selectMonth")}:</Label>
                   <Select value={brazilianData.selectedMonth} onValueChange={(value) => setBrazilianData({...brazilianData, selectedMonth: value})}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
@@ -666,11 +666,11 @@ export default function Financial() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Account</TableHead>
-                      <TableHead>Monthly Budget</TableHead>
-                      <TableHead>Actual Expense</TableHead>
-                      <TableHead>Variance</TableHead>
+                      <TableHead>{t("code")}</TableHead>
+                      <TableHead>{t("account")}</TableHead>
+                      <TableHead>{t("monthlyBudget")}</TableHead>
+                      <TableHead>{t("actualExpense")}</TableHead>
+                      <TableHead>{t("variance")}</TableHead>
                       <TableHead>%</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -710,35 +710,35 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileSpreadsheet className="w-5 h-5" />
-                  Standard Template Generator
+                  {t("standardTemplateGenerator")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  Generate standardized spreadsheets for administrators to complete and submit
+                  {t("generateStandardizedSpreadsheets")}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Button className="flex-1 gap-2">
                     <Download className="w-4 h-4" />
-                    Download Monthly Expense Template
+                    {t("downloadMonthlyExpenseTemplate")}
                   </Button>
                   <Button variant="outline" className="flex-1 gap-2">
                     <Download className="w-4 h-4" />
-                    Download Budget Template
+                    {t("downloadBudgetTemplate")}
                   </Button>
                   <Button variant="outline" className="flex-1 gap-2">
                     <Download className="w-4 h-4" />
-                    Download Ideal Fractions Template
+                    {t("downloadIdealFractionsTemplate")}
                   </Button>
                 </div>
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2">Template Instructions:</h4>
+                  <h4 className="font-semibold text-blue-900 mb-2">{t("templateInstructions")}</h4>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Templates include all current account structures</li>
-                    <li>• Pre-filled with current budget values for reference</li>
-                    <li>• Color-coded cells indicate which fields should be filled</li>
-                    <li>• Built-in validation to prevent errors</li>
-                    <li>• Ready for import back into the system</li>
+                    <li>{t("templatesIncludeStructures")}</li>
+                    <li>{t("prefilledBudgetValues")}</li>
+                    <li>{t("colorCodedCells")}</li>
+                    <li>{t("builtInValidation")}</li>
+                    <li>{t("readyForImport")}</li>
                   </ul>
                 </div>
               </CardContent>
@@ -755,19 +755,19 @@ export default function Financial() {
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  Brazilian System
+                  {t("brazilianSystem")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Complete Brazilian condominium management with ideal fractions, budget matrix, and monthly tracking vs forecast.
+                  {t("completeBrazilianCondominium")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Calculator className="w-4 h-4" />
-                  Condominium Calculator
+                  {t("condominiumCalculator")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Automatically calculate and distribute expenses across units based on area, equality, or custom percentages.
+                  {t("automaticallyCalculateDistribute")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
