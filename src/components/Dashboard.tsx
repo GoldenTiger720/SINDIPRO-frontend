@@ -90,9 +90,9 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <DashboardHeader userName={t("adminSindipro")} />
       
-      <main className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+      <main className="max-w-7xl mx-auto p-4 sm:p-6">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             {t("condominiumManagementSystem")}
           </h1>
           <p className="text-muted-foreground">
@@ -100,7 +100,7 @@ export const Dashboard = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {dashboardItems.map((item) => (
             <DashboardCard
               key={item.id}

@@ -149,22 +149,20 @@ export const DashboardHeader = ({
       {isSubmenuOpen && (
         <div 
           ref={submenuRef}
-          className="absolute top-full left-4 bg-background border border-border shadow-lg z-50 rounded-md"
-          style={{ width: 'fit-content' }}
+          className="absolute top-full left-4 right-4 sm:right-auto bg-background border border-border shadow-lg z-50 rounded-md"
         >
           <div className="p-4">
-            <div className="grid grid-cols-4 gap-3" style={{ width: 'max-content' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {submenuItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Card
                     key={item.name}
-                    className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/50 hover:scale-105"
+                    className="cursor-pointer hover:shadow-md transition-all duration-200 border border-border hover:border-primary/50 hover:scale-105 aspect-square"
                     onClick={() => {
                       navigate(item.href);
                       setIsSubmenuOpen(false);
                     }}
-                    style={{ width: '100px', height: '80px' }}
                   >
                     <CardContent className="flex flex-col items-center justify-center p-2 text-center h-full">
                       <Icon className="h-5 w-5 text-muted-foreground mb-1 hover:text-primary transition-colors" />

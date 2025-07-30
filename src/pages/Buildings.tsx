@@ -69,7 +69,7 @@ export default function Buildings() {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader userName={t("adminSindipro")} />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
@@ -78,7 +78,7 @@ export default function Buildings() {
           </Button>
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-primary" />
-            <h1 className="text-3xl font-bold">{t("basicCondominiumRegistry")}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">{t("basicCondominiumRegistry")}</h1>
           </div>
         </div>
 

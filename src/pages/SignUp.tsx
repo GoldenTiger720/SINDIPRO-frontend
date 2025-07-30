@@ -63,9 +63,9 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Image (2/3 of the page) */}
-      <div className="flex-[2] relative">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Image section - Top on mobile, left side (2/3) on desktop */}
+      <div className="w-full h-48 sm:h-64 lg:h-auto lg:flex-[2] relative">
         <img
           src="/sigin_in.jpg"
           alt="Sign Up Background"
@@ -73,15 +73,15 @@ const SignUp = () => {
         />
       </div>
 
-      {/* Right side - Sign Up Form (1/3 of the page) */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 bg-white">
+      {/* Sign Up Form section - Below image on mobile, right side (1/3) on desktop */}
+      <div className="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8 bg-white min-h-0">
         <div className="w-full max-w-sm space-y-6">
           {/* Logo */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-6 sm:mb-8">
             <img
               src="/logo.png"
               alt="SINDIPRO Logo"
-              className="h-16 w-auto"
+              className="h-12 sm:h-16 w-auto"
             />
           </div>
           {/* Sign Up Form */}
