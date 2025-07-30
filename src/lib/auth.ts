@@ -121,13 +121,11 @@ export const registerUser = async (credentials: RegisterCredentials): Promise<Re
   if (response.access && response.refresh) {
     setTokens(response);
   }
-  
   return response;
 };
 
 export const refreshToken = async (): Promise<string> => {
   const refreshTokenValue = getStoredToken('refresh');
-  
   if (!refreshTokenValue) {
     throw new Error('No refresh token available');
   }
