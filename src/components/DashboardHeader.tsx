@@ -84,7 +84,12 @@ export const DashboardHeader = ({
           </Button>
 
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="SINDIPRO" className="h-8 w-auto" />
+            <img 
+              src="/logo.png" 
+              alt="SINDIPRO" 
+              className="h-8 w-auto cursor-pointer hover:opacity-80 transition-opacity" 
+              onClick={() => navigate("/")}
+            />
           </div>
         </div>
 
@@ -152,7 +157,7 @@ export const DashboardHeader = ({
           className="absolute top-full left-4 right-4 sm:right-auto bg-background border border-border shadow-lg z-50 rounded-md"
         >
           <div className="p-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3">
               {submenuItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -164,9 +169,9 @@ export const DashboardHeader = ({
                       setIsSubmenuOpen(false);
                     }}
                   >
-                    <CardContent className="flex flex-col items-center justify-center p-2 text-center h-full">
-                      <Icon className="h-5 w-5 text-muted-foreground mb-1 hover:text-primary transition-colors" />
-                      <span className="text-xs font-medium text-foreground leading-tight">{item.name}</span>
+                    <CardContent className="flex flex-col items-center justify-center p-1 sm:p-2 text-center h-full">
+                      <Icon className="h-3 w-3 sm:h-5 sm:w-5 text-muted-foreground mb-0.5 sm:mb-1 hover:text-primary transition-colors" />
+                      <span className="text-[10px] sm:text-xs font-medium text-foreground leading-tight">{item.name}</span>
                     </CardContent>
                   </Card>
                 );

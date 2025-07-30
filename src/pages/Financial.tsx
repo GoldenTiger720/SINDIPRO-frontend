@@ -6,8 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, BarChart3, Upload, TrendingUp, DollarSign, FileSpreadsheet, Calculator, Home, PieChart, FileText, Download, Edit, Plus, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { BarChart3, Upload, TrendingUp, DollarSign, FileSpreadsheet, Calculator, Home, PieChart, FileText, Download, Edit, Plus, Trash2 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -82,7 +81,6 @@ const mockMonthlyExpenses = [
 ];
 
 export default function Financial() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const [calculationData, setCalculationData] = useState({
     totalExpense: "5000",
@@ -181,30 +179,26 @@ export default function Financial() {
       <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-{t("backToDashboard")}
-          </Button>
+        <div className="flex items-center mb-6">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-orange-500" />
-            <h1 className="text-2xl sm:text-3xl font-bold">{t("financialBudgetManagement")}</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">{t("financialBudgetManagement")}</h1>
           </div>
         </div>
 
         <Tabs defaultValue="budget-management" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="budget-management" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              {t("budgetManagement")}
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="budget-management" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-[10px] sm:text-xs lg:text-sm">
+              <BarChart3 className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
+              <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("budgetManagement")}</span>
             </TabsTrigger>
-            <TabsTrigger value="condominium-calculations" className="flex items-center gap-2">
-              <Calculator className="w-4 h-4" />
-              {t("condominiumCalculations")}
+            <TabsTrigger value="condominium-calculations" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-[10px] sm:text-xs lg:text-sm">
+              <Calculator className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
+              <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("condominiumCalculations")}</span>
             </TabsTrigger>
-            <TabsTrigger value="brazilian-system" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              {t("brazilianSystem")}
+            <TabsTrigger value="brazilian-system" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-[10px] sm:text-xs lg:text-sm">
+              <FileText className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
+              <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("brazilianSystem")}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -212,40 +206,40 @@ export default function Financial() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                     <DollarSign className="w-5 h-5 text-green-500" />
                     {t("annualBudget")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">R$ 250.000,00</div>
-                  <p className="text-sm text-muted-foreground">{t("totalApproved")} 2024</p>
+                  <div className="text-lg sm:text-xl font-bold text-green-600">R$ 250.000,00</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t("totalApproved")} 2024</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                     <TrendingUp className="w-5 h-5 text-blue-500" />
                     {t("currentExpense")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">R$ 125.430,00</div>
-                  <p className="text-sm text-muted-foreground">50,2% {t("ofBudget")}</p>
+                  <div className="text-lg sm:text-xl font-bold text-blue-600">R$ 125.430,00</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">50,2% {t("ofBudget")}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                     <BarChart3 className="w-5 h-5 text-orange-500" />
                     {t("remainingBalance")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">R$ 124.570,00</div>
-                  <p className="text-sm text-muted-foreground">49,8% {t("available")}</p>
+                  <div className="text-lg sm:text-xl font-bold text-orange-600">R$ 124.570,00</div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">49,8% {t("available")}</p>
                 </CardContent>
               </Card>
             </div>
@@ -253,14 +247,14 @@ export default function Financial() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                     <BarChart3 className="w-5 h-5" />
                     {t("annualBudgetRegistry")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="account-category">{t("accountCategory")}</Label>
+                    <Label htmlFor="account-category" className="text-xs sm:text-sm">{t("accountCategory")}</Label>
                     <select className="w-full p-2 border rounded">
                       <option>{t("maintenance")}</option>
                       <option>{t("cleaning")}</option>
@@ -270,27 +264,27 @@ export default function Financial() {
                     </select>
                   </div>
                   <div>
-                    <Label htmlFor="subcategory">{t("subItem")}</Label>
-                    <Input id="subcategory" placeholder={t("subItemPlaceholder")} />
+                    <Label htmlFor="subcategory" className="text-xs sm:text-sm">{t("subItem")}</Label>
+                    <Input id="subcategory" placeholder={t("subItemPlaceholder")} className="text-xs sm:text-sm" />
                   </div>
                   <div>
-                    <Label htmlFor="budget-amount">{t("budgetedAmount")}</Label>
-                    <Input id="budget-amount" type="number" placeholder="0,00" />
+                    <Label htmlFor="budget-amount" className="text-xs sm:text-sm">{t("budgetedAmount")}</Label>
+                    <Input id="budget-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
                   </div>
-                  <Button className="w-full">{t("addToBudget")}</Button>
+                  <Button className="w-full text-xs sm:text-sm">{t("addToBudget")}</Button>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                     <FileSpreadsheet className="w-5 h-5" />
                     {t("monthlyExpenses")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="expense-category">{t("category")}</Label>
+                    <Label htmlFor="expense-category" className="text-xs sm:text-sm">{t("category")}</Label>
                     <select className="w-full p-2 border rounded">
                       <option>{t("maintenance")}</option>
                       <option>{t("cleaning")}</option>
@@ -299,19 +293,19 @@ export default function Financial() {
                     </select>
                   </div>
                   <div>
-                    <Label htmlFor="expense-amount">{t("expenseAmount")}</Label>
-                    <Input id="expense-amount" type="number" placeholder="0,00" />
+                    <Label htmlFor="expense-amount" className="text-xs sm:text-sm">{t("expenseAmount")}</Label>
+                    <Input id="expense-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
                   </div>
                   <div>
-                    <Label htmlFor="expense-date">{t("date")}</Label>
+                    <Label htmlFor="expense-date" className="text-xs sm:text-sm">{t("date")}</Label>
                     <Input id="expense-date" type="date" />
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1 gap-2">
+                    <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
                       <Upload className="w-4 h-4" />
                       {t("uploadExcel")}
                     </Button>
-                    <Button className="flex-1">{t("registerExpense")}</Button>
+                    <Button className="flex-1 text-xs sm:text-sm">{t("registerExpense")}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -319,38 +313,38 @@ export default function Financial() {
 
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>{t("comparativeAnalysis")}</CardTitle>
+                <CardTitle className="text-sm sm:text-base lg:text-lg">{t("comparativeAnalysis")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <h3 className="font-semibold">{t("maintenance")}</h3>
-                      <p className="text-sm text-muted-foreground">{t("budgeted")}: R$ 50.000,00 | {t("spent")}: R$ 35.420,00</p>
+                      <h3 className="font-semibold text-xs sm:text-sm">{t("maintenance")}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 50.000,00 | {t("spent")}: R$ 35.420,00</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-green-600 font-semibold">-29%</div>
-                      <div className="text-sm text-muted-foreground">{t("economy")}</div>
+                      <div className="text-green-600 font-semibold text-xs sm:text-sm">-29%</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">{t("economy")}</div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <h3 className="font-semibold">{t("electricity")}</h3>
-                      <p className="text-sm text-muted-foreground">{t("budgeted")}: R$ 30.000,00 | {t("spent")}: R$ 32.150,00</p>
+                      <h3 className="font-semibold text-xs sm:text-sm">{t("electricity")}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 30.000,00 | {t("spent")}: R$ 32.150,00</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-red-600 font-semibold">+7%</div>
-                      <div className="text-sm text-muted-foreground">{t("aboveBudget")}</div>
+                      <div className="text-red-600 font-semibold text-xs sm:text-sm">+7%</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">{t("aboveBudget")}</div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <h3 className="font-semibold">{t("cleaning")}</h3>
-                      <p className="text-sm text-muted-foreground">{t("budgeted")}: R$ 25.000,00 | {t("spent")}: R$ 24.860,00</p>
+                      <h3 className="font-semibold text-xs sm:text-sm">{t("cleaning")}</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 25.000,00 | {t("spent")}: R$ 24.860,00</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-green-600 font-semibold">-1%</div>
-                      <div className="text-sm text-muted-foreground">{t("withinBudget")}</div>
+                      <div className="text-green-600 font-semibold text-xs sm:text-sm">-1%</div>
+                      <div className="text-xs sm:text-sm text-muted-foreground">{t("withinBudget")}</div>
                     </div>
                   </div>
                 </div>
@@ -362,7 +356,7 @@ export default function Financial() {
             {/* Calculation Settings */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <Calculator className="w-5 h-5" />
                   {t("expenseDistributionCalculator")}
                 </CardTitle>
@@ -370,7 +364,7 @@ export default function Financial() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="total-expense">{t("totalExpenseAmount")}</Label>
+                    <Label htmlFor="total-expense" className="text-xs sm:text-sm">{t("totalExpenseAmount")}</Label>
                     <Input
                       id="total-expense"
                       type="number"
@@ -380,7 +374,7 @@ export default function Financial() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="calculation-type">{t("calculationMethod")}</Label>
+                    <Label htmlFor="calculation-type" className="text-xs sm:text-sm">{t("calculationMethod")}</Label>
                     <Select value={calculationData.calculationType} onValueChange={(value) => setCalculationData({...calculationData, calculationType: value})}>
                       <SelectTrigger>
                         <SelectValue />
@@ -399,7 +393,7 @@ export default function Financial() {
             {/* Results Table */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <PieChart className="w-5 h-5" />
                   {t("costDistributionByUnit")}
                 </CardTitle>
@@ -423,12 +417,12 @@ export default function Financial() {
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <Home className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-semibold">{t("unit")} {unit.number}</span>
+                            <span className="font-semibold text-xs sm:text-sm">{t("unit")} {unit.number}</span>
                           </div>
                           <Badge variant="outline">
                             {unit.area}m²
                           </Badge>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
                             {unit.owner}
                           </div>
                         </div>
@@ -440,16 +434,16 @@ export default function Financial() {
                                 placeholder={t("percentagePlaceholder")}
                                 value={calculationData.customPercentages[unit.id]}
                                 onChange={(e) => handleCustomPercentageChange(unit.id, e.target.value)}
-                                className="w-20 text-center"
+                                className="w-20 text-center text-xs"
                               />
-                              <span className="text-sm">%</span>
+                              <span className="text-xs sm:text-sm">%</span>
                             </div>
                           )}
                           <div className="text-right">
-                            <div className="font-semibold text-lg">
+                            <div className="font-semibold text-sm sm:text-base">
                               R$ {unitShare.toFixed(2)}
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-xs sm:text-sm text-muted-foreground">
                               {percentage.toFixed(1)}%
                             </div>
                           </div>
@@ -460,8 +454,8 @@ export default function Financial() {
                 </div>
                 <div className="mt-4 p-4 bg-muted rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">{t("totalDistributed")}:</span>
-                    <span className="font-bold text-lg">
+                    <span className="font-semibold text-xs sm:text-sm">{t("totalDistributed")}:</span>
+                    <span className="font-bold text-sm sm:text-base">
                       R$ {mockUnits.reduce((sum, unit) => sum + calculateUnitShare(unit), 0).toFixed(2)}
                     </span>
                   </div>
@@ -472,17 +466,17 @@ export default function Financial() {
             {/* Quick Actions */}
             <Card>
               <CardHeader>
-                <CardTitle>{t("quickActions")}</CardTitle>
+                <CardTitle className="text-sm sm:text-base">{t("quickActions")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
                     {t("exportExcel")}
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
                     {t("generateInvoices")}
                   </Button>
-                  <Button className="flex-1">
+                  <Button className="flex-1 text-xs sm:text-sm px-2 py-1.5">
                     {t("sendToUnits")}
                   </Button>
                 </div>
@@ -494,7 +488,7 @@ export default function Financial() {
             {/* Ideal Fractions Management */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <Home className="w-5 h-5" />
                   {t("idealFractionsManagement")}
                 </CardTitle>
@@ -505,13 +499,13 @@ export default function Financial() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h4 className="font-semibold">{t("currentAnnualBudget")}: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
+                    <h4 className="font-semibold text-xs sm:text-sm">{t("currentAnnualBudget")}: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
                     <div className="flex gap-2">
-                      <Button variant="outline" onClick={importFromExcel}>
+                      <Button variant="outline" onClick={importFromExcel} className="text-xs sm:text-sm">
                         <Upload className="w-4 h-4 mr-2" />
                         {t("importExcel")}
                       </Button>
-                      <Button variant="outline" onClick={exportToExcel}>
+                      <Button variant="outline" onClick={exportToExcel} className="text-xs sm:text-sm">
                         <Download className="w-4 h-4 mr-2" />
                         {t("exportExcelBrazilian")}
                       </Button>
@@ -549,12 +543,12 @@ export default function Financial() {
                               }}
                             />
                           </TableCell>
-                          <TableCell className="font-semibold text-green-600">
+                          <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
                             R$ {calculateUnitMonthlyFee(unit).toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-3 h-3" />
+                            <Button variant="outline" size="sm" className="text-xs">
+                              <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -564,11 +558,11 @@ export default function Financial() {
                   
                   <div className="p-4 bg-muted rounded-lg">
                     <div className="flex justify-between items-center">
-                      <span>{t("totalIdealFractions")}:</span>
-                      <span className="font-bold">
+                      <span className="text-xs sm:text-sm">{t("totalIdealFractions")}:</span>
+                      <span className="font-bold text-xs sm:text-sm">
                         {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0).toFixed(3)}
                         {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0) !== 1.0 && 
-                          <span className="text-red-500 ml-2">{t("shouldEqualOne")}</span>
+                          <span className="text-red-500 ml-2 text-xs">{t("shouldEqualOne")}</span>
                         }
                       </span>
                     </div>
@@ -580,7 +574,7 @@ export default function Financial() {
             {/* Budget Matrix Editor */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <FileSpreadsheet className="w-5 h-5" />
                   {t("annualBudgetMatrix")}
                 </CardTitle>
@@ -597,18 +591,18 @@ export default function Financial() {
                           <Badge variant="default" className="bg-slate-700">
                             {account.code}
                           </Badge>
-                          <h3 className="font-bold text-lg">{account.name}</h3>
-                          <span className="text-xl font-bold text-green-600">
+                          <h3 className="font-bold text-sm sm:text-base">{account.name}</h3>
+                          <span className="text-base sm:text-lg font-bold text-green-600">
                             R$ {account.annualBudget.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" className="text-xs">
                             <Plus className="w-3 h-3 mr-1" />
                             {t("addSubAccount")}
                           </Button>
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-3 h-3" />
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
                           </Button>
                         </div>
                       </div>
@@ -618,16 +612,16 @@ export default function Financial() {
                           <div key={subAccount.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                             <div className="flex items-center gap-3">
                               <Badge variant="outline">{subAccount.code}</Badge>
-                              <span>{subAccount.name}</span>
-                              <span className="font-semibold text-green-600">
+                              <span className="text-xs sm:text-sm">{subAccount.name}</span>
+                              <span className="font-semibold text-green-600 text-xs sm:text-sm">
                                 R$ {subAccount.annualBudget.toLocaleString()}
                               </span>
                             </div>
                             <div className="flex gap-1">
-                              <Button variant="outline" size="sm">
-                                <Edit className="w-3 h-3" />
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="text-xs">
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
@@ -643,12 +637,12 @@ export default function Financial() {
             {/* Monthly Tracking vs Forecast */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <TrendingUp className="w-5 h-5" />
                   {t("monthlyTrackingForecast")}
                 </CardTitle>
                 <div className="flex items-center gap-4">
-                  <Label>{t("selectMonth")}:</Label>
+                  <Label className="text-xs sm:text-sm">{t("selectMonth")}:</Label>
                   <Select value={brazilianData.selectedMonth} onValueChange={(value) => setBrazilianData({...brazilianData, selectedMonth: value})}>
                     <SelectTrigger className="w-40">
                       <SelectValue />
@@ -686,10 +680,10 @@ export default function Financial() {
                           <TableCell>
                             <Badge variant="outline">{subAccount.code}</Badge>
                           </TableCell>
-                          <TableCell>{subAccount.name}</TableCell>
-                          <TableCell>R$ {monthlyBudget.toFixed(2)}</TableCell>
-                          <TableCell>R$ {actualExpense.toFixed(2)}</TableCell>
-                          <TableCell className={variance >= 0 ? "text-red-600" : "text-green-600"}>
+                          <TableCell className="text-xs sm:text-sm">{subAccount.name}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">R$ {monthlyBudget.toFixed(2)}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">R$ {actualExpense.toFixed(2)}</TableCell>
+                          <TableCell className={variance >= 0 ? "text-red-600 text-xs sm:text-sm" : "text-green-600 text-xs sm:text-sm"}>
                             R$ {Math.abs(variance).toFixed(2)}
                           </TableCell>
                           <TableCell>
@@ -708,7 +702,7 @@ export default function Financial() {
             {/* Template Generator */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <FileSpreadsheet className="w-5 h-5" />
                   {t("standardTemplateGenerator")}
                 </CardTitle>
@@ -718,22 +712,22 @@ export default function Financial() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button className="flex-1 gap-2">
-                    <Download className="w-4 h-4" />
+                  <Button className="flex-1 gap-2 text-xs sm:text-sm">
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     {t("downloadMonthlyExpenseTemplate")}
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2">
-                    <Download className="w-4 h-4" />
+                  <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     {t("downloadBudgetTemplate")}
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2">
-                    <Download className="w-4 h-4" />
+                  <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
+                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
                     {t("downloadIdealFractionsTemplate")}
                   </Button>
                 </div>
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2">{t("templateInstructions")}</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                  <h4 className="font-semibold text-blue-900 mb-2 text-xs sm:text-sm">{t("templateInstructions")}</h4>
+                  <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
                     <li>{t("templatesIncludeStructures")}</li>
                     <li>{t("prefilledBudgetValues")}</li>
                     <li>{t("colorCodedCells")}</li>
@@ -748,43 +742,43 @@ export default function Financial() {
 
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>{t("relatedFeatures")}</CardTitle>
+            <CardTitle className="text-sm sm:text-base lg:text-lg">{t("relatedFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-xs sm:text-sm">
                   <FileText className="w-4 h-4" />
                   {t("brazilianSystem")}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {t("completeBrazilianCondominium")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-xs sm:text-sm">
                   <Calculator className="w-4 h-4" />
                   {t("condominiumCalculator")}
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {t("automaticallyCalculateDistribute")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("excelUploadAndAnalysis")}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("excelUploadAndAnalysis")}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {t("excelUploadAndAnalysisDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("automaticBudgetComparison")}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("automaticBudgetComparison")}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {t("automaticBudgetComparisonDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("automaticReportGeneration")}</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("automaticReportGeneration")}</h3>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {t("automaticReportGenerationDesc")}
                 </p>
               </div>

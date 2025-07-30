@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
@@ -21,7 +20,6 @@ const mockUnits = [
 ];
 
 export default function Buildings() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const [units, setUnits] = useState(mockUnits);
   const [searchTerm, setSearchTerm] = useState("");
@@ -71,14 +69,10 @@ export default function Buildings() {
       <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            {t("backToDashboard")}
-          </Button>
+        <div className="flex items-center mb-6">
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl sm:text-3xl font-bold">{t("basicCondominiumRegistry")}</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t("basicCondominiumRegistry")}</h1>
           </div>
         </div>
 
@@ -276,31 +270,31 @@ export default function Buildings() {
               <CardContent>
                 <div className="space-y-3">
                   {filteredUnits.map((unit) => (
-                    <div key={unit.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-4">
+                    <div key={unit.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <div className="flex items-center gap-2">
-                          <Home className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-semibold">{t("unit")} {unit.number}</span>
+                          <Home className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+                          <span className="text-sm sm:text-base font-semibold">{t("unit")} {unit.number}</span>
+                          <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'} className="text-xs">
+                            {unit.status}
+                          </Badge>
                         </div>
-                        <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'}>
-                          {unit.status}
-                        </Badge>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-xs sm:text-sm text-muted-foreground">
                           {t("floorBuildings")} {unit.floor} • {unit.area}m² • {unit.type}
                         </div>
                         {unit.owner && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Users className="w-3 h-3" />
+                          <div className="flex items-center gap-1 text-xs sm:text-sm">
+                            <Users className="w-2 h-2 sm:w-3 sm:h-3" />
                             {unit.owner}
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-3 h-3" />
+                      <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto">
+                        <Button variant="outline" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
+                          <Edit className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleDeleteUnit(unit.id)}>
-                          <Trash2 className="w-3 h-3" />
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteUnit(unit.id)} className="h-8 w-8 sm:h-9 sm:w-9 p-0">
+                          <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         </Button>
                       </div>
                     </div>

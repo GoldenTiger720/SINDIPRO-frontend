@@ -2,13 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Settings, Users as UsersIcon, Shield, Plus, UserCheck, Key } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Settings, Users as UsersIcon, Shield, Plus, UserCheck, Key } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 
 export default function Users() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
 
   return (
@@ -16,14 +14,10 @@ export default function Users() {
       <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-{t("backToDashboard")}
-          </Button>
+        <div className="flex items-center mb-6">
           <div className="flex items-center gap-2">
             <Settings className="w-6 h-6 text-pink-500" />
-            <h1 className="text-2xl sm:text-3xl font-bold">{t("userAndPermissionManagement")}</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t("userAndPermissionManagement")}</h1>
           </div>
         </div>
 
