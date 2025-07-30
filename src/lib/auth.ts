@@ -1,5 +1,5 @@
 // Auth API configuration and utilities
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
 
 // Types for auth responses
 export interface LoginResponse {
