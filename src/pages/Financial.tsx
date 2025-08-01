@@ -97,7 +97,7 @@ export default function Financial() {
     monthlyExpenses: mockMonthlyExpenses,
     units: mockUnits,
     selectedMonth: "Janeiro",
-    editingAccount: null as any,
+    editingAccount: null as number | null,
     newAccount: {
       code: "",
       name: "",
@@ -149,7 +149,7 @@ export default function Financial() {
   };
 
   const getAllSubAccounts = () => {
-    const subAccounts: any[] = [];
+    const subAccounts: typeof mockBudgetAccounts[0]['subAccounts'][0][] = [];
     brazilianData.budgetAccounts.forEach(account => {
       account.subAccounts?.forEach(sub => {
         subAccounts.push(sub);
@@ -498,63 +498,65 @@ export default function Financial() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <h4 className="font-semibold text-xs sm:text-sm">{t("currentAnnualBudget")}: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={importFromExcel} className="text-xs sm:text-sm">
-                        <Upload className="w-4 h-4 mr-2" />
-                        {t("importExcel")}
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      <Button variant="outline" onClick={importFromExcel} className="text-xs sm:text-sm px-3 py-2">
+                        <Upload className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t("importExcel")}</span>
                       </Button>
-                      <Button variant="outline" onClick={exportToExcel} className="text-xs sm:text-sm">
-                        <Download className="w-4 h-4 mr-2" />
-                        {t("exportExcelBrazilian")}
+                      <Button variant="outline" onClick={exportToExcel} className="text-xs sm:text-sm px-3 py-2">
+                        <Download className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t("exportExcelBrazilian")}</span>
                       </Button>
                     </div>
                   </div>
                   
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("unit")}</TableHead>
-                        <TableHead>{t("owner")}</TableHead>
-                        <TableHead>{t("area")}</TableHead>
-                        <TableHead>{t("idealFraction")}</TableHead>
-                        <TableHead>{t("monthlyFee")}</TableHead>
-                        <TableHead>{t("actions")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {brazilianData.units.map((unit) => (
-                        <TableRow key={unit.id}>
-                          <TableCell className="font-medium">{unit.number}</TableCell>
-                          <TableCell>{unit.owner}</TableCell>
-                          <TableCell>{unit.area}</TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.001"
-                              className="w-20"
-                              value={unit.idealFraction}
-                              onChange={(e) => {
-                                const newUnits = brazilianData.units.map(u => 
-                                  u.id === unit.id ? {...u, idealFraction: parseFloat(e.target.value) || 0} : u
-                                );
-                                setBrazilianData({...brazilianData, units: newUnits});
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
-                            R$ {calculateUnitMonthlyFee(unit).toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" className="text-xs">
-                              <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
-                            </Button>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[60px]">{t("unit")}</TableHead>
+                          <TableHead className="min-w-[120px]">{t("owner")}</TableHead>
+                          <TableHead className="min-w-[60px]">{t("area")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("idealFraction")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("monthlyFee")}</TableHead>
+                          <TableHead className="min-w-[80px]">{t("actions")}</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {brazilianData.units.map((unit) => (
+                          <TableRow key={unit.id}>
+                            <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">{unit.owner}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">{unit.area}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                step="0.001"
+                                className="w-16 sm:w-20 text-xs"
+                                value={unit.idealFraction}
+                                onChange={(e) => {
+                                  const newUnits = brazilianData.units.map(u => 
+                                    u.id === unit.id ? {...u, idealFraction: parseFloat(e.target.value) || 0} : u
+                                  );
+                                  setBrazilianData({...brazilianData, units: newUnits});
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
+                              R$ {calculateUnitMonthlyFee(unit).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
+                                <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                   
                   <div className="p-4 bg-muted rounded-lg">
                     <div className="flex justify-between items-center">
@@ -585,43 +587,43 @@ export default function Financial() {
               <CardContent>
                 <div className="space-y-4">
                   {brazilianData.budgetAccounts.map((account) => (
-                    <div key={account.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <Badge variant="default" className="bg-slate-700">
+                    <div key={account.id} className="border rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <Badge variant="default" className="bg-slate-700 w-fit">
                             {account.code}
                           </Badge>
-                          <h3 className="font-bold text-sm sm:text-base">{account.name}</h3>
-                          <span className="text-base sm:text-lg font-bold text-green-600">
+                          <h3 className="font-bold text-sm sm:text-base truncate">{account.name}</h3>
+                          <span className="text-sm sm:text-base lg:text-lg font-bold text-green-600">
                             R$ {account.annualBudget.toLocaleString()}
                           </span>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Plus className="w-3 h-3 mr-1" />
-                            {t("addSubAccount")}
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
+                            <Plus className="w-3 h-3 sm:mr-1" />
+                            <span className="hidden sm:inline">{t("addSubAccount")}</span>
                           </Button>
-                          <Button variant="outline" size="sm" className="text-xs">
+                          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
                             <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
                           </Button>
                         </div>
                       </div>
                       
-                      <div className="ml-6 space-y-2">
+                      <div className="ml-0 sm:ml-6 space-y-2">
                         {account.subAccounts?.map((subAccount) => (
-                          <div key={subAccount.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline">{subAccount.code}</Badge>
-                              <span className="text-xs sm:text-sm">{subAccount.name}</span>
+                          <div key={subAccount.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 bg-gray-50 rounded">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                              <Badge variant="outline" className="w-fit">{subAccount.code}</Badge>
+                              <span className="text-xs sm:text-sm truncate">{subAccount.name}</span>
                               <span className="font-semibold text-green-600 text-xs sm:text-sm">
                                 R$ {subAccount.annualBudget.toLocaleString()}
                               </span>
                             </div>
-                            <div className="flex gap-1">
-                              <Button variant="outline" size="sm" className="text-xs">
+                            <div className="flex gap-1 flex-shrink-0 self-start sm:self-center">
+                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
                                 <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
                               </Button>
-                              <Button variant="outline" size="sm" className="text-xs">
+                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
                                 <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
@@ -641,10 +643,10 @@ export default function Financial() {
                   <TrendingUp className="w-5 h-5" />
                   {t("monthlyTrackingForecast")}
                 </CardTitle>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <Label className="text-xs sm:text-sm">{t("selectMonth")}:</Label>
                   <Select value={brazilianData.selectedMonth} onValueChange={(value) => setBrazilianData({...brazilianData, selectedMonth: value})}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full sm:w-40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -657,45 +659,47 @@ export default function Financial() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("code")}</TableHead>
-                      <TableHead>{t("account")}</TableHead>
-                      <TableHead>{t("monthlyBudget")}</TableHead>
-                      <TableHead>{t("actualExpense")}</TableHead>
-                      <TableHead>{t("variance")}</TableHead>
-                      <TableHead>%</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getAllSubAccounts().map((subAccount) => {
-                      const monthlyBudget = getMonthlyBudget(subAccount.id);
-                      const actualExpense = getMonthlyExpense(subAccount.id, brazilianData.selectedMonth);
-                      const variance = actualExpense - monthlyBudget;
-                      const variancePercent = monthlyBudget > 0 ? (variance / monthlyBudget) * 100 : 0;
-                      
-                      return (
-                        <TableRow key={subAccount.id}>
-                          <TableCell>
-                            <Badge variant="outline">{subAccount.code}</Badge>
-                          </TableCell>
-                          <TableCell className="text-xs sm:text-sm">{subAccount.name}</TableCell>
-                          <TableCell className="text-xs sm:text-sm">R$ {monthlyBudget.toFixed(2)}</TableCell>
-                          <TableCell className="text-xs sm:text-sm">R$ {actualExpense.toFixed(2)}</TableCell>
-                          <TableCell className={variance >= 0 ? "text-red-600 text-xs sm:text-sm" : "text-green-600 text-xs sm:text-sm"}>
-                            R$ {Math.abs(variance).toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={Math.abs(variancePercent) > 10 ? "destructive" : variancePercent > 0 ? "secondary" : "default"}>
-                              {variancePercent > 0 ? "+" : ""}{variancePercent.toFixed(1)}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[80px]">{t("code")}</TableHead>
+                        <TableHead className="min-w-[120px]">{t("account")}</TableHead>
+                        <TableHead className="min-w-[100px]">{t("monthlyBudget")}</TableHead>
+                        <TableHead className="min-w-[100px]">{t("actualExpense")}</TableHead>
+                        <TableHead className="min-w-[80px]">{t("variance")}</TableHead>
+                        <TableHead className="min-w-[60px]">%</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getAllSubAccounts().map((subAccount) => {
+                        const monthlyBudget = getMonthlyBudget(subAccount.id);
+                        const actualExpense = getMonthlyExpense(subAccount.id, brazilianData.selectedMonth);
+                        const variance = actualExpense - monthlyBudget;
+                        const variancePercent = monthlyBudget > 0 ? (variance / monthlyBudget) * 100 : 0;
+                        
+                        return (
+                          <TableRow key={subAccount.id}>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">{subAccount.code}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs sm:text-sm">{subAccount.name}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">R$ {monthlyBudget.toFixed(2)}</TableCell>
+                            <TableCell className="text-xs sm:text-sm">R$ {actualExpense.toFixed(2)}</TableCell>
+                            <TableCell className={variance >= 0 ? "text-red-600 text-xs sm:text-sm" : "text-green-600 text-xs sm:text-sm"}>
+                              R$ {Math.abs(variance).toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={Math.abs(variancePercent) > 10 ? "destructive" : variancePercent > 0 ? "secondary" : "default"} className="text-xs">
+                                {variancePercent > 0 ? "+" : ""}{variancePercent.toFixed(1)}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
 
@@ -711,18 +715,18 @@ export default function Financial() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button className="flex-1 gap-2 text-xs sm:text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Button className="gap-2 text-xs sm:text-sm px-3 py-2">
                     <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {t("downloadMonthlyExpenseTemplate")}
+                    <span className="truncate">{t("downloadMonthlyExpenseTemplate")}</span>
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
+                  <Button variant="outline" className="gap-2 text-xs sm:text-sm px-3 py-2">
                     <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {t("downloadBudgetTemplate")}
+                    <span className="truncate">{t("downloadBudgetTemplate")}</span>
                   </Button>
-                  <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
+                  <Button variant="outline" className="gap-2 text-xs sm:text-sm px-3 py-2 sm:col-span-2 lg:col-span-1">
                     <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    {t("downloadIdealFractionsTemplate")}
+                    <span className="truncate">{t("downloadIdealFractionsTemplate")}</span>
                   </Button>
                 </div>
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg">
