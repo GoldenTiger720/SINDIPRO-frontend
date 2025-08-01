@@ -88,7 +88,7 @@ const SignUp = () => {
                 value={formData.username}
                 onChange={(e) => handleInputChange("username", e.target.value)}
                 required
-                className="w-full h-12 border-gray-300"
+                className="w-full h-12 bg-white/70 backdrop-blur border-white/30 placeholder:text-gray-600"
               />
 
               <Input
@@ -97,7 +97,7 @@ const SignUp = () => {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 required
-                className="w-full h-12 border-gray-300"
+                className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
               />
 
               <Input
@@ -106,7 +106,7 @@ const SignUp = () => {
                 value={formData.password}
                 onChange={(e) => handleInputChange("password", e.target.value)}
                 required
-                className="w-full h-12 border-gray-300"
+                className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
               />
 
               <Input
@@ -115,7 +115,7 @@ const SignUp = () => {
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                 required
-                className="w-full h-12 border-gray-300"
+                className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
               />
 
               {/* Sign Up Button */}
