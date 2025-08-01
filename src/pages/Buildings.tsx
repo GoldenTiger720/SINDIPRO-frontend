@@ -99,6 +99,27 @@ export default function Buildings() {
   const [queryResult, setQueryResult] = useState<any>(null);
   const [isQueryEditingOwner, setIsQueryEditingOwner] = useState(false);
   const [queryEditOwnerName, setQueryEditOwnerName] = useState("");
+  
+  // Building address state
+  const [cep, setCep] = useState("");
+
+  // CEP formatting function
+  const formatCEP = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, '');
+    
+    // Apply the CEP format: XXXXX-XXX
+    if (numericValue.length <= 5) {
+      return numericValue;
+    } else {
+      return `${numericValue.slice(0, 5)}-${numericValue.slice(5, 8)}`;
+    }
+  };
+
+  const handleCEPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCEP = formatCEP(e.target.value);
+    setCep(formattedCEP);
+  };
   const [newUnit, setNewUnit] = useState({
     number: "",
     blockName: "",
@@ -244,22 +265,19 @@ export default function Buildings() {
           </TabsList>
 
           <TabsContent value="building-info" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    {t("basicBuildingInfo")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  {t("basicBuildingInfo")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Basic Building Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="building-name">{t("buildingName")}</Label>
                     <Input id="building-name" placeholder={t("enterBuildingName")} />
-                  </div>
-                  <div>
-                    <Label htmlFor="address">{t("address")} *</Label>
-                    <Input id="address" placeholder={t("enterAddress")} />
                   </div>
                   <div>
                     <Label htmlFor="cnpj">{t("cnpj")} *</Label>
@@ -279,52 +297,64 @@ export default function Buildings() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="total-area">{t("totalArea")}</Label>
-                    <Input id="total-area" type="number" placeholder="0.00" />
-                  </div>
-                  <div>
                     <Label htmlFor="total-units">{t("numberOfUnits")}</Label>
                     <Input id="total-units" type="number" placeholder="0" />
                   </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="w-5 h-5" />
-                    {t("advancedSettings")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="area-unit">{t("areaPerUnit")}</Label>
-                    <Input id="area-unit" type="number" placeholder="0.00" />
+                {/* Full Address Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">{t("fullAddress")} *</h3>
+                  
+                  {/* First row - Street and Number */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="street">{t("street")} *</Label>
+                      <Input id="street" placeholder={t("enterStreet")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="address-number">{t("addressNumber")} *</Label>
+                      <Input id="address-number" placeholder={t("enterAddressNumber")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="allocation-ratio">{t("allocationRatio")}</Label>
-                    <Input id="allocation-ratio" type="number" placeholder="0.00" />
+                  
+                  {/* Second row - CEP and Neighborhood */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cep">{t("cep")} *</Label>
+                      <Input 
+                        id="cep" 
+                        placeholder={t("enterCEP")} 
+                        value={cep}
+                        onChange={handleCEPChange}
+                        maxLength={9}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="neighborhood">{t("neighborhood")} *</Label>
+                      <Input id="neighborhood" placeholder={t("enterNeighborhood")} />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="parking">{t("parkingSpaces")}</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("availability")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="available">{t("availableCommon")}</SelectItem>
-                        <SelectItem value="not-available">{t("notAvailable")}</SelectItem>
-                        <SelectItem value="limited">{t("limited")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  
+                  {/* Third row - City and State */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city">{t("city")} *</Label>
+                      <Input id="city" placeholder={t("enterCity")} />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">{t("state")} *</Label>
+                      <Input id="state" placeholder={t("enterState")} />
+                    </div>
                   </div>
-                  <Button className="w-full gap-2">
-                    <Plus className="w-4 h-4" />
-                    {t("saveSettings")}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+
+                <Button className="w-full gap-2">
+                  <Plus className="w-4 h-4" />
+                  {t("saveSettings")}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="unit-management" className="space-y-6">

@@ -579,5 +579,18 @@
   "searchButton": "Search",
   "unitFound": "Unit Found",
   "unitNotFound": "Unit not found",
-  "clearSearch": "Clear Search"
+  "clearSearch": "Clear Search",
+  "street": "Street/Avenue",
+  "addressNumber": "Number",
+  "cep": "CEP",
+  "neighborhood": "Neighborhood",
+  "city": "City",
+  "state": "State",
+  "enterStreet": "Enter street or avenue",
+  "enterAddressNumber": "Enter number",
+  "enterCEP": "Enter CEP (00000-000)",
+  "enterNeighborhood": "Enter neighborhood",
+  "enterCity": "Enter city",
+  "enterState": "Enter state",
+  "fullAddress": "Full Address"
 }
