@@ -570,5 +570,14 @@
   "enterParkingSpaces": "Enter number of parking spaces",
   "enterIdealFraction": "Enter ideal fraction (%)",
   "noOwnerSet": "No owner set",
-  "parkingSpaces": "parking spaces"
+  "parkingSpaces": "parking spaces",
+  "query": "Query",
+  "unitQuery": "Unit Query",
+  "searchUnit": "Search Unit",
+  "enterUnitNumber": "Enter unit number",
+  "enterBlockNumber": "Enter block number",
+  "searchButton": "Search",
+  "unitFound": "Unit Found",
+  "unitNotFound": "Unit not found",
+  "clearSearch": "Clear Search"
 }

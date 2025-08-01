@@ -92,6 +92,13 @@ export default function Buildings() {
   const [selectedUnit, setSelectedUnit] = useState<any>(null);
   const [isEditingOwner, setIsEditingOwner] = useState(false);
   const [editOwnerName, setEditOwnerName] = useState("");
+  
+  // Query tab state
+  const [queryUnitNumber, setQueryUnitNumber] = useState("");
+  const [queryBlockName, setQueryBlockName] = useState("");
+  const [queryResult, setQueryResult] = useState<any>(null);
+  const [isQueryEditingOwner, setIsQueryEditingOwner] = useState(false);
+  const [queryEditOwnerName, setQueryEditOwnerName] = useState("");
   const [newUnit, setNewUnit] = useState({
     number: "",
     blockName: "",
@@ -171,6 +178,43 @@ export default function Buildings() {
     setIsEditingOwner(false);
   };
 
+  // Query tab functions
+  const handleSearchUnit = () => {
+    const foundUnit = units.find(unit => 
+      unit.number === queryUnitNumber && 
+      unit.blockName.toLowerCase() === queryBlockName.toLowerCase()
+    );
+    setQueryResult(foundUnit || null);
+    if (foundUnit) {
+      setQueryEditOwnerName(foundUnit.owner);
+    }
+  };
+
+  const handleClearQuery = () => {
+    setQueryUnitNumber("");
+    setQueryBlockName("");
+    setQueryResult(null);
+    setIsQueryEditingOwner(false);
+    setQueryEditOwnerName("");
+  };
+
+  const handleQuerySaveOwnerName = () => {
+    if (queryResult) {
+      setUnits(units.map(unit => 
+        unit.id === queryResult.id 
+          ? { ...unit, owner: queryEditOwnerName }
+          : unit
+      ));
+      setQueryResult({ ...queryResult, owner: queryEditOwnerName });
+      setIsQueryEditingOwner(false);
+    }
+  };
+
+  const handleQueryCancelEdit = () => {
+    setQueryEditOwnerName(queryResult?.owner || "");
+    setIsQueryEditingOwner(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader userName={t("adminSindipro")} />
@@ -184,7 +228,7 @@ export default function Buildings() {
         </div>
 
         <Tabs defaultValue="building-info" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="building-info" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               {t("buildingInformation")}
@@ -192,6 +236,10 @@ export default function Buildings() {
             <TabsTrigger value="unit-management" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
               {t("unitManagement")}
+            </TabsTrigger>
+            <TabsTrigger value="unit-query" className="flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              {t("query")}
             </TabsTrigger>
           </TabsList>
 
@@ -603,6 +651,177 @@ export default function Buildings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="unit-query" className="space-y-6">
+            {/* Unit Search Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5" />
+                  {t("unitQuery")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {t("searchByUnitOrBlock")}
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="query-unit-number">{t("unitNumber")} *</Label>
+                      <Input 
+                        id="query-unit-number" 
+                        placeholder={t("enterUnitNumber")} 
+                        value={queryUnitNumber}
+                        onChange={(e) => setQueryUnitNumber(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="query-block-name">{t("blockName")} *</Label>
+                      <Input 
+                        id="query-block-name" 
+                        placeholder={t("enterBlockNumber")} 
+                        value={queryBlockName}
+                        onChange={(e) => setQueryBlockName(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <Button 
+                        onClick={handleSearchUnit}
+                        className="gap-2"
+                        disabled={!queryUnitNumber || !queryBlockName}
+                      >
+                        <Search className="w-4 h-4" />
+                        {t("searchButton")}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleClearQuery}
+                        className="gap-2"
+                      >
+                        {t("clearSearch")}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Query Results */}
+            {queryResult && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Home className="w-5 h-5" />
+                    {t("unitFound")} - {t("unit")} {queryResult.number}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Unit Information - Read Only */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">{t("unitDetails")}</h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("unitNumber")}</Label>
+                          <p className="text-sm font-medium">{queryResult.number}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("blockName")}</Label>
+                          <p className="text-sm font-medium">{queryResult.blockName}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("floorNumber")}</Label>
+                          <p className="text-sm font-medium">{queryResult.floor}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("area")} (m²)</Label>
+                          <p className="text-sm font-medium">{queryResult.area}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("keyDelivery")}</Label>
+                          <Badge variant={queryResult.keyDelivery === 'yes' ? 'default' : 'secondary'} className="w-fit">
+                            {queryResult.keyDelivery === 'yes' ? t("keyDelivered") : t("keyNotDelivered")}
+                          </Badge>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("identification")}</Label>
+                          <p className="text-sm font-medium">{t(queryResult.identification)}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("depositLocation")}</Label>
+                          <p className="text-sm font-medium">{queryResult.depositLocation}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("parkingSpacesByApartment")}</Label>
+                          <p className="text-sm font-medium">{queryResult.parkingSpaces}</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("idealFraction")}</Label>
+                          <p className="text-sm font-medium">{queryResult.idealFraction}%</p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("status")}</Label>
+                          <Badge variant={queryResult.status === 'occupied' ? 'default' : queryResult.status === 'vacant' ? 'secondary' : 'destructive'}>
+                            {t(queryResult.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Owner Information - Editable */}
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">{t("ownerName")}</h3>
+                      
+                      <div className="p-4 border rounded-lg">
+                        {isQueryEditingOwner ? (
+                          <div className="space-y-3">
+                            <Label htmlFor="query-owner-name">{t("ownerName")}</Label>
+                            <Input
+                              id="query-owner-name"
+                              value={queryEditOwnerName}
+                              onChange={(e) => setQueryEditOwnerName(e.target.value)}
+                              placeholder={t("ownerNameOptional")}
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={handleQuerySaveOwnerName}>
+                                {t("save")}
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={handleQueryCancelEdit}>
+                                {t("cancel")}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-medium text-muted-foreground">{t("ownerName")}</Label>
+                            <p className="text-sm font-medium">{queryResult.owner || t("noOwnerSet")}</p>
+                            <Button size="sm" variant="outline" onClick={() => setIsQueryEditingOwner(true)} className="gap-2">
+                              <Edit className="w-3 h-3" />
+                              {t("editOwnerName")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* No Results Message */}
+            {queryUnitNumber && queryBlockName && queryResult === null && (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">{t("unitNotFound")}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {t("unit")}: {queryUnitNumber} | {t("block")}: {queryBlockName}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
