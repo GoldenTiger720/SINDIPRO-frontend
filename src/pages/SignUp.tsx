@@ -74,7 +74,7 @@ const SignUp = () => {
         
         {/* Card/Modal Form */}
         <div className="relative z-10 w-full max-w-sm mx-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <div className="bg-white/30 backdrop-blur rounded-2xl shadow-2xl p-8 border border-white/20">
             {/* Logo */}
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">SINDIPRO</h1>

@@ -59,7 +59,7 @@ const Login = () => {
         
         {/* Card/Modal Form */}
         <div className="relative z-10 w-full max-w-sm mx-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
+          <div className="bg-white/30 backdrop-blur rounded-2xl shadow-2xl p-8 border border-white/20">
             {/* Logo */}
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">SINDIPRO</h1>
@@ -74,7 +74,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full h-12 border-gray-300"
+                  className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
                 />
                 
                 <Input
@@ -83,7 +83,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full h-12 border-gray-300"
+                  className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
                 />
               </div>
 
@@ -112,7 +112,7 @@ const Login = () => {
             <Button
               onClick={handleCreateAccount}
               variant="outline"
-              className="w-full mt-4 bg-white hover:bg-gray-50 h-12 text-blue-600 font-medium border border-blue-600"
+              className="w-full mt-4 bg-white/70 hover:bg-white/80 backdrop-blur-sm h-12 text-blue-600 font-medium border border-white/30"
             >
               Create an account
             </Button>
