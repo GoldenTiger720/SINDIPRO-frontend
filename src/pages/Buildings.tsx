@@ -229,17 +229,17 @@ export default function Buildings() {
 
         <Tabs defaultValue="building-info" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="building-info" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              {t("buildingInformation")}
+            <TabsTrigger value="building-info" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">{t("buildingInformation")}</span>
             </TabsTrigger>
-            <TabsTrigger value="unit-management" className="flex items-center gap-2">
-              <Home className="w-4 h-4" />
-              {t("unitManagement")}
+            <TabsTrigger value="unit-management" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Home className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">{t("unitManagement")}</span>
             </TabsTrigger>
-            <TabsTrigger value="unit-query" className="flex items-center gap-2">
-              <Search className="w-4 h-4" />
-              {t("query")}
+            <TabsTrigger value="unit-query" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3">
+              <Search className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="text-xs sm:text-sm truncate">{t("query")}</span>
             </TabsTrigger>
           </TabsList>
 
