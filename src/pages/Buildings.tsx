@@ -5,56 +5,141 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search, Eye } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 
 // Mock data for demonstration
 const mockUnits = [
-  { id: 1, number: "101", floor: 1, area: 85.5, type: "residential", owner: "João Silva", status: "occupied" },
-  { id: 2, number: "102", floor: 1, area: 90.0, type: "residential", owner: "Maria Santos", status: "occupied" },
-  { id: 3, number: "201", floor: 2, area: 85.5, type: "residential", owner: "", status: "vacant" },
-  { id: 4, number: "202", floor: 2, area: 90.0, type: "residential", owner: "Carlos Oliveira", status: "occupied" },
-  { id: 5, number: "301", floor: 3, area: 85.5, type: "residential", owner: "Ana Costa", status: "occupied" },
+  { 
+    id: 1, 
+    number: "101", 
+    blockName: "A", 
+    floor: 1, 
+    area: 85.5, 
+    keyDelivery: "yes", 
+    owner: "João Silva", 
+    identification: "residential", 
+    depositLocation: "Subsolo", 
+    parkingSpaces: 1, 
+    idealFraction: 8.5, 
+    status: "occupied" 
+  },
+  { 
+    id: 2, 
+    number: "102", 
+    blockName: "A", 
+    floor: 1, 
+    area: 90.0, 
+    keyDelivery: "yes", 
+    owner: "Maria Santos", 
+    identification: "residential", 
+    depositLocation: "Subsolo", 
+    parkingSpaces: 1, 
+    idealFraction: 9.0, 
+    status: "occupied" 
+  },
+  { 
+    id: 3, 
+    number: "201", 
+    blockName: "A", 
+    floor: 2, 
+    area: 85.5, 
+    keyDelivery: "no", 
+    owner: "", 
+    identification: "residential", 
+    depositLocation: "Subsolo", 
+    parkingSpaces: 1, 
+    idealFraction: 8.5, 
+    status: "vacant" 
+  },
+  { 
+    id: 4, 
+    number: "202", 
+    blockName: "A", 
+    floor: 2, 
+    area: 90.0, 
+    keyDelivery: "yes", 
+    owner: "Carlos Oliveira", 
+    identification: "residential", 
+    depositLocation: "Subsolo", 
+    parkingSpaces: 1, 
+    idealFraction: 9.0, 
+    status: "occupied" 
+  },
+  { 
+    id: 5, 
+    number: "301", 
+    blockName: "A", 
+    floor: 3, 
+    area: 85.5, 
+    keyDelivery: "yes", 
+    owner: "Ana Costa", 
+    identification: "residential", 
+    depositLocation: "Subsolo", 
+    parkingSpaces: 1, 
+    idealFraction: 8.5, 
+    status: "occupied" 
+  },
 ];
 
 export default function Buildings() {
   const { t } = useTranslation();
   const [units, setUnits] = useState(mockUnits);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState<any>(null);
+  const [isEditingOwner, setIsEditingOwner] = useState(false);
+  const [editOwnerName, setEditOwnerName] = useState("");
   const [newUnit, setNewUnit] = useState({
     number: "",
+    blockName: "",
     floor: "",
     area: "",
-    type: "residential",
+    keyDelivery: "no",
     owner: "",
+    identification: "residential",
+    depositLocation: "",
+    parkingSpaces: "",
+    idealFraction: "",
     status: "vacant"
   });
 
   const filteredUnits = units.filter(unit => 
     unit.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    unit.blockName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     unit.owner.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddUnit = () => {
-    if (newUnit.number && newUnit.floor && newUnit.area) {
+    if (newUnit.number && newUnit.blockName && newUnit.floor && newUnit.area && newUnit.depositLocation && newUnit.parkingSpaces && newUnit.idealFraction) {
       const unit = {
         id: Date.now(),
         number: newUnit.number,
+        blockName: newUnit.blockName,
         floor: parseInt(newUnit.floor),
         area: parseFloat(newUnit.area),
-        type: newUnit.type,
+        keyDelivery: newUnit.keyDelivery,
         owner: newUnit.owner,
+        identification: newUnit.identification,
+        depositLocation: newUnit.depositLocation,
+        parkingSpaces: parseInt(newUnit.parkingSpaces),
+        idealFraction: parseFloat(newUnit.idealFraction),
         status: newUnit.status
       };
       setUnits([...units, unit]);
       setNewUnit({
         number: "",
+        blockName: "",
         floor: "",
         area: "",
-        type: "residential",
+        keyDelivery: "no",
         owner: "",
+        identification: "residential",
+        depositLocation: "",
+        parkingSpaces: "",
+        idealFraction: "",
         status: "vacant"
       });
     }
@@ -62,6 +147,28 @@ export default function Buildings() {
 
   const handleDeleteUnit = (id: number) => {
     setUnits(units.filter(unit => unit.id !== id));
+  };
+
+  const handleSelectUnit = (unit: any) => {
+    setSelectedUnit(unit);
+    setEditOwnerName(unit.owner);
+  };
+
+  const handleSaveOwnerName = () => {
+    if (selectedUnit) {
+      setUnits(units.map(unit => 
+        unit.id === selectedUnit.id 
+          ? { ...unit, owner: editOwnerName }
+          : unit
+      ));
+      setSelectedUnit({ ...selectedUnit, owner: editOwnerName });
+      setIsEditingOwner(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditOwnerName(selectedUnit?.owner || "");
+    setIsEditingOwner(false);
   };
 
   return (
@@ -101,6 +208,14 @@ export default function Buildings() {
                   <div>
                     <Label htmlFor="building-name">{t("buildingName")}</Label>
                     <Input id="building-name" placeholder={t("enterBuildingName")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="address">{t("address")} *</Label>
+                    <Input id="address" placeholder={t("enterAddress")} />
+                  </div>
+                  <div>
+                    <Label htmlFor="cnpj">{t("cnpj")} *</Label>
+                    <Input id="cnpj" placeholder={t("enterCNPJ")} />
                   </div>
                   <div>
                     <Label htmlFor="building-type">{t("buildingType")}</Label>
@@ -174,77 +289,178 @@ export default function Buildings() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="unit-number">{t("unitNumber")}</Label>
-                    <Input 
-                      id="unit-number" 
-                      placeholder={t("unitNumberPlaceholder")} 
-                      value={newUnit.number}
-                      onChange={(e) => setNewUnit({...newUnit, number: e.target.value})}
-                    />
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground mb-4">{t("requiredFields")} *</p>
+                  
+                  {/* First row - Basic unit info */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="unit-number">{t("unitNumber")} *</Label>
+                      <Input 
+                        id="unit-number" 
+                        placeholder={t("unitNumberPlaceholder")} 
+                        value={newUnit.number}
+                        onChange={(e) => setNewUnit({...newUnit, number: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="block-name">{t("blockName")} *</Label>
+                      <Input 
+                        id="block-name" 
+                        placeholder={t("enterBlockName")} 
+                        value={newUnit.blockName}
+                        onChange={(e) => setNewUnit({...newUnit, blockName: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="unit-floor">{t("floorNumber")} *</Label>
+                      <Input 
+                        id="unit-floor" 
+                        type="number" 
+                        placeholder={t("enterFloorNumber")} 
+                        value={newUnit.floor}
+                        onChange={(e) => setNewUnit({...newUnit, floor: e.target.value})}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="unit-floor">{t("floorBuildings")}</Label>
-                    <Input 
-                      id="unit-floor" 
-                      type="number" 
-                      placeholder={t("floorPlaceholder")} 
-                      value={newUnit.floor}
-                      onChange={(e) => setNewUnit({...newUnit, floor: e.target.value})}
-                    />
+
+                  {/* Second row - Area and key delivery */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="unit-area">{t("area")} (m²) *</Label>
+                      <Input 
+                        id="unit-area" 
+                        type="number" 
+                        step="0.1" 
+                        placeholder={t("areaPlaceholder")} 
+                        value={newUnit.area}
+                        onChange={(e) => setNewUnit({...newUnit, area: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="key-delivery">{t("keyDelivery")} *</Label>
+                      <Select value={newUnit.keyDelivery} onValueChange={(value) => setNewUnit({...newUnit, keyDelivery: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectKeyDelivery")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">{t("keyDelivered")}</SelectItem>
+                          <SelectItem value="no">{t("keyNotDelivered")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="unit-area">{t("area")}</Label>
-                    <Input 
-                      id="unit-area" 
-                      type="number" 
-                      step="0.1" 
-                      placeholder={t("areaPlaceholder")} 
-                      value={newUnit.area}
-                      onChange={(e) => setNewUnit({...newUnit, area: e.target.value})}
-                    />
+
+                  {/* Third row - Owner and identification */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="unit-owner">{t("ownerName")}</Label>
+                      <Input 
+                        id="unit-owner" 
+                        placeholder={t("ownerNameOptional")} 
+                        value={newUnit.owner}
+                        onChange={(e) => setNewUnit({...newUnit, owner: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="identification">{t("identification")} *</Label>
+                      <Select value={newUnit.identification} onValueChange={(value) => setNewUnit({...newUnit, identification: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectIdentification")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="residential">{t("residential")}</SelectItem>
+                          <SelectItem value="non-residential">{t("nonResidential")}</SelectItem>
+                          <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                          <SelectItem value="studio">{t("studio")}</SelectItem>
+                          <SelectItem value="wave">{t("wave")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="unit-type">{t("type")}</Label>
-                    <Select value={newUnit.type} onValueChange={(value) => setNewUnit({...newUnit, type: value})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="residential">{t("residential")}</SelectItem>
-                        <SelectItem value="commercial">{t("commercial")}</SelectItem>
-                        <SelectItem value="parking">{t("parking")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  {/* Fourth row - Deposit and parking */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="deposit-location">{t("depositLocation")} *</Label>
+                      <Input 
+                        id="deposit-location" 
+                        placeholder={t("enterDepositLocation")} 
+                        value={newUnit.depositLocation}
+                        onChange={(e) => setNewUnit({...newUnit, depositLocation: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="parking-spaces">{t("parkingSpacesByApartment")} *</Label>
+                      <Input 
+                        id="parking-spaces" 
+                        type="number" 
+                        placeholder={t("enterParkingSpaces")} 
+                        value={newUnit.parkingSpaces}
+                        onChange={(e) => setNewUnit({...newUnit, parkingSpaces: e.target.value})}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="unit-owner">{t("ownerTenant")}</Label>
-                    <Input 
-                      id="unit-owner" 
-                      placeholder={t("ownerNameOptional")} 
-                      value={newUnit.owner}
-                      onChange={(e) => setNewUnit({...newUnit, owner: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="unit-status">{t("status")}</Label>
-                    <Select value={newUnit.status} onValueChange={(value) => setNewUnit({...newUnit, status: value})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="occupied">{t("occupied")}</SelectItem>
-                        <SelectItem value="vacant">{t("vacant")}</SelectItem>
-                        <SelectItem value="maintenance">{t("underMaintenance")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  {/* Fifth row - Ideal fraction and status */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="ideal-fraction">{t("idealFraction")} *</Label>
+                      <Input 
+                        id="ideal-fraction" 
+                        type="number" 
+                        step="0.01" 
+                        placeholder={t("enterIdealFraction")} 
+                        value={newUnit.idealFraction}
+                        onChange={(e) => setNewUnit({...newUnit, idealFraction: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="unit-status">{t("status")}</Label>
+                      <Select value={newUnit.status} onValueChange={(value) => setNewUnit({...newUnit, status: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="occupied">{t("occupied")}</SelectItem>
+                          <SelectItem value="vacant">{t("vacant")}</SelectItem>
+                          <SelectItem value="maintenance">{t("underMaintenance")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 <Button onClick={handleAddUnit} className="mt-4 gap-2">
                   <Plus className="w-4 h-4" />
                   {t("addUnit")}
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Excel Import Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  {t("importUnits")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    {t("importFromExcel")} - {t("requiredFields")}: {t("unitNumber")}, {t("blockName")}, {t("floorNumber")}, {t("area")}, {t("keyDelivery")}, {t("ownerName")}, {t("identification")}, {t("depositLocation")}, {t("parkingSpacesByApartment")}, {t("idealFraction")}
+                  </p>
+                  <div className="flex gap-4">
+                    <Button variant="outline" className="gap-2">
+                      <Calculator className="w-4 h-4" />
+                      {t("downloadTemplate")}
+                    </Button>
+                    <Button className="gap-2">
+                      <Plus className="w-4 h-4" />
+                      {t("uploadExcelFile")}
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -259,7 +475,7 @@ export default function Buildings() {
                   <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={t("searchUnitsOrOwners")}
+                      placeholder={t("searchByUnitOrBlock")}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-8"
@@ -271,16 +487,19 @@ export default function Buildings() {
                 <div className="space-y-3">
                   {filteredUnits.map((unit) => (
                     <div key={unit.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                           <Home className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
-                          <span className="text-sm sm:text-base font-semibold">{t("unit")} {unit.number}</span>
+                          <span className="text-sm sm:text-base font-semibold">{t("unit")} {unit.number} - {t("block")} {unit.blockName}</span>
                           <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'} className="text-xs">
                             {unit.status}
                           </Badge>
+                          <Badge variant={unit.keyDelivery === 'yes' ? 'default' : 'secondary'} className="text-xs">
+                            {unit.keyDelivery === 'yes' ? t("keyDelivered") : t("keyNotDelivered")}
+                          </Badge>
                         </div>
                         <div className="text-xs sm:text-sm text-muted-foreground">
-                          {t("floorBuildings")} {unit.floor} • {unit.area}m² • {unit.type}
+                          {t("floorNumber")} {unit.floor} • {unit.area}m² • {t(unit.identification)} • {unit.idealFraction}% • {unit.parkingSpaces} {t("parkingSpaces")}
                         </div>
                         {unit.owner && (
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
@@ -290,9 +509,86 @@ export default function Buildings() {
                         )}
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2 self-end sm:self-auto">
-                        <Button variant="outline" size="sm" className="h-8 w-8 sm:h-9 sm:w-9 p-0">
-                          <Edit className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => handleSelectUnit(unit)} className="h-8 w-8 sm:h-9 sm:w-9 p-0">
+                              <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{t("unitDetails")} - {t("unit")} {unit.number}</DialogTitle>
+                            </DialogHeader>
+                            <div className="grid grid-cols-2 gap-4 py-4">
+                              <div>
+                                <Label className="text-sm font-medium">{t("unitNumber")}</Label>
+                                <p className="text-sm">{unit.number}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("blockName")}</Label>
+                                <p className="text-sm">{unit.blockName}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("floorNumber")}</Label>
+                                <p className="text-sm">{unit.floor}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("area")} (m²)</Label>
+                                <p className="text-sm">{unit.area}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("keyDelivery")}</Label>
+                                <p className="text-sm">{unit.keyDelivery === 'yes' ? t("keyDelivered") : t("keyNotDelivered")}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("identification")}</Label>
+                                <p className="text-sm">{t(unit.identification)}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("depositLocation")}</Label>
+                                <p className="text-sm">{unit.depositLocation}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("parkingSpacesByApartment")}</Label>
+                                <p className="text-sm">{unit.parkingSpaces}</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("idealFraction")}</Label>
+                                <p className="text-sm">{unit.idealFraction}%</p>
+                              </div>
+                              <div>
+                                <Label className="text-sm font-medium">{t("status")}</Label>
+                                <p className="text-sm">{t(unit.status)}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <Label className="text-sm font-medium">{t("ownerName")}</Label>
+                                {isEditingOwner ? (
+                                  <div className="flex gap-2 mt-1">
+                                    <Input
+                                      value={editOwnerName}
+                                      onChange={(e) => setEditOwnerName(e.target.value)}
+                                      placeholder={t("ownerNameOptional")}
+                                    />
+                                    <Button size="sm" onClick={handleSaveOwnerName}>
+                                      {t("save")}
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                                      {t("cancel")}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-sm">{unit.owner || t("noOwnerSet")}</p>
+                                    <Button size="sm" variant="outline" onClick={() => setIsEditingOwner(true)}>
+                                      <Edit className="w-3 h-3" />
+                                      {t("editOwnerName")}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button variant="outline" size="sm" onClick={() => handleDeleteUnit(unit.id)} className="h-8 w-8 sm:h-9 sm:w-9 p-0">
                           <Trash2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         </Button>
