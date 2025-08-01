@@ -592,5 +592,19 @@
   "enterNeighborhood": "Enter neighborhood",
   "enterCity": "Enter city",
   "enterState": "Enter state",
-  "fullAddress": "Full Address"
+  "fullAddress": "Full Address",
+  "numberOfTowers": "Number of Towers",
+  "apartmentsPerTower": "Apartments per Tower",
+  "unitsPerTower": "Units per Tower",
+  "residentialUnits": "Residential Units",
+  "commercialUnits": "Commercial Units",
+  "studioUnits": "Studio Units",
+  "enterNumberOfTowers": "Enter number of towers",
+  "enterApartmentsPerTower": "Enter apartments per tower",
+  "enterUnitsPerTower": "Enter units per tower",
+  "enterResidentialUnits": "Enter residential units",
+  "enterCommercialUnits": "Enter commercial units",
+  "enterStudioUnits": "Enter studio units",
+  "buildingComposition": "Building Composition",
+  "mixed": "Mixed"
 }

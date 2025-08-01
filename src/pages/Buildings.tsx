@@ -102,6 +102,15 @@ export default function Buildings() {
   
   // Building address state
   const [cep, setCep] = useState("");
+  
+  // Building type and composition state
+  const [buildingType, setBuildingType] = useState("");
+  const [numberOfTowers, setNumberOfTowers] = useState("");
+  const [apartmentsPerTower, setApartmentsPerTower] = useState("");
+  const [unitsPerTower, setUnitsPerTower] = useState("");
+  const [residentialUnits, setResidentialUnits] = useState("");
+  const [commercialUnits, setCommercialUnits] = useState("");
+  const [studioUnits, setStudioUnits] = useState("");
 
   // CEP formatting function
   const formatCEP = (value: string) => {
@@ -285,7 +294,7 @@ export default function Buildings() {
                   </div>
                   <div>
                     <Label htmlFor="building-type">{t("buildingType")}</Label>
-                    <Select>
+                    <Select value={buildingType} onValueChange={setBuildingType}>
                       <SelectTrigger>
                         <SelectValue placeholder={t("selectType")} />
                       </SelectTrigger>
@@ -301,6 +310,98 @@ export default function Buildings() {
                     <Input id="total-units" type="number" placeholder="0" />
                   </div>
                 </div>
+
+                {/* Dynamic Building Composition Fields */}
+                {buildingType && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">{t("buildingComposition")}</h3>
+                    
+                    {buildingType === "residential" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="number-of-towers">{t("numberOfTowers")}</Label>
+                          <Input 
+                            id="number-of-towers" 
+                            type="number" 
+                            placeholder={t("enterNumberOfTowers")}
+                            value={numberOfTowers}
+                            onChange={(e) => setNumberOfTowers(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="apartments-per-tower">{t("apartmentsPerTower")}</Label>
+                          <Input 
+                            id="apartments-per-tower" 
+                            type="number" 
+                            placeholder={t("enterApartmentsPerTower")}
+                            value={apartmentsPerTower}
+                            onChange={(e) => setApartmentsPerTower(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {buildingType === "commercial" && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="number-of-towers-commercial">{t("numberOfTowers")}</Label>
+                          <Input 
+                            id="number-of-towers-commercial" 
+                            type="number" 
+                            placeholder={t("enterNumberOfTowers")}
+                            value={numberOfTowers}
+                            onChange={(e) => setNumberOfTowers(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="units-per-tower">{t("unitsPerTower")}</Label>
+                          <Input 
+                            id="units-per-tower" 
+                            type="number" 
+                            placeholder={t("enterUnitsPerTower")}
+                            value={unitsPerTower}
+                            onChange={(e) => setUnitsPerTower(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    
+                    {buildingType === "mixed" && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="residential-units">{t("residentialUnits")}</Label>
+                          <Input 
+                            id="residential-units" 
+                            type="number" 
+                            placeholder={t("enterResidentialUnits")}
+                            value={residentialUnits}
+                            onChange={(e) => setResidentialUnits(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="commercial-units">{t("commercialUnits")}</Label>
+                          <Input 
+                            id="commercial-units" 
+                            type="number" 
+                            placeholder={t("enterCommercialUnits")}
+                            value={commercialUnits}
+                            onChange={(e) => setCommercialUnits(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="studio-units">{t("studioUnits")}</Label>
+                          <Input 
+                            id="studio-units" 
+                            type="number" 
+                            placeholder={t("enterStudioUnits")}
+                            value={studioUnits}
+                            onChange={(e) => setStudioUnits(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Full Address Section */}
                 <div className="space-y-4">
@@ -358,6 +459,37 @@ export default function Buildings() {
           </TabsContent>
 
           <TabsContent value="unit-management" className="space-y-6">
+            {/* Building Type Information */}
+            {buildingType && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Building2 className="w-4 h-4" />
+                    <span>
+                      {t("buildingType")}: <strong>{t(buildingType)}</strong>
+                      {buildingType === "mixed" && (
+                        <span className="ml-2">
+                          - {t("residentialUnits")}: {residentialUnits || "0"}, 
+                          {t("commercialUnits")}: {commercialUnits || "0"}, 
+                          {t("studioUnits")}: {studioUnits || "0"}
+                        </span>
+                      )}
+                      {buildingType === "residential" && numberOfTowers && apartmentsPerTower && (
+                        <span className="ml-2">
+                          - {numberOfTowers} {t("numberOfTowers")}, {apartmentsPerTower} {t("apartmentsPerTower")}
+                        </span>
+                      )}
+                      {buildingType === "commercial" && numberOfTowers && unitsPerTower && (
+                        <span className="ml-2">
+                          - {numberOfTowers} {t("numberOfTowers")}, {unitsPerTower} {t("unitsPerTower")}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Unit Registration Form */}
             <Card>
               <CardHeader>
@@ -447,11 +579,41 @@ export default function Buildings() {
                           <SelectValue placeholder={t("selectIdentification")} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="residential">{t("residential")}</SelectItem>
-                          <SelectItem value="non-residential">{t("nonResidential")}</SelectItem>
-                          <SelectItem value="commercial">{t("commercial")}</SelectItem>
-                          <SelectItem value="studio">{t("studio")}</SelectItem>
-                          <SelectItem value="wave">{t("wave")}</SelectItem>
+                          {/* Show all options for mixed building type */}
+                          {buildingType === "mixed" && (
+                            <>
+                              <SelectItem value="residential">{t("residential")}</SelectItem>
+                              <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                              <SelectItem value="studio">{t("studio")}</SelectItem>
+                              <SelectItem value="non-residential">{t("nonResidential")}</SelectItem>
+                              <SelectItem value="wave">{t("wave")}</SelectItem>
+                            </>
+                          )}
+                          {/* Show residential options for residential building type */}
+                          {buildingType === "residential" && (
+                            <>
+                              <SelectItem value="residential">{t("residential")}</SelectItem>
+                              <SelectItem value="studio">{t("studio")}</SelectItem>
+                              <SelectItem value="wave">{t("wave")}</SelectItem>
+                            </>
+                          )}
+                          {/* Show commercial options for commercial building type */}
+                          {buildingType === "commercial" && (
+                            <>
+                              <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                              <SelectItem value="non-residential">{t("nonResidential")}</SelectItem>
+                            </>
+                          )}
+                          {/* Show all options when no building type is selected */}
+                          {!buildingType && (
+                            <>
+                              <SelectItem value="residential">{t("residential")}</SelectItem>
+                              <SelectItem value="non-residential">{t("nonResidential")}</SelectItem>
+                              <SelectItem value="commercial">{t("commercial")}</SelectItem>
+                              <SelectItem value="studio">{t("studio")}</SelectItem>
+                              <SelectItem value="wave">{t("wave")}</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
