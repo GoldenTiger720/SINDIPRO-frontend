@@ -749,40 +749,49 @@ export default function Financial() {
             <CardTitle className="text-sm sm:text-base lg:text-lg">{t("relatedFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 flex items-center gap-2 text-xs sm:text-sm">
-                  <FileText className="w-4 h-4" />
-                  {t("brazilianSystem")}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm leading-tight">
+                  <FileText className="w-4 h-4 flex-shrink-0" />
+                  <span className="break-words">{t("brazilianSystem")}</span>
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {t("completeBrazilianCondominium")}
                 </p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 flex items-center gap-2 text-xs sm:text-sm">
-                  <Calculator className="w-4 h-4" />
-                  {t("condominiumCalculator")}
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm leading-tight">
+                  <Calculator className="w-4 h-4 flex-shrink-0" />
+                  <span className="break-words">{t("condominiumCalculator")}</span>
                 </h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {t("automaticallyCalculateDistribute")}
                 </p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("excelUploadAndAnalysis")}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm leading-tight">
+                  <DollarSign className="w-4 h-4 flex-shrink-0" />
+                  <span className="break-words">{t("automaticFeeDistribution")}</span>
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                  {t("automaticFeeDistributionDesc")}
+                </p>
+              </div>
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 text-sm leading-tight break-words">{t("excelUploadAndAnalysis")}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {t("excelUploadAndAnalysisDesc")}
                 </p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("automaticBudgetComparison")}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 text-sm leading-tight break-words">{t("automaticBudgetComparison")}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {t("automaticBudgetComparisonDesc")}
                 </p>
               </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2 text-xs sm:text-sm">{t("automaticReportGeneration")}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
+                <h3 className="font-semibold mb-2 text-sm leading-tight break-words">{t("automaticReportGeneration")}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {t("automaticReportGenerationDesc")}
                 </p>
               </div>

@@ -860,7 +860,7 @@ export default function Buildings() {
             <CardTitle>{t("relatedFeatures")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Home className="w-4 h-4" />
@@ -868,12 +868,6 @@ export default function Buildings() {
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {t("comprehensiveUnitManagement")}
-                </p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("automaticFeeDistribution")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("automaticFeeDistributionDesc")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
