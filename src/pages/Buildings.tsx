@@ -745,7 +745,7 @@ export default function Buildings() {
                   <p className="text-sm text-muted-foreground mb-4">{t("requiredFields")} *</p>
                   
                   {/* First row - Basic unit info */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="unit-number">{t("unitNumber")} *</Label>
                       <Input 
@@ -797,7 +797,7 @@ export default function Buildings() {
                   </div>
 
                   {/* Second row - Area and key delivery */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="unit-area">{t("area")} (m²) *</Label>
                       <Input 
@@ -824,7 +824,7 @@ export default function Buildings() {
                   </div>
 
                   {/* Third row - Owner name and phone */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="unit-owner">{t("ownerName")} *</Label>
                       <Input 
@@ -846,7 +846,7 @@ export default function Buildings() {
                   </div>
 
                   {/* Fourth row - Identification */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="identification">{t("identification")} *</Label>
                       <Select value={newUnit.identification} onValueChange={(value) => setNewUnit({...newUnit, identification: value})}>
@@ -895,7 +895,7 @@ export default function Buildings() {
                   </div>
 
                   {/* Fifth row - Deposit and parking */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="deposit-location">{t("depositLocation")} *</Label>
                       <Input 
@@ -918,7 +918,7 @@ export default function Buildings() {
                   </div>
 
                   {/* Sixth row - Ideal fraction and status */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="ideal-fraction">{t("idealFraction")} *</Label>
                       <Input 
@@ -962,17 +962,32 @@ export default function Buildings() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    {t("importFromExcel")} - {t("requiredFields")}: {t("unitNumber")}, {t("blockName")}, {t("floorNumber")}, {t("area")}, {t("keyDelivery")}, {t("ownerName")}, {t("identification")}, {t("depositLocation")}, {t("parkingSpacesByApartment")}, {t("idealFraction")}
-                  </p>
-                  <div className="flex gap-4">
-                    <Button variant="outline" className="gap-2">
-                      <Calculator className="w-4 h-4" />
-                      {t("downloadTemplate")}
+                  <div className="text-sm text-muted-foreground">
+                    <p className="mb-2">{t("importFromExcel")}</p>
+                    <div className="text-xs">
+                      <strong>{t("requiredFields")}:</strong>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("unitNumber")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("blockName")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("floorNumber")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("area")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("keyDelivery")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("ownerName")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("identification")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("depositLocation")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("parkingSpacesByApartment")}</span>
+                        <span className="inline-block bg-muted px-2 py-1 rounded text-xs">{t("idealFraction")}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <Button variant="outline" className="flex-1 sm:flex-none gap-2 text-xs sm:text-sm">
+                      <Calculator className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="truncate">{t("downloadTemplate")}</span>
                     </Button>
-                    <Button className="gap-2">
-                      <Plus className="w-4 h-4" />
-                      {t("uploadExcelFile")}
+                    <Button className="flex-1 sm:flex-none gap-2 text-xs sm:text-sm">
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="truncate">{t("uploadExcelFile")}</span>
                     </Button>
                   </div>
                 </div>
@@ -987,13 +1002,13 @@ export default function Buildings() {
                   {t("registeredUnits")} ({units.length})
                 </CardTitle>
                 <div className="flex items-center gap-2 mt-2">
-                  <div className="relative flex-1 max-w-sm">
+                  <div className="relative flex-1 max-w-full sm:max-w-sm">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder={t("searchByUnitOrBlock")}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8"
+                      className="pl-8 text-sm"
                     />
                   </div>
                 </div>
@@ -1003,15 +1018,19 @@ export default function Buildings() {
                   {filteredUnits.map((unit) => (
                     <div key={unit.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border rounded-lg gap-3 sm:gap-4">
                       <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <Home className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
-                          <span className="text-sm sm:text-base font-semibold">{t("unit")} {unit.number} - {t("block")} {unit.blockName}</span>
-                          <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'} className="text-xs">
-                            {unit.status}
-                          </Badge>
-                          <Badge variant={unit.keyDelivery === 'yes' ? 'default' : 'secondary'} className="text-xs">
-                            {unit.keyDelivery === 'yes' ? t("keyDelivered") : t("keyNotDelivered")}
-                          </Badge>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <div className="flex items-center gap-2">
+                            <Home className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground" />
+                            <span className="text-sm sm:text-base font-semibold">{t("unit")} {unit.number} - {t("block")} {unit.blockName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant={unit.status === 'occupied' ? 'default' : unit.status === 'vacant' ? 'secondary' : 'destructive'} className="text-xs whitespace-nowrap">
+                              {t(unit.status)}
+                            </Badge>
+                            <Badge variant={unit.keyDelivery === 'yes' ? 'default' : 'secondary'} className="text-xs whitespace-nowrap">
+                              {unit.keyDelivery === 'yes' ? t("keyDelivered") : t("keyNotDelivered")}
+                            </Badge>
+                          </div>
                         </div>
                         <div className="text-xs sm:text-sm text-muted-foreground">
                           {t("floorNumber")} {unit.floor} • {unit.area}m² • {t(unit.identification)} • {unit.idealFraction}% • {unit.parkingSpaces} {t("parkingSpaces")}
