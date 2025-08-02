@@ -102,6 +102,7 @@ export default function Buildings() {
   
   // Building address state
   const [cep, setCep] = useState("");
+  const [cnpj, setCnpj] = useState("");
   
   // Building type and composition state
   const [buildingType, setBuildingType] = useState("");
@@ -111,6 +112,10 @@ export default function Buildings() {
   const [residentialUnits, setResidentialUnits] = useState("");
   const [commercialUnits, setCommercialUnits] = useState("");
   const [studioUnits, setStudioUnits] = useState("");
+  const [nonResidentialUnits, setNonResidentialUnits] = useState("");
+  const [waveUnits, setWaveUnits] = useState("");
+  const [towerNames, setTowerNames] = useState<string[]>([]);
+  const [unitsPerTowerArray, setUnitsPerTowerArray] = useState<string[]>([]);
 
   // CEP formatting function
   const formatCEP = (value: string) => {
@@ -129,6 +134,30 @@ export default function Buildings() {
     const formattedCEP = formatCEP(e.target.value);
     setCep(formattedCEP);
   };
+
+  // CNPJ formatting function
+  const formatCNPJ = (value: string) => {
+    // Remove all non-numeric characters
+    const numericValue = value.replace(/\D/g, '');
+    
+    // Apply the CNPJ format: XX.XXX.XXX/XXXX-XX
+    if (numericValue.length <= 2) {
+      return numericValue;
+    } else if (numericValue.length <= 5) {
+      return `${numericValue.slice(0, 2)}.${numericValue.slice(2)}`;
+    } else if (numericValue.length <= 8) {
+      return `${numericValue.slice(0, 2)}.${numericValue.slice(2, 5)}.${numericValue.slice(5)}`;
+    } else if (numericValue.length <= 12) {
+      return `${numericValue.slice(0, 2)}.${numericValue.slice(2, 5)}.${numericValue.slice(5, 8)}/${numericValue.slice(8)}`;
+    } else {
+      return `${numericValue.slice(0, 2)}.${numericValue.slice(2, 5)}.${numericValue.slice(5, 8)}/${numericValue.slice(8, 12)}-${numericValue.slice(12, 14)}`;
+    }
+  };
+
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    setCnpj(formattedCNPJ);
+  };
   const [newUnit, setNewUnit] = useState({
     number: "",
     blockName: "",
@@ -136,6 +165,7 @@ export default function Buildings() {
     area: "",
     keyDelivery: "no",
     owner: "",
+    ownerPhone: "",
     identification: "residential",
     depositLocation: "",
     parkingSpaces: "",
@@ -150,7 +180,7 @@ export default function Buildings() {
   );
 
   const handleAddUnit = () => {
-    if (newUnit.number && newUnit.blockName && newUnit.floor && newUnit.area && newUnit.depositLocation && newUnit.parkingSpaces && newUnit.idealFraction) {
+    if (newUnit.number && newUnit.owner && newUnit.ownerPhone && (parseInt(numberOfTowers) > 1 ? newUnit.blockName : true) && newUnit.floor && newUnit.area && newUnit.depositLocation && newUnit.parkingSpaces && newUnit.idealFraction) {
       const unit = {
         id: Date.now(),
         number: newUnit.number,
@@ -159,6 +189,7 @@ export default function Buildings() {
         area: parseFloat(newUnit.area),
         keyDelivery: newUnit.keyDelivery,
         owner: newUnit.owner,
+        ownerPhone: newUnit.ownerPhone,
         identification: newUnit.identification,
         depositLocation: newUnit.depositLocation,
         parkingSpaces: parseInt(newUnit.parkingSpaces),
@@ -173,6 +204,7 @@ export default function Buildings() {
         area: "",
         keyDelivery: "no",
         owner: "",
+        ownerPhone: "",
         identification: "residential",
         depositLocation: "",
         parkingSpaces: "",
@@ -290,7 +322,13 @@ export default function Buildings() {
                   </div>
                   <div>
                     <Label htmlFor="cnpj">{t("cnpj")} *</Label>
-                    <Input id="cnpj" placeholder={t("enterCNPJ")} />
+                    <Input 
+                      id="cnpj" 
+                      placeholder="00.000.000/0000-00" 
+                      value={cnpj}
+                      onChange={handleCNPJChange}
+                      maxLength={18}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="building-type">{t("buildingType")}</Label>
@@ -317,86 +355,290 @@ export default function Buildings() {
                     <h3 className="text-lg font-semibold">{t("buildingComposition")}</h3>
                     
                     {buildingType === "residential" && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="number-of-towers">{t("numberOfTowers")}</Label>
-                          <Input 
-                            id="number-of-towers" 
-                            type="number" 
-                            placeholder={t("enterNumberOfTowers")}
-                            value={numberOfTowers}
-                            onChange={(e) => setNumberOfTowers(e.target.value)}
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="number-of-towers">{t("numberOfTowers")}</Label>
+                            <Input 
+                              id="number-of-towers" 
+                              type="number" 
+                              placeholder={t("enterNumberOfTowers")}
+                              value={numberOfTowers}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setNumberOfTowers(value);
+                                const num = parseInt(value) || 0;
+                                if (num > 1) {
+                                  setTowerNames(Array(num).fill("").map((_, i) => towerNames[i] || ""));
+                                  setUnitsPerTowerArray(Array(num).fill("").map((_, i) => unitsPerTowerArray[i] || ""));
+                                } else {
+                                  setTowerNames([]);
+                                  setUnitsPerTowerArray([]);
+                                }
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="apartments-per-tower">{t("apartmentsPerTower")}</Label>
+                            <Input 
+                              id="apartments-per-tower" 
+                              type="number" 
+                              placeholder={t("enterApartmentsPerTower")}
+                              value={apartmentsPerTower}
+                              onChange={(e) => setApartmentsPerTower(e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="apartments-per-tower">{t("apartmentsPerTower")}</Label>
-                          <Input 
-                            id="apartments-per-tower" 
-                            type="number" 
-                            placeholder={t("enterApartmentsPerTower")}
-                            value={apartmentsPerTower}
-                            onChange={(e) => setApartmentsPerTower(e.target.value)}
-                          />
-                        </div>
+                        
+                        {/* Tower naming section - only show when more than 1 tower */}
+                        {parseInt(numberOfTowers) > 1 && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold">{t("towerDetails")}</Label>
+                            <div className="grid grid-cols-1 gap-4">
+                              {towerNames.map((name, index) => (
+                                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border rounded-lg">
+                                  <div>
+                                    <Label htmlFor={`tower-name-${index}`} className="text-xs text-muted-foreground">
+                                      {t("tower")} {index + 1} - {t("name")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-name-${index}`}
+                                      placeholder={`${t("tower")} ${String.fromCharCode(65 + index)}`}
+                                      value={name}
+                                      onChange={(e) => {
+                                        const newNames = [...towerNames];
+                                        newNames[index] = e.target.value;
+                                        setTowerNames(newNames);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`tower-units-${index}`} className="text-xs text-muted-foreground">
+                                      {t("numberOfUnits")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-units-${index}`}
+                                      type="number"
+                                      placeholder={t("enterNumberOfUnits")}
+                                      value={unitsPerTowerArray[index] || ""}
+                                      onChange={(e) => {
+                                        const newUnits = [...unitsPerTowerArray];
+                                        newUnits[index] = e.target.value;
+                                        setUnitsPerTowerArray(newUnits);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     
                     {buildingType === "commercial" && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="number-of-towers-commercial">{t("numberOfTowers")}</Label>
-                          <Input 
-                            id="number-of-towers-commercial" 
-                            type="number" 
-                            placeholder={t("enterNumberOfTowers")}
-                            value={numberOfTowers}
-                            onChange={(e) => setNumberOfTowers(e.target.value)}
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="number-of-towers-commercial">{t("numberOfTowers")}</Label>
+                            <Input 
+                              id="number-of-towers-commercial" 
+                              type="number" 
+                              placeholder={t("enterNumberOfTowers")}
+                              value={numberOfTowers}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setNumberOfTowers(value);
+                                const num = parseInt(value) || 0;
+                                if (num > 1) {
+                                  setTowerNames(Array(num).fill("").map((_, i) => towerNames[i] || ""));
+                                  setUnitsPerTowerArray(Array(num).fill("").map((_, i) => unitsPerTowerArray[i] || ""));
+                                } else {
+                                  setTowerNames([]);
+                                  setUnitsPerTowerArray([]);
+                                }
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="units-per-tower">{t("unitsPerTower")}</Label>
+                            <Input 
+                              id="units-per-tower" 
+                              type="number" 
+                              placeholder={t("enterUnitsPerTower")}
+                              value={unitsPerTower}
+                              onChange={(e) => setUnitsPerTower(e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="units-per-tower">{t("unitsPerTower")}</Label>
-                          <Input 
-                            id="units-per-tower" 
-                            type="number" 
-                            placeholder={t("enterUnitsPerTower")}
-                            value={unitsPerTower}
-                            onChange={(e) => setUnitsPerTower(e.target.value)}
-                          />
-                        </div>
+                        
+                        {/* Tower naming section - only show when more than 1 tower */}
+                        {parseInt(numberOfTowers) > 1 && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold">{t("towerDetails")}</Label>
+                            <div className="grid grid-cols-1 gap-4">
+                              {towerNames.map((name, index) => (
+                                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border rounded-lg">
+                                  <div>
+                                    <Label htmlFor={`tower-name-commercial-${index}`} className="text-xs text-muted-foreground">
+                                      {t("tower")} {index + 1} - {t("name")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-name-commercial-${index}`}
+                                      placeholder={`${t("tower")} ${String.fromCharCode(65 + index)}`}
+                                      value={name}
+                                      onChange={(e) => {
+                                        const newNames = [...towerNames];
+                                        newNames[index] = e.target.value;
+                                        setTowerNames(newNames);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`tower-units-commercial-${index}`} className="text-xs text-muted-foreground">
+                                      {t("numberOfUnits")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-units-commercial-${index}`}
+                                      type="number"
+                                      placeholder={t("enterNumberOfUnits")}
+                                      value={unitsPerTowerArray[index] || ""}
+                                      onChange={(e) => {
+                                        const newUnits = [...unitsPerTowerArray];
+                                        newUnits[index] = e.target.value;
+                                        setUnitsPerTowerArray(newUnits);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                     
                     {buildingType === "mixed" && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor="residential-units">{t("residentialUnits")}</Label>
-                          <Input 
-                            id="residential-units" 
-                            type="number" 
-                            placeholder={t("enterResidentialUnits")}
-                            value={residentialUnits}
-                            onChange={(e) => setResidentialUnits(e.target.value)}
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="number-of-towers-mixed">{t("numberOfTowers")}</Label>
+                            <Input 
+                              id="number-of-towers-mixed" 
+                              type="number" 
+                              placeholder={t("enterNumberOfTowers")}
+                              value={numberOfTowers}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setNumberOfTowers(value);
+                                const num = parseInt(value) || 0;
+                                if (num > 1) {
+                                  setTowerNames(Array(num).fill("").map((_, i) => towerNames[i] || ""));
+                                  setUnitsPerTowerArray(Array(num).fill("").map((_, i) => unitsPerTowerArray[i] || ""));
+                                } else {
+                                  setTowerNames([]);
+                                  setUnitsPerTowerArray([]);
+                                }
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="commercial-units">{t("commercialUnits")}</Label>
-                          <Input 
-                            id="commercial-units" 
-                            type="number" 
-                            placeholder={t("enterCommercialUnits")}
-                            value={commercialUnits}
-                            onChange={(e) => setCommercialUnits(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="studio-units">{t("studioUnits")}</Label>
-                          <Input 
-                            id="studio-units" 
-                            type="number" 
-                            placeholder={t("enterStudioUnits")}
-                            value={studioUnits}
-                            onChange={(e) => setStudioUnits(e.target.value)}
-                          />
+                        
+                        {/* Tower naming section - only show when more than 1 tower */}
+                        {parseInt(numberOfTowers) > 1 && (
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold">{t("towerDetails")}</Label>
+                            <div className="grid grid-cols-1 gap-4">
+                              {towerNames.map((name, index) => (
+                                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 border rounded-lg">
+                                  <div>
+                                    <Label htmlFor={`tower-name-mixed-${index}`} className="text-xs text-muted-foreground">
+                                      {t("tower")} {index + 1} - {t("name")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-name-mixed-${index}`}
+                                      placeholder={`${t("tower")} ${String.fromCharCode(65 + index)}`}
+                                      value={name}
+                                      onChange={(e) => {
+                                        const newNames = [...towerNames];
+                                        newNames[index] = e.target.value;
+                                        setTowerNames(newNames);
+                                      }}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`tower-units-mixed-${index}`} className="text-xs text-muted-foreground">
+                                      {t("numberOfUnits")}
+                                    </Label>
+                                    <Input
+                                      id={`tower-units-mixed-${index}`}
+                                      type="number"
+                                      placeholder={t("enterNumberOfUnits")}
+                                      value={unitsPerTowerArray[index] || ""}
+                                      onChange={(e) => {
+                                        const newUnits = [...unitsPerTowerArray];
+                                        newUnits[index] = e.target.value;
+                                        setUnitsPerTowerArray(newUnits);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                          <div>
+                            <Label htmlFor="residential-units">{t("residentialUnits")}</Label>
+                            <Input 
+                              id="residential-units" 
+                              type="number" 
+                              placeholder={t("enterResidentialUnits")}
+                              value={residentialUnits}
+                              onChange={(e) => setResidentialUnits(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="commercial-units">{t("commercialUnits")}</Label>
+                            <Input 
+                              id="commercial-units" 
+                              type="number" 
+                              placeholder={t("enterCommercialUnits")}
+                              value={commercialUnits}
+                              onChange={(e) => setCommercialUnits(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="studio-units">{t("studioUnits")}</Label>
+                            <Input 
+                              id="studio-units" 
+                              type="number" 
+                              placeholder={t("enterStudioUnits")}
+                              value={studioUnits}
+                              onChange={(e) => setStudioUnits(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="non-residential-units">{t("nonResidentialUnits")}</Label>
+                            <Input 
+                              id="non-residential-units" 
+                              type="number" 
+                              placeholder={t("enterNonResidentialUnits")}
+                              value={nonResidentialUnits}
+                              onChange={(e) => setNonResidentialUnits(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="wave-units">{t("waveUnits")}</Label>
+                            <Input 
+                              id="wave-units" 
+                              type="number" 
+                              placeholder={t("enterWaveUnits")}
+                              value={waveUnits}
+                              onChange={(e) => setWaveUnits(e.target.value)}
+                            />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -513,15 +755,35 @@ export default function Buildings() {
                         onChange={(e) => setNewUnit({...newUnit, number: e.target.value})}
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="block-name">{t("blockName")} *</Label>
-                      <Input 
-                        id="block-name" 
-                        placeholder={t("enterBlockName")} 
-                        value={newUnit.blockName}
-                        onChange={(e) => setNewUnit({...newUnit, blockName: e.target.value})}
-                      />
-                    </div>
+                    {parseInt(numberOfTowers) > 1 && (
+                      <div>
+                        <Label htmlFor="block-name">{t("blockName")} *</Label>
+                        <Select value={newUnit.blockName} onValueChange={(value) => setNewUnit({...newUnit, blockName: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectTower")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {towerNames.map((name, index) => (
+                              <SelectItem key={index} value={name || `${t("tower")} ${String.fromCharCode(65 + index)}`}>
+                                {name || `${t("tower")} ${String.fromCharCode(65 + index)}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {parseInt(numberOfTowers) <= 1 && (
+                      <div>
+                        <Label htmlFor="building-name-single">{t("buildingName")}</Label>
+                        <Input 
+                          id="building-name-single" 
+                          placeholder={t("enterBuildingName")} 
+                          value={newUnit.blockName}
+                          onChange={(e) => setNewUnit({...newUnit, blockName: e.target.value})}
+                          disabled
+                        />
+                      </div>
+                    )}
                     <div>
                       <Label htmlFor="unit-floor">{t("floorNumber")} *</Label>
                       <Input 
@@ -561,17 +823,30 @@ export default function Buildings() {
                     </div>
                   </div>
 
-                  {/* Third row - Owner and identification */}
+                  {/* Third row - Owner name and phone */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="unit-owner">{t("ownerName")}</Label>
+                      <Label htmlFor="unit-owner">{t("ownerName")} *</Label>
                       <Input 
                         id="unit-owner" 
-                        placeholder={t("ownerNameOptional")} 
+                        placeholder={t("enterOwnerName")} 
                         value={newUnit.owner}
                         onChange={(e) => setNewUnit({...newUnit, owner: e.target.value})}
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="owner-phone">{t("ownerPhone")} *</Label>
+                      <Input 
+                        id="owner-phone" 
+                        placeholder={t("enterOwnerPhone")} 
+                        value={newUnit.ownerPhone}
+                        onChange={(e) => setNewUnit({...newUnit, ownerPhone: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fourth row - Identification */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="identification">{t("identification")} *</Label>
                       <Select value={newUnit.identification} onValueChange={(value) => setNewUnit({...newUnit, identification: value})}>
@@ -619,7 +894,7 @@ export default function Buildings() {
                     </div>
                   </div>
 
-                  {/* Fourth row - Deposit and parking */}
+                  {/* Fifth row - Deposit and parking */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="deposit-location">{t("depositLocation")} *</Label>
@@ -642,7 +917,7 @@ export default function Buildings() {
                     </div>
                   </div>
 
-                  {/* Fifth row - Ideal fraction and status */}
+                  {/* Sixth row - Ideal fraction and status */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="ideal-fraction">{t("idealFraction")} *</Label>
@@ -1026,10 +1301,10 @@ export default function Buildings() {
               <div className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Home className="w-4 h-4" />
-                  {t("unitRegistrationSystem")}
+                  {t("unitManagement")}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t("comprehensiveUnitManagement")}
+                  {t("unitManagementDescription")}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
