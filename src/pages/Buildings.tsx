@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search, Eye } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
@@ -18,13 +19,14 @@ const mockUnits = [
     number: "101", 
     blockName: "A", 
     floor: 1, 
-    area: 85.5, 
+    area: 85.500, 
     keyDelivery: "yes", 
     owner: "João Silva", 
     identification: "residential", 
+    hasDeposit: "yes",
     depositLocation: "Subsolo", 
     parkingSpaces: 1, 
-    idealFraction: 8.5, 
+    idealFraction: 8.500000, 
     status: "occupied" 
   },
   { 
@@ -32,13 +34,14 @@ const mockUnits = [
     number: "102", 
     blockName: "A", 
     floor: 1, 
-    area: 90.0, 
+    area: 90.000, 
     keyDelivery: "yes", 
     owner: "Maria Santos", 
     identification: "residential", 
+    hasDeposit: "yes",
     depositLocation: "Subsolo", 
     parkingSpaces: 1, 
-    idealFraction: 9.0, 
+    idealFraction: 9.000000, 
     status: "occupied" 
   },
   { 
@@ -46,13 +49,14 @@ const mockUnits = [
     number: "201", 
     blockName: "A", 
     floor: 2, 
-    area: 85.5, 
+    area: 85.500, 
     keyDelivery: "no", 
     owner: "", 
     identification: "residential", 
-    depositLocation: "Subsolo", 
+    hasDeposit: "no",
+    depositLocation: "", 
     parkingSpaces: 1, 
-    idealFraction: 8.5, 
+    idealFraction: 8.500000, 
     status: "vacant" 
   },
   { 
@@ -60,13 +64,14 @@ const mockUnits = [
     number: "202", 
     blockName: "A", 
     floor: 2, 
-    area: 90.0, 
+    area: 90.000, 
     keyDelivery: "yes", 
     owner: "Carlos Oliveira", 
     identification: "residential", 
+    hasDeposit: "yes",
     depositLocation: "Subsolo", 
     parkingSpaces: 1, 
-    idealFraction: 9.0, 
+    idealFraction: 9.000000, 
     status: "occupied" 
   },
   { 
@@ -74,13 +79,14 @@ const mockUnits = [
     number: "301", 
     blockName: "A", 
     floor: 3, 
-    area: 85.5, 
+    area: 85.500, 
     keyDelivery: "yes", 
     owner: "Ana Costa", 
     identification: "residential", 
+    hasDeposit: "yes",
     depositLocation: "Subsolo", 
     parkingSpaces: 1, 
-    idealFraction: 8.5, 
+    idealFraction: 8.500000, 
     status: "occupied" 
   },
 ];
@@ -116,6 +122,14 @@ export default function Buildings() {
   const [waveUnits, setWaveUnits] = useState("");
   const [towerNames, setTowerNames] = useState<string[]>([]);
   const [unitsPerTowerArray, setUnitsPerTowerArray] = useState<string[]>([]);
+  
+  // Manager information state
+  const [managerName, setManagerName] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
+  const [managerPhoneType, setManagerPhoneType] = useState("mobile");
+  
+  // Mixed building address state
+  const [useSeparateAddress, setUseSeparateAddress] = useState(false);
 
   // CEP formatting function
   const formatCEP = (value: string) => {
@@ -158,6 +172,50 @@ export default function Buildings() {
     const formattedCNPJ = formatCNPJ(e.target.value);
     setCnpj(formattedCNPJ);
   };
+
+  // Phone formatting function for Brazilian phones
+  const formatBrazilianPhone = (value: string, type: string) => {
+    const numericValue = value.replace(/\D/g, '');
+    
+    if (type === 'mobile') {
+      // Mobile: 55 (11) 98910-0000
+      if (numericValue.length <= 2) {
+        return numericValue;
+      } else if (numericValue.length <= 4) {
+        return `${numericValue.slice(0, 2)} (${numericValue.slice(2)}`;
+      } else if (numericValue.length <= 9) {
+        return `${numericValue.slice(0, 2)} (${numericValue.slice(2, 4)}) ${numericValue.slice(4)}`;
+      } else if (numericValue.length <= 13) {
+        return `${numericValue.slice(0, 2)} (${numericValue.slice(2, 4)}) ${numericValue.slice(4, 9)}-${numericValue.slice(9)}`;
+      } else {
+        return `${numericValue.slice(0, 2)} (${numericValue.slice(2, 4)}) ${numericValue.slice(4, 9)}-${numericValue.slice(9, 13)}`;
+      }
+    } else {
+      // Landline: 3083-6749
+      if (numericValue.length <= 4) {
+        return numericValue;
+      } else {
+        return `${numericValue.slice(0, 4)}-${numericValue.slice(4, 8)}`;
+      }
+    }
+  };
+
+  const handleManagerPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedPhone = formatBrazilianPhone(e.target.value, managerPhoneType);
+    setManagerPhone(formattedPhone);
+  };
+
+  // Area formatting with 3 decimal places
+  const formatArea = (value: string) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? value : num.toFixed(3);
+  };
+
+  // Ideal fraction formatting with 6 decimal places
+  const formatIdealFraction = (value: string) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? value : num.toFixed(6);
+  };
   const [newUnit, setNewUnit] = useState({
     number: "",
     blockName: "",
@@ -167,6 +225,7 @@ export default function Buildings() {
     owner: "",
     ownerPhone: "",
     identification: "residential",
+    hasDeposit: "no",
     depositLocation: "",
     parkingSpaces: "",
     idealFraction: "",
@@ -180,7 +239,8 @@ export default function Buildings() {
   );
 
   const handleAddUnit = () => {
-    if (newUnit.number && newUnit.owner && newUnit.ownerPhone && (parseInt(numberOfTowers) > 1 ? newUnit.blockName : true) && newUnit.floor && newUnit.area && newUnit.depositLocation && newUnit.parkingSpaces && newUnit.idealFraction) {
+    const depositRequired = newUnit.hasDeposit === "yes" ? newUnit.depositLocation : true;
+    if (newUnit.number && newUnit.owner && newUnit.ownerPhone && (parseInt(numberOfTowers) > 1 ? newUnit.blockName : true) && newUnit.floor && newUnit.area && depositRequired && newUnit.parkingSpaces && newUnit.idealFraction) {
       const unit = {
         id: Date.now(),
         number: newUnit.number,
@@ -191,7 +251,8 @@ export default function Buildings() {
         owner: newUnit.owner,
         ownerPhone: newUnit.ownerPhone,
         identification: newUnit.identification,
-        depositLocation: newUnit.depositLocation,
+        hasDeposit: newUnit.hasDeposit,
+        depositLocation: newUnit.hasDeposit === "yes" ? newUnit.depositLocation : "",
         parkingSpaces: parseInt(newUnit.parkingSpaces),
         idealFraction: parseFloat(newUnit.idealFraction),
         status: newUnit.status
@@ -206,6 +267,7 @@ export default function Buildings() {
         owner: "",
         ownerPhone: "",
         identification: "residential",
+        hasDeposit: "no",
         depositLocation: "",
         parkingSpaces: "",
         idealFraction: "",
@@ -588,56 +650,123 @@ export default function Buildings() {
                           </div>
                         )}
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                          <div>
-                            <Label htmlFor="residential-units">{t("residentialUnits")}</Label>
-                            <Input 
-                              id="residential-units" 
-                              type="number" 
-                              placeholder={t("enterResidentialUnits")}
-                              value={residentialUnits}
-                              onChange={(e) => setResidentialUnits(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="commercial-units">{t("commercialUnits")}</Label>
-                            <Input 
-                              id="commercial-units" 
-                              type="number" 
-                              placeholder={t("enterCommercialUnits")}
-                              value={commercialUnits}
-                              onChange={(e) => setCommercialUnits(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="studio-units">{t("studioUnits")}</Label>
-                            <Input 
-                              id="studio-units" 
-                              type="number" 
-                              placeholder={t("enterStudioUnits")}
-                              value={studioUnits}
-                              onChange={(e) => setStudioUnits(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="non-residential-units">{t("nonResidentialUnits")}</Label>
-                            <Input 
-                              id="non-residential-units" 
-                              type="number" 
-                              placeholder={t("enterNonResidentialUnits")}
-                              value={nonResidentialUnits}
-                              onChange={(e) => setNonResidentialUnits(e.target.value)}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="wave-units">{t("waveUnits")}</Label>
-                            <Input 
-                              id="wave-units" 
-                              type="number" 
-                              placeholder={t("enterWaveUnits")}
-                              value={waveUnits}
-                              onChange={(e) => setWaveUnits(e.target.value)}
-                            />
+                        <div className="space-y-6">
+                          {/* Unit type distribution per tower */}
+                          {towerNames.length > 0 && (
+                            <div className="space-y-4">
+                              <Label className="text-sm font-semibold">{t("unitDistributionPerTower")}</Label>
+                              {towerNames.map((towerName, towerIndex) => (
+                                <div key={towerIndex} className="p-4 border rounded-lg bg-muted/10">
+                                  <h4 className="font-medium mb-3">
+                                    {towerName || `${t("tower")} ${String.fromCharCode(65 + towerIndex)}`}
+                                  </h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                                    <div>
+                                      <Label htmlFor={`residential-units-${towerIndex}`} className="text-xs">{t("residentialUnits")}</Label>
+                                      <Input 
+                                        id={`residential-units-${towerIndex}`}
+                                        type="number" 
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`commercial-units-${towerIndex}`} className="text-xs">{t("commercialUnits")}</Label>
+                                      <Input 
+                                        id={`commercial-units-${towerIndex}`}
+                                        type="number" 
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`studio-units-${towerIndex}`} className="text-xs">{t("studioUnits")}</Label>
+                                      <Input 
+                                        id={`studio-units-${towerIndex}`}
+                                        type="number" 
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`non-residential-units-${towerIndex}`} className="text-xs">{t("nonResidentialUnits")}</Label>
+                                      <Input 
+                                        id={`non-residential-units-${towerIndex}`}
+                                        type="number" 
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <Label htmlFor={`wave-units-${towerIndex}`} className="text-xs">{t("waveUnits")}</Label>
+                                      <Input 
+                                        id={`wave-units-${towerIndex}`}
+                                        type="number" 
+                                        placeholder="0"
+                                        className="h-8 text-sm"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Overall totals */}
+                          <div className="space-y-3">
+                            <Label className="text-sm font-semibold">{t("overallTotals")}</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                              <div>
+                                <Label htmlFor="residential-units">{t("residentialUnits")}</Label>
+                                <Input 
+                                  id="residential-units" 
+                                  type="number" 
+                                  placeholder={t("enterResidentialUnits")}
+                                  value={residentialUnits}
+                                  onChange={(e) => setResidentialUnits(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="commercial-units">{t("commercialUnits")}</Label>
+                                <Input 
+                                  id="commercial-units" 
+                                  type="number" 
+                                  placeholder={t("enterCommercialUnits")}
+                                  value={commercialUnits}
+                                  onChange={(e) => setCommercialUnits(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="studio-units">{t("studioUnits")}</Label>
+                                <Input 
+                                  id="studio-units" 
+                                  type="number" 
+                                  placeholder={t("enterStudioUnits")}
+                                  value={studioUnits}
+                                  onChange={(e) => setStudioUnits(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="non-residential-units">{t("nonResidentialUnits")}</Label>
+                                <Input 
+                                  id="non-residential-units" 
+                                  type="number" 
+                                  placeholder={t("enterNonResidentialUnits")}
+                                  value={nonResidentialUnits}
+                                  onChange={(e) => setNonResidentialUnits(e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="wave-units">{t("waveUnits")}</Label>
+                                <Input 
+                                  id="wave-units" 
+                                  type="number" 
+                                  placeholder={t("enterWaveUnits")}
+                                  value={waveUnits}
+                                  onChange={(e) => setWaveUnits(e.target.value)}
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -645,9 +774,64 @@ export default function Buildings() {
                   </div>
                 )}
 
+                {/* Manager Information Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">{t("managerInformation")} *</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="manager-name">{t("managerName")} *</Label>
+                      <Input 
+                        id="manager-name" 
+                        placeholder={t("enterManagerName")} 
+                        value={managerName}
+                        onChange={(e) => setManagerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone-type">{t("phoneType")} *</Label>
+                      <Select value={managerPhoneType} onValueChange={setManagerPhoneType}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectPhoneType")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mobile">{t("mobile")}</SelectItem>
+                          <SelectItem value="landline">{t("landline")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="manager-phone">{t("managerPhone")} *</Label>
+                      <Input 
+                        id="manager-phone" 
+                        placeholder={managerPhoneType === 'mobile' ? '55 (11) 98910-0000' : '3083-6749'} 
+                        value={managerPhone}
+                        onChange={handleManagerPhoneChange}
+                        maxLength={managerPhoneType === 'mobile' ? 18 : 9}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Full Address Section */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">{t("fullAddress")} *</h3>
+                  
+                  {/* Mixed building separate address option */}
+                  {buildingType === "mixed" && (
+                    <div className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        id="separate-address" 
+                        checked={useSeparateAddress}
+                        onChange={(e) => setUseSeparateAddress(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="separate-address" className="text-sm">
+                        {t("useSeparateAddressForMixed")}
+                      </Label>
+                    </div>
+                  )}
                   
                   {/* First row - Street and Number */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -690,6 +874,49 @@ export default function Buildings() {
                       <Input id="state" placeholder={t("enterState")} />
                     </div>
                   </div>
+                  
+                  {/* Separate address for mixed buildings */}
+                  {buildingType === "mixed" && useSeparateAddress && (
+                    <div className="space-y-4 mt-6 p-4 border rounded-lg bg-muted/20">
+                      <h4 className="text-md font-semibold">{t("alternativeAddress")}</h4>
+                      
+                      {/* Alternative Street and Number */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <Label htmlFor="alt-street">{t("street")}</Label>
+                          <Input id="alt-street" placeholder={t("enterStreet")} />
+                        </div>
+                        <div>
+                          <Label htmlFor="alt-address-number">{t("addressNumber")}</Label>
+                          <Input id="alt-address-number" placeholder={t("enterAddressNumber")} />
+                        </div>
+                      </div>
+                      
+                      {/* Alternative CEP and Neighborhood */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="alt-cep">{t("cep")}</Label>
+                          <Input id="alt-cep" placeholder={t("enterCEP")} maxLength={9} />
+                        </div>
+                        <div>
+                          <Label htmlFor="alt-neighborhood">{t("neighborhood")}</Label>
+                          <Input id="alt-neighborhood" placeholder={t("enterNeighborhood")} />
+                        </div>
+                      </div>
+                      
+                      {/* Alternative City and State */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="alt-city">{t("city")}</Label>
+                          <Input id="alt-city" placeholder={t("enterCity")} />
+                        </div>
+                        <div>
+                          <Label htmlFor="alt-state">{t("state")}</Label>
+                          <Input id="alt-state" placeholder={t("enterState")} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Button className="w-full gap-2">
@@ -803,10 +1030,15 @@ export default function Buildings() {
                       <Input 
                         id="unit-area" 
                         type="number" 
-                        step="0.1" 
+                        step="0.001" 
                         placeholder={t("areaPlaceholder")} 
                         value={newUnit.area}
                         onChange={(e) => setNewUnit({...newUnit, area: e.target.value})}
+                        onBlur={(e) => {
+                          if (e.target.value) {
+                            setNewUnit({...newUnit, area: formatArea(e.target.value)});
+                          }
+                        }}
                       />
                     </div>
                     <div>
@@ -897,13 +1129,16 @@ export default function Buildings() {
                   {/* Fifth row - Deposit and parking */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="deposit-location">{t("depositLocation")} *</Label>
-                      <Input 
-                        id="deposit-location" 
-                        placeholder={t("enterDepositLocation")} 
-                        value={newUnit.depositLocation}
-                        onChange={(e) => setNewUnit({...newUnit, depositLocation: e.target.value})}
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id="has-deposit"
+                          checked={newUnit.hasDeposit === "yes"}
+                          onCheckedChange={(checked) => setNewUnit({...newUnit, hasDeposit: checked ? "yes" : "no", depositLocation: checked ? newUnit.depositLocation : ""})}
+                        />
+                        <Label htmlFor="has-deposit" className="cursor-pointer">
+                          {t("hasDeposit")} *
+                        </Label>
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="parking-spaces">{t("parkingSpacesByApartment")} *</Label>
@@ -916,18 +1151,38 @@ export default function Buildings() {
                       />
                     </div>
                   </div>
+                  
+                  {/* Conditional deposit location field */}
+                  {newUnit.hasDeposit === "yes" && (
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="deposit-location">{t("depositLocation")} *</Label>
+                        <Input 
+                          id="deposit-location" 
+                          placeholder={t("enterDepositLocation")} 
+                          value={newUnit.depositLocation}
+                          onChange={(e) => setNewUnit({...newUnit, depositLocation: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Sixth row - Ideal fraction and status */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="ideal-fraction">{t("idealFraction")} *</Label>
+                      <Label htmlFor="ideal-fraction">{t("idealFraction")} (%) *</Label>
                       <Input 
                         id="ideal-fraction" 
                         type="number" 
-                        step="0.01" 
+                        step="0.000001" 
                         placeholder={t("enterIdealFraction")} 
                         value={newUnit.idealFraction}
                         onChange={(e) => setNewUnit({...newUnit, idealFraction: e.target.value})}
+                        onBlur={(e) => {
+                          if (e.target.value) {
+                            setNewUnit({...newUnit, idealFraction: formatIdealFraction(e.target.value)});
+                          }
+                        }}
                       />
                     </div>
                     <div>
@@ -1033,7 +1288,7 @@ export default function Buildings() {
                           </div>
                         </div>
                         <div className="text-xs sm:text-sm text-muted-foreground">
-                          {t("floorNumber")} {unit.floor} • {unit.area}m² • {t(unit.identification)} • {unit.idealFraction}% • {unit.parkingSpaces} {t("parkingSpaces")}
+                          {t("floorNumber")} {unit.floor} • {unit.area}m² • {t(unit.identification)} • {unit.idealFraction}% • {unit.parkingSpaces} {t("parkingSpaces")} • {unit.hasDeposit === "yes" ? t("hasDeposit") : t("noDeposit")}
                         </div>
                         {unit.owner && (
                           <div className="flex items-center gap-1 text-xs sm:text-sm">
@@ -1079,9 +1334,15 @@ export default function Buildings() {
                                 <p className="text-sm">{t(unit.identification)}</p>
                               </div>
                               <div>
-                                <Label className="text-sm font-medium">{t("depositLocation")}</Label>
-                                <p className="text-sm">{unit.depositLocation}</p>
+                                <Label className="text-sm font-medium">{t("hasDeposit")}</Label>
+                                <p className="text-sm">{unit.hasDeposit === "yes" ? t("yes") : t("no")}</p>
                               </div>
+                              {unit.hasDeposit === "yes" && (
+                                <div>
+                                  <Label className="text-sm font-medium">{t("depositLocation")}</Label>
+                                  <p className="text-sm">{unit.depositLocation}</p>
+                                </div>
+                              )}
                               <div>
                                 <Label className="text-sm font-medium">{t("parkingSpacesByApartment")}</Label>
                                 <p className="text-sm">{unit.parkingSpaces}</p>
@@ -1237,9 +1498,17 @@ export default function Buildings() {
                           <p className="text-sm font-medium">{t(queryResult.identification)}</p>
                         </div>
                         <div>
-                          <Label className="text-sm font-medium text-muted-foreground">{t("depositLocation")}</Label>
-                          <p className="text-sm font-medium">{queryResult.depositLocation}</p>
+                          <Label className="text-sm font-medium text-muted-foreground">{t("hasDeposit")}</Label>
+                          <Badge variant={queryResult.hasDeposit === 'yes' ? 'default' : 'secondary'} className="w-fit">
+                            {queryResult.hasDeposit === 'yes' ? t("yes") : t("no")}
+                          </Badge>
                         </div>
+                        {queryResult.hasDeposit === "yes" && (
+                          <div>
+                            <Label className="text-sm font-medium text-muted-foreground">{t("depositLocation")}</Label>
+                            <p className="text-sm font-medium">{queryResult.depositLocation}</p>
+                          </div>
+                        )}
                         <div>
                           <Label className="text-sm font-medium text-muted-foreground">{t("parkingSpacesByApartment")}</Label>
                           <p className="text-sm font-medium">{queryResult.parkingSpaces}</p>
