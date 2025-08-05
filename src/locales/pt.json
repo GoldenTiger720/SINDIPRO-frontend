@@ -609,5 +609,6 @@
   "loadingBuildings": "Carregando edifícios...",
   "errorLoadingBuildings": "Erro ao carregar edifícios",
   "noBuildingRegistered": "Nenhum Edifício Registrado",
-  "registerBuildingFirst": "Por favor, registre um edifício na aba Informações do Edifício antes de gerenciar unidades."
+  "registerBuildingFirst": "Por favor, registre um edifício na aba Informações do Edifício antes de gerenciar unidades.",
+  "availableTowers": "Torres Disponíveis"
 }

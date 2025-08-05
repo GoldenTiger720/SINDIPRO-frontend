@@ -41,6 +41,13 @@ interface NewUnit {
   status: string;
 }
 
+interface Tower {
+  name: string;
+  units: number;
+  buildingName: string;
+  buildingId: number;
+}
+
 interface UnitManagementProps {
   buildingType: string;
   numberOfTowers: string;
@@ -50,6 +57,7 @@ interface UnitManagementProps {
   commercialUnits: string;
   studioUnits: string;
   towerNames: string[];
+  availableTowers: Tower[];
   units: Unit[];
   setUnits: (units: Unit[]) => void;
   searchTerm: string;
@@ -82,31 +90,14 @@ export default function UnitManagement(props: UnitManagementProps) {
 
   return (
     <div className="space-y-6">
-      {/* Building Type Information */}
-      {props.buildingType && (
+      {/* Tower Information */}
+      {props.availableTowers && props.availableTowers.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Building2 className="w-4 h-4" />
               <span>
-                {t("buildingType")}: <strong>{t(props.buildingType)}</strong>
-                {props.buildingType === "mixed" && (
-                  <span className="ml-2">
-                    - {t("residentialUnits")}: {props.residentialUnits || "0"}, 
-                    {t("commercialUnits")}: {props.commercialUnits || "0"}, 
-                    {t("studioUnits")}: {props.studioUnits || "0"}
-                  </span>
-                )}
-                {props.buildingType === "residential" && props.numberOfTowers && props.apartmentsPerTower && (
-                  <span className="ml-2">
-                    - {props.numberOfTowers} {t("numberOfTowers")}, {props.apartmentsPerTower} {t("apartmentsPerTower")}
-                  </span>
-                )}
-                {props.buildingType === "commercial" && props.numberOfTowers && props.unitsPerTower && (
-                  <span className="ml-2">
-                    - {props.numberOfTowers} {t("numberOfTowers")}, {props.unitsPerTower} {t("unitsPerTower")}
-                  </span>
-                )}
+                {t("availableTowers")}: <strong>{props.availableTowers.map(tower => tower.name).join(", ")}</strong>
               </span>
             </div>
           </CardContent>
@@ -136,7 +127,7 @@ export default function UnitManagement(props: UnitManagementProps) {
                   onChange={(e) => props.setNewUnit({...props.newUnit, number: e.target.value})}
                 />
               </div>
-              {parseInt(props.numberOfTowers) > 1 && (
+              {props.availableTowers && props.availableTowers.length > 0 && (
                 <div>
                   <Label htmlFor="block-name">{t("blockName")} *</Label>
                   <Select value={props.newUnit.blockName} onValueChange={(value) => props.setNewUnit({...props.newUnit, blockName: value})}>
@@ -144,25 +135,13 @@ export default function UnitManagement(props: UnitManagementProps) {
                       <SelectValue placeholder={t("selectTower")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {props.towerNames.map((name, index) => (
-                        <SelectItem key={index} value={name || `${t("tower")} ${String.fromCharCode(65 + index)}`}>
-                          {name || `${t("tower")} ${String.fromCharCode(65 + index)}`}
+                      {props.availableTowers.map((tower, index) => (
+                        <SelectItem key={index} value={tower.name}>
+                          {tower.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              )}
-              {parseInt(props.numberOfTowers) <= 1 && (
-                <div>
-                  <Label htmlFor="building-name-single">{t("buildingName")}</Label>
-                  <Input 
-                    id="building-name-single" 
-                    placeholder={t("enterBuildingName")} 
-                    value={props.newUnit.blockName}
-                    onChange={(e) => props.setNewUnit({...props.newUnit, blockName: e.target.value})}
-                    disabled
-                  />
                 </div>
               )}
               <div>

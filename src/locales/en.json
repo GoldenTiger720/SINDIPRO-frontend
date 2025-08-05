@@ -610,5 +610,6 @@
   "loadingBuildings": "Loading buildings...",
   "errorLoadingBuildings": "Error loading buildings",
   "noBuildingRegistered": "No Building Registered",
-  "registerBuildingFirst": "Please register a building in the Building Information tab before managing units."
+  "registerBuildingFirst": "Please register a building in the Building Information tab before managing units.",
+  "availableTowers": "Available Towers"
 }
