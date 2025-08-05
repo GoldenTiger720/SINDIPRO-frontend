@@ -1,6 +1,8 @@
 // Building API Service
 // Professional service for handling building-related backend operations
 
+import { getStoredToken } from './auth';
+
 // TypeScript interfaces for type safety
 export interface Address {
   street: string;
@@ -39,6 +41,13 @@ export interface BuildingData {
   waveUnits?: number;
   towerNames: string[];
   unitsPerTowerArray: number[];
+  towerUnitDistribution?: Array<{
+    residential: number;
+    commercial: number;
+    studio: number;
+    nonResidential: number;
+    wave: number;
+  }>;
   managerName: string;
   managerPhone: string;
   managerPhoneType: 'mobile' | 'landline';
@@ -73,9 +82,12 @@ class ApiClient {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
+    const accessToken = getStoredToken('access');
+    
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
         ...options.headers,
       },
       ...options,
