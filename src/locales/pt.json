@@ -605,5 +605,9 @@
   "areaPlaceholder": "85.5",
   "percentagePlaceholder": "8.5",
   "excelExportMessage": "Funcionalidade de exportação Excel seria implementada aqui",
-  "excelImportMessage": "Funcionalidade de importação Excel seria implementada aqui"
+  "excelImportMessage": "Funcionalidade de importação Excel seria implementada aqui",
+  "loadingBuildings": "Carregando edifícios...",
+  "errorLoadingBuildings": "Erro ao carregar edifícios",
+  "noBuildingRegistered": "Nenhum Edifício Registrado",
+  "registerBuildingFirst": "Por favor, registre um edifício na aba Informações do Edifício antes de gerenciar unidades."
 }

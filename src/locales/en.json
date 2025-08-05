@@ -606,5 +606,9 @@
   "enterCommercialUnits": "Enter commercial units",
   "enterStudioUnits": "Enter studio units",
   "buildingComposition": "Building Composition",
-  "mixed": "Mixed"
+  "mixed": "Mixed",
+  "loadingBuildings": "Loading buildings...",
+  "errorLoadingBuildings": "Error loading buildings",
+  "noBuildingRegistered": "No Building Registered",
+  "registerBuildingFirst": "Please register a building in the Building Information tab before managing units."
 }

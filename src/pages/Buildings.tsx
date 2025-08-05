@@ -3,8 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, Home, Search } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useBuildings } from "@/hooks/useBuildings";
 
 // Import the new components
 import BuildingInformation from "@/components/buildings/BuildingInformation";
@@ -94,17 +95,20 @@ export default function Buildings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   
+  // Fetch buildings data using ReactQuery
+  const { data: buildings = [], isLoading, error } = useBuildings();
+  
   // Units state
   const [units, setUnits] = useState(mockUnits);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUnit, setSelectedUnit] = useState<any>(null);
+  const [selectedUnit, setSelectedUnit] = useState<typeof mockUnits[0] | null>(null);
   const [isEditingOwner, setIsEditingOwner] = useState(false);
   const [editOwnerName, setEditOwnerName] = useState("");
   
   // Query tab state
   const [queryUnitNumber, setQueryUnitNumber] = useState("");
   const [queryBlockName, setQueryBlockName] = useState("");
-  const [queryResult, setQueryResult] = useState<any>(null);
+  const [queryResult, setQueryResult] = useState<typeof mockUnits[0] | null>(null);
   const [isQueryEditingOwner, setIsQueryEditingOwner] = useState(false);
   const [queryEditOwnerName, setQueryEditOwnerName] = useState("");
   
@@ -132,6 +136,10 @@ export default function Buildings() {
     wave: string;
   }>>([]);
   
+  // State to track if building data is loaded
+  const [hasBuildingData, setHasBuildingData] = useState(false);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  
   // Manager information state
   const [managerName, setManagerName] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
@@ -156,6 +164,58 @@ export default function Buildings() {
   const [altNeighborhood, setAltNeighborhood] = useState("");
   const [altCity, setAltCity] = useState("");
   const [altState, setAltState] = useState("");
+
+  // Effect to load building data when available
+  useEffect(() => {
+    if (buildings && buildings.length > 0) {
+      // Use the first building data (or implement a building selector)
+      const building = buildings[0];
+      setHasBuildingData(true);
+      setSelectedBuildingId(building.id);
+      
+      // Load building information
+      setBuildingName(building.data.buildingName || "");
+      setCnpj(building.data.cnpj || "");
+      setBuildingType(building.data.buildingType || "");
+      setTotalUnits(building.data.totalUnits?.toString() || "");
+      setNumberOfTowers(building.data.numberOfTowers?.toString() || "");
+      setApartmentsPerTower(building.data.apartmentsPerTower?.toString() || "");
+      setUnitsPerTower(building.data.unitsPerTower?.toString() || "");
+      setResidentialUnits(building.data.residentialUnits?.toString() || "");
+      setCommercialUnits(building.data.commercialUnits?.toString() || "");
+      setStudioUnits(building.data.studioUnits?.toString() || "");
+      setNonResidentialUnits(building.data.nonResidentialUnits?.toString() || "");
+      setWaveUnits(building.data.waveUnits?.toString() || "");
+      setTowerNames(building.data.towerNames || []);
+      setUnitsPerTowerArray(building.data.unitsPerTowerArray?.map(u => u.toString()) || []);
+      
+      // Load manager information
+      setManagerName(building.data.managerName || "");
+      setManagerPhone(building.data.managerPhone || "");
+      setManagerPhoneType(building.data.managerPhoneType || "mobile");
+      
+      // Load address information
+      if (building.data.address) {
+        setCep(building.data.address.cep || "");
+        setStreet(building.data.address.street || "");
+        setAddressNumber(building.data.address.number || "");
+        setNeighborhood(building.data.address.neighborhood || "");
+        setCity(building.data.address.city || "");
+        setState(building.data.address.state || "");
+      }
+      
+      // Load alternative address if exists
+      setUseSeparateAddress(building.data.useSeparateAddress || false);
+      if (building.data.alternativeAddress) {
+        setAltCep(building.data.alternativeAddress.cep || "");
+        setAltStreet(building.data.alternativeAddress.street || "");
+        setAltAddressNumber(building.data.alternativeAddress.number || "");
+        setAltNeighborhood(building.data.alternativeAddress.neighborhood || "");
+        setAltCity(building.data.alternativeAddress.city || "");
+        setAltState(building.data.alternativeAddress.state || "");
+      }
+    }
+  }, [buildings]);
 
   // CEP formatting function
   const formatCEP = (value: string) => {
@@ -301,7 +361,7 @@ export default function Buildings() {
     setUnits(units.filter(unit => unit.id !== id));
   };
 
-  const handleSelectUnit = (unit: any) => {
+  const handleSelectUnit = (unit: typeof mockUnits[0]) => {
     setSelectedUnit(unit);
     setEditOwnerName(unit.owner);
   };
@@ -359,6 +419,42 @@ export default function Buildings() {
     setQueryEditOwnerName(queryResult?.owner || "");
     setIsQueryEditingOwner(false);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={t("adminSindipro")} />
+        <div className="p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">{t("loadingBuildings")}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={t("adminSindipro")} />
+        <div className="p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <p className="text-destructive mb-2">{t("errorLoadingBuildings")}</p>
+                <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : 'Unknown error'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -471,35 +567,49 @@ export default function Buildings() {
           </TabsContent>
 
           <TabsContent value="unit-management" className="space-y-6">
-            <UnitManagement
-              buildingType={buildingType}
-              numberOfTowers={numberOfTowers}
-              apartmentsPerTower={apartmentsPerTower}
-              unitsPerTower={unitsPerTower}
-              residentialUnits={residentialUnits}
-              commercialUnits={commercialUnits}
-              studioUnits={studioUnits}
-              towerNames={towerNames}
-              units={units}
-              setUnits={setUnits}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedUnit={selectedUnit}
-              setSelectedUnit={setSelectedUnit}
-              isEditingOwner={isEditingOwner}
-              setIsEditingOwner={setIsEditingOwner}
-              editOwnerName={editOwnerName}
-              setEditOwnerName={setEditOwnerName}
-              newUnit={newUnit}
-              setNewUnit={setNewUnit}
-              handleAddUnit={handleAddUnit}
-              handleDeleteUnit={handleDeleteUnit}
-              handleSelectUnit={handleSelectUnit}
-              handleSaveOwnerName={handleSaveOwnerName}
-              handleCancelEdit={handleCancelEdit}
-              formatArea={formatArea}
-              formatIdealFraction={formatIdealFraction}
-            />
+            {!hasBuildingData ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-8">
+                    <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-lg font-semibold mb-2">{t("noBuildingRegistered")}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("registerBuildingFirst")}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <UnitManagement
+                buildingType={buildingType}
+                numberOfTowers={numberOfTowers}
+                apartmentsPerTower={apartmentsPerTower}
+                unitsPerTower={unitsPerTower}
+                residentialUnits={residentialUnits}
+                commercialUnits={commercialUnits}
+                studioUnits={studioUnits}
+                towerNames={towerNames}
+                units={units}
+                setUnits={setUnits}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                selectedUnit={selectedUnit}
+                setSelectedUnit={setSelectedUnit}
+                isEditingOwner={isEditingOwner}
+                setIsEditingOwner={setIsEditingOwner}
+                editOwnerName={editOwnerName}
+                setEditOwnerName={setEditOwnerName}
+                newUnit={newUnit}
+                setNewUnit={setNewUnit}
+                handleAddUnit={handleAddUnit}
+                handleDeleteUnit={handleDeleteUnit}
+                handleSelectUnit={handleSelectUnit}
+                handleSaveOwnerName={handleSaveOwnerName}
+                handleCancelEdit={handleCancelEdit}
+                formatArea={formatArea}
+                formatIdealFraction={formatIdealFraction}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="unit-query" className="space-y-6">
