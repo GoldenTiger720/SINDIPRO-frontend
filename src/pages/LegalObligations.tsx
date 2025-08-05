@@ -270,21 +270,25 @@ export default function LegalObligations() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="templates" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Template Matrix
+              <TabsTrigger value="templates" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm px-1 sm:px-3 py-1 sm:py-2">
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Template Matrix</span>
+                <span className="sm:hidden leading-tight">Templates</span>
               </TabsTrigger>
-              <TabsTrigger value="buildings" className="flex items-center gap-2">
-                <Building2 className="w-4 h-4" />
-                Building Setup
+              <TabsTrigger value="buildings" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm px-1 sm:px-3 py-1 sm:py-2">
+                <Building2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Building Setup</span>
+                <span className="sm:hidden leading-tight">Buildings</span>
               </TabsTrigger>
-              <TabsTrigger value="agenda" className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Agenda
+              <TabsTrigger value="agenda" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm px-1 sm:px-3 py-1 sm:py-2">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Agenda</span>
+                <span className="sm:hidden leading-tight">Agenda</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="w-4 h-4" />
-                Notifications
+              <TabsTrigger value="notifications" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm px-1 sm:px-3 py-1 sm:py-2">
+                <Bell className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Notifications</span>
+                <span className="sm:hidden leading-tight">Notify</span>
               </TabsTrigger>
             </TabsList>
 
@@ -292,70 +296,75 @@ export default function LegalObligations() {
             <TabsContent value="templates" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      Obligation Template Matrix
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-sm sm:text-lg">Obligation Template Matrix</span>
                     </CardTitle>
-                    <Button onClick={() => setIsCreatingTemplate(true)} className="gap-2">
-                      <Plus className="w-4 h-4" />
-                      Add Template
+                    <Button onClick={() => setIsCreatingTemplate(true)} className="gap-2 w-full sm:w-auto text-sm">
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Add Template</span>
+                      <span className="sm:hidden">Add</span>
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                     Manage the master list of legal obligations that can be assigned to buildings based on their type.
                   </p>
                   
                   <div className="space-y-4">
                     {obligationTemplates.map((template) => (
-                      <div key={template.id} className="p-4 border rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h3 className="font-semibold">{template.name}</h3>
-                              <Badge variant={template.active ? "default" : "secondary"}>
+                      <div key={template.id} className="p-3 sm:p-4 border rounded-lg">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                          <div className="flex-1 w-full">
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
+                              <h3 className="text-sm sm:text-base font-semibold break-words">{template.name}</h3>
+                              <Badge variant={template.active ? "default" : "secondary"} className="text-xs">
                                 {template.active ? "Active" : "Inactive"}
                               </Badge>
                               {template.buildingTypes.map(type => (
-                                <Badge key={type} variant="outline">
+                                <Badge key={type} variant="outline" className="text-xs">
                                   {type === "residential" ? "Residential" : "Commercial"}
                                 </Badge>
                               ))}
                             </div>
-                            <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words">{template.description}</p>
                             {template.conditions && (
-                              <p className="text-sm text-orange-600 mb-2">
+                              <p className="text-xs sm:text-sm text-orange-600 mb-2 break-words">
                                 <strong>Conditions:</strong> {template.conditions}
                               </p>
                             )}
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               <span>Frequency: {template.frequency}</span>
                               <span>Alert: {template.daysBeforeExpiry} days before</span>
-                              <span>Quotes: {template.requiresQuote ? "Required" : "Not required"}</span>
+                              <span className="break-words">Quotes: {template.requiresQuote ? "Required" : "Not required"}</span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 sm:gap-2 w-full sm:w-auto justify-end">
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
                               onClick={() => {
                                 setEditingTemplate(template);
                                 setNewTemplate({ ...template });
                                 setIsCreatingTemplate(true);
                               }}
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline ml-1">Edit</span>
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
+                              className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
                               onClick={() => {
                                 setObligationTemplates(prev => prev.filter(t => t.id !== template.id));
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden sm:inline ml-1">Delete</span>
                             </Button>
                           </div>
                         </div>
@@ -372,35 +381,35 @@ export default function LegalObligations() {
                 {/* Building Selection */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5" />
-                      Select Building
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-sm sm:text-lg">Select Building</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {buildings.map((building) => (
                       <div
                         key={building.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        className={`p-3 sm:p-4 border rounded-lg cursor-pointer transition-colors ${
                           selectedBuilding?.id === building.id ? "border-primary bg-primary/10" : "hover:bg-muted/50"
                         }`}
                         onClick={() => setSelectedBuilding(building)}
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold">{building.name}</h3>
-                            <p className="text-sm text-muted-foreground">{building.address}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                          <div className="flex-1 w-full">
+                            <h3 className="text-sm sm:text-base font-semibold break-words">{building.name}</h3>
+                            <p className="text-xs sm:text-sm text-muted-foreground break-words">{building.address}</p>
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-2">
+                              <Badge variant="outline" className="text-xs">
                                 {building.type === "residential" ? "Residential" : "Commercial"}
                               </Badge>
                               {building.hasAirConditioning && (
-                                <Badge variant="secondary">Air Conditioning</Badge>
+                                <Badge variant="secondary" className="text-xs">Air Conditioning</Badge>
                               )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">
+                          <div className="text-right w-full sm:w-auto">
+                            <p className="text-xs sm:text-sm font-medium">
                               {getBuildingObligations(building.id).length} obligations
                             </p>
                           </div>
@@ -414,13 +423,13 @@ export default function LegalObligations() {
                 {selectedBuilding && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Check className="w-5 h-5" />
-                        Assign Obligations
+                      <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span className="text-sm sm:text-lg">Assign Obligations</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-sm text-muted-foreground mb-4">
+                      <div className="text-xs sm:text-sm text-muted-foreground mb-4 break-words">
                         Available obligations for <strong>{selectedBuilding.name}</strong> ({selectedBuilding.type}):
                       </div>
                       
@@ -505,9 +514,9 @@ export default function LegalObligations() {
               {selectedBuilding && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" />
-                      Current Obligations for {selectedBuilding.name}
+                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-sm sm:text-lg break-words">Current Obligations for {selectedBuilding.name}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -518,24 +527,25 @@ export default function LegalObligations() {
                         const statusColor = getStatusColor(bo.status, daysUntil);
                         
                         return (
-                          <div key={bo.id} className="p-4 border rounded-lg">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-medium">{template?.name}</h4>
+                          <div key={bo.id} className="p-3 sm:p-4 border rounded-lg">
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                              <div className="flex-1 w-full">
+                                <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
+                                  <h4 className="text-sm sm:text-base font-medium break-words">{template?.name}</h4>
                                   <Badge
                                     variant={statusColor === "red" ? "destructive" : statusColor === "yellow" ? "secondary" : "default"}
+                                    className="text-xs"
                                   >
                                     {daysUntil <= 0 ? "Overdue" : daysUntil <= 7 ? "Urgent" : daysUntil <= 30 ? "Soon" : "Active"}
                                   </Badge>
                                   {bo.status === "pending_quotes" && (
-                                    <Badge variant="outline">Quotes Requested</Badge>
+                                    <Badge variant="outline" className="text-xs">Quotes Requested</Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-muted-foreground mb-2">{template?.description}</p>
-                                <div className="flex items-center gap-4 text-sm">
+                                <p className="text-xs sm:text-sm text-muted-foreground mb-2 break-words">{template?.description}</p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm">
                                   <span>Due: {new Date(bo.nextDueDate).toLocaleDateString()}</span>
-                                  <span className={`font-medium ${
+                                  <span className={`font-medium break-words ${
                                     daysUntil <= 0 ? "text-red-600" :
                                     daysUntil <= 7 ? "text-red-500" :
                                     daysUntil <= 30 ? "text-yellow-600" : "text-green-600"
@@ -550,26 +560,29 @@ export default function LegalObligations() {
                                   </div>
                                 </div>
                                 {bo.notes && (
-                                  <p className="text-sm text-muted-foreground mt-2">
+                                  <p className="text-xs sm:text-sm text-muted-foreground mt-2 break-words">
                                     <strong>Notes:</strong> {bo.notes}
                                   </p>
                                 )}
                               </div>
-                              <div className="flex gap-2">
+                              <div className="flex gap-1 sm:gap-2 w-full sm:w-auto justify-end">
                                 {template?.requiresQuote && bo.status === "active" && daysUntil <= 30 && (
-                                  <Button size="sm" variant="outline" className="gap-2">
+                                  <Button size="sm" variant="outline" className="gap-1 text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3">
                                     <Mail className="w-3 h-3" />
-                                    Request Quotes
+                                    <span className="hidden sm:inline">Request Quotes</span>
+                                    <span className="sm:hidden">Quote</span>
                                   </Button>
                                 )}
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
                                   onClick={() => {
                                     setBuildingObligations(prev => prev.filter(item => item.id !== bo.id));
                                   }}
                                 >
                                   <Trash2 className="w-3 h-3" />
+                                  <span className="hidden sm:inline ml-1 text-xs sm:text-sm">Delete</span>
                                 </Button>
                               </div>
                             </div>
