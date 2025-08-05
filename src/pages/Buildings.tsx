@@ -171,48 +171,63 @@ export default function Buildings() {
       // Use the first building data (or implement a building selector)
       const building = buildings[0];
       setHasBuildingData(true);
-      setSelectedBuildingId(building.id);
+      setSelectedBuildingId(building.id.toString());
       
       // Load building information
-      setBuildingName(building.data.buildingName || "");
-      setCnpj(building.data.cnpj || "");
-      setBuildingType(building.data.buildingType || "");
-      setTotalUnits(building.data.totalUnits?.toString() || "");
-      setNumberOfTowers(building.data.numberOfTowers?.toString() || "");
-      setApartmentsPerTower(building.data.apartmentsPerTower?.toString() || "");
-      setUnitsPerTower(building.data.unitsPerTower?.toString() || "");
-      setResidentialUnits(building.data.residentialUnits?.toString() || "");
-      setCommercialUnits(building.data.commercialUnits?.toString() || "");
-      setStudioUnits(building.data.studioUnits?.toString() || "");
-      setNonResidentialUnits(building.data.nonResidentialUnits?.toString() || "");
-      setWaveUnits(building.data.waveUnits?.toString() || "");
-      setTowerNames(building.data.towerNames || []);
-      setUnitsPerTowerArray(building.data.unitsPerTowerArray?.map(u => u.toString()) || []);
+      setBuildingName(building.building_name || "");
+      setCnpj(building.cnpj || "");
+      setBuildingType(building.building_type || "");
+      setNumberOfTowers(building.number_of_towers?.toString() || "");
+      setApartmentsPerTower(building.apartments_per_tower?.toString() || "");
+      setResidentialUnits(building.residential_units?.toString() || "");
+      setCommercialUnits(building.commercial_units?.toString() || "");
+      setStudioUnits(building.studio_units?.toString() || "");
+      setNonResidentialUnits(building.non_residential_units?.toString() || "");
+      setWaveUnits(building.wave_units?.toString() || "");
+      
+      // Extract tower names and units per tower from towers array
+      if (building.towers && building.towers.length > 0) {
+        const towerNamesList = building.towers.map(tower => tower.name);
+        const unitsPerTowerList = building.towers.map(tower => tower.units_per_tower.toString());
+        setTowerNames(towerNamesList);
+        setUnitsPerTowerArray(unitsPerTowerList);
+        
+        // Calculate total units if not provided
+        if (!building.residential_units && !building.commercial_units) {
+          const total = building.towers.reduce((sum, tower) => sum + tower.units_per_tower, 0);
+          setTotalUnits(total.toString());
+        } else {
+          const total = (building.residential_units || 0) + (building.commercial_units || 0) + 
+                       (building.studio_units || 0) + (building.non_residential_units || 0) + 
+                       (building.wave_units || 0);
+          setTotalUnits(total.toString());
+        }
+      }
       
       // Load manager information
-      setManagerName(building.data.managerName || "");
-      setManagerPhone(building.data.managerPhone || "");
-      setManagerPhoneType(building.data.managerPhoneType || "mobile");
+      setManagerName(building.manager_name || "");
+      setManagerPhone(building.manager_phone || "");
+      setManagerPhoneType(building.manager_phone_type || "mobile");
       
       // Load address information
-      if (building.data.address) {
-        setCep(building.data.address.cep || "");
-        setStreet(building.data.address.street || "");
-        setAddressNumber(building.data.address.number || "");
-        setNeighborhood(building.data.address.neighborhood || "");
-        setCity(building.data.address.city || "");
-        setState(building.data.address.state || "");
+      if (building.address) {
+        setCep(building.address.cep || "");
+        setStreet(building.address.street || "");
+        setAddressNumber(building.address.number || "");
+        setNeighborhood(building.address.neighborhood || "");
+        setCity(building.address.city || "");
+        setState(building.address.state || "");
       }
       
       // Load alternative address if exists
-      setUseSeparateAddress(building.data.useSeparateAddress || false);
-      if (building.data.alternativeAddress) {
-        setAltCep(building.data.alternativeAddress.cep || "");
-        setAltStreet(building.data.alternativeAddress.street || "");
-        setAltAddressNumber(building.data.alternativeAddress.number || "");
-        setAltNeighborhood(building.data.alternativeAddress.neighborhood || "");
-        setAltCity(building.data.alternativeAddress.city || "");
-        setAltState(building.data.alternativeAddress.state || "");
+      setUseSeparateAddress(building.use_separate_address || false);
+      if (building.alternative_address) {
+        setAltCep(building.alternative_address.cep || "");
+        setAltStreet(building.alternative_address.street || "");
+        setAltAddressNumber(building.alternative_address.number || "");
+        setAltNeighborhood(building.alternative_address.neighborhood || "");
+        setAltCity(building.alternative_address.city || "");
+        setAltState(building.alternative_address.state || "");
       }
     }
   }, [buildings]);

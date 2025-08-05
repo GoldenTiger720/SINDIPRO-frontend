@@ -13,19 +13,42 @@ export interface Address {
   state: string;
 }
 
-export interface TowerConfig {
+export interface Tower {
   name: string;
-  units: number;
+  units_per_tower: number;
+  unit_distribution: {
+    residential?: number;
+    commercial?: number;
+    studio?: number;
+    non_residential?: number;
+    wave?: number;
+  } | null;
 }
 
-export interface UnitDistribution {
-  residential?: number;
-  commercial?: number;
-  studio?: number;
-  nonResidential?: number;
-  wave?: number;
+export interface BuildingResponse {
+  id: number;
+  building_name: string;
+  building_type: 'residential' | 'commercial' | 'mixed';
+  cnpj: string;
+  manager_name: string;
+  manager_phone: string;
+  manager_phone_type: 'mobile' | 'landline';
+  address: Address;
+  use_separate_address: boolean;
+  alternative_address: Address | null;
+  number_of_towers: number;
+  apartments_per_tower: number | null;
+  residential_units: number | null;
+  commercial_units: number | null;
+  non_residential_units: number | null;
+  studio_units: number | null;
+  wave_units: number | null;
+  towers: Tower[];
+  created_at: string;
+  updated_at: string;
 }
 
+// Keep the camelCase interface for internal use
 export interface BuildingData {
   buildingName: string;
   cnpj: string;
@@ -56,18 +79,10 @@ export interface BuildingData {
   useSeparateAddress: boolean;
 }
 
-export interface BuildingResponse {
-  id: string;
-  message: string;
-  data: BuildingData;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface ApiErrorData {
   message: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 // API Configuration
@@ -125,7 +140,7 @@ class ApiClient {
   }
 
   // POST request
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -133,7 +148,7 @@ class ApiClient {
   }
 
   // PUT request
-  async put<T>(endpoint: string, data: any): Promise<T> {
+  async put<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -149,9 +164,9 @@ class ApiClient {
 // Custom error class for API errors
 class ApiError extends Error {
   public code?: string;
-  public details?: any;
+  public details?: unknown;
 
-  constructor({ message, code, details }: { message: string; code?: string; details?: any }) {
+  constructor({ message, code, details }: { message: string; code?: string; details?: unknown }) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
