@@ -190,7 +190,7 @@ export default function LegalObligations() {
   const getDaysUntilDue = (dueDate) => {
     const today = new Date();
     const due = new Date(dueDate);
-    const diffTime = due - today;
+    const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
@@ -348,7 +348,10 @@ export default function LegalObligations() {
                               className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
                               onClick={() => {
                                 setEditingTemplate(template);
-                                setNewTemplate({ ...template });
+                                setNewTemplate({ 
+                                  ...template, 
+                                  conditions: template.conditions ?? "" 
+                                });
                                 setIsCreatingTemplate(true);
                               }}
                             >
@@ -902,7 +905,7 @@ export default function LegalObligations() {
               <Checkbox
                 id="requires-quote"
                 checked={newTemplate.requiresQuote}
-                onCheckedChange={(checked) => setNewTemplate({ ...newTemplate, requiresQuote: checked })}
+                onCheckedChange={(checked) => setNewTemplate({ ...newTemplate, requiresQuote: Boolean(checked) })}
               />
               <Label htmlFor="requires-quote">Requires Quote Request</Label>
             </div>
@@ -911,7 +914,7 @@ export default function LegalObligations() {
               <Checkbox
                 id="active"
                 checked={newTemplate.active}
-                onCheckedChange={(checked) => setNewTemplate({ ...newTemplate, active: checked })}
+                onCheckedChange={(checked) => setNewTemplate({ ...newTemplate, active: Boolean(checked) })}
               />
               <Label htmlFor="active">Active Template</Label>
             </div>

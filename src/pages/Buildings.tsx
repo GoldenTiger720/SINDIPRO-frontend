@@ -11,6 +11,8 @@ import { Building2, Plus, Calculator, Home, Users, Trash2, Edit, Search, Eye } f
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { buildingApi, BuildingData, ApiError } from "@/lib/building";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -93,6 +95,7 @@ const mockUnits = [
 
 export default function Buildings() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [units, setUnits] = useState(mockUnits);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUnit, setSelectedUnit] = useState<any>(null);
@@ -130,6 +133,26 @@ export default function Buildings() {
   
   // Mixed building address state
   const [useSeparateAddress, setUseSeparateAddress] = useState(false);
+  
+  // Additional form states for Building Information
+  const [buildingName, setBuildingName] = useState("");
+  const [totalUnits, setTotalUnits] = useState("");
+  const [street, setStreet] = useState("");
+  const [addressNumber, setAddressNumber] = useState("");
+  const [neighborhood, setNeighborhood] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  
+  // Alternative address states for mixed buildings
+  const [altStreet, setAltStreet] = useState("");
+  const [altAddressNumber, setAltAddressNumber] = useState("");
+  const [altCep, setAltCep] = useState("");
+  const [altNeighborhood, setAltNeighborhood] = useState("");
+  const [altCity, setAltCity] = useState("");
+  const [altState, setAltState] = useState("");
+  
+  // Loading state for API call
+  const [isSaving, setIsSaving] = useState(false);
 
   // CEP formatting function
   const formatCEP = (value: string) => {
@@ -338,6 +361,108 @@ export default function Buildings() {
     setQueryEditOwnerName(queryResult?.owner || "");
     setIsQueryEditingOwner(false);
   };
+  
+  // Handle Save Settings API call using professional API service
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    
+    try {
+      // Collect all form data using the BuildingData interface
+      const buildingData: BuildingData = {
+        buildingName,
+        cnpj,
+        buildingType: buildingType as 'residential' | 'commercial' | 'mixed',
+        totalUnits: totalUnits ? parseInt(totalUnits) : undefined,
+        numberOfTowers: numberOfTowers ? parseInt(numberOfTowers) : undefined,
+        apartmentsPerTower: apartmentsPerTower ? parseInt(apartmentsPerTower) : undefined,
+        unitsPerTower: unitsPerTower ? parseInt(unitsPerTower) : undefined,
+        residentialUnits: residentialUnits ? parseInt(residentialUnits) : undefined,
+        commercialUnits: commercialUnits ? parseInt(commercialUnits) : undefined,
+        studioUnits: studioUnits ? parseInt(studioUnits) : undefined,
+        nonResidentialUnits: nonResidentialUnits ? parseInt(nonResidentialUnits) : undefined,
+        waveUnits: waveUnits ? parseInt(waveUnits) : undefined,
+        towerNames: towerNames.filter(name => name.trim() !== ""),
+        unitsPerTowerArray: unitsPerTowerArray.map(units => units ? parseInt(units) : 0),
+        managerName,
+        managerPhone,
+        managerPhoneType: managerPhoneType as 'mobile' | 'landline',
+        address: {
+          street,
+          number: addressNumber,
+          cep,
+          neighborhood,
+          city,
+          state
+        },
+        // Include alternative address if mixed building and separate address is used
+        ...(buildingType === "mixed" && useSeparateAddress && {
+          alternativeAddress: {
+            street: altStreet,
+            number: altAddressNumber,
+            cep: altCep,
+            neighborhood: altNeighborhood,
+            city: altCity,
+            state: altState
+          }
+        }),
+        useSeparateAddress: buildingType === "mixed" ? useSeparateAddress : false
+      };
+      
+      // Use the professional API service
+      const result = await buildingApi.createBuilding(buildingData);
+      
+      console.log('Building data saved successfully:', result);
+      
+      // Show success toast notification
+      toast({
+        title: "Success!",
+        description: `Building information saved successfully! Building ID: ${result.id}`,
+        variant: "default",
+      });
+      
+      // Optionally reset form or redirect
+      // resetForm();
+      
+    } catch (error) {
+      console.error('Error saving building data:', error);
+      
+      if (error instanceof ApiError) {
+        // Handle specific API errors with toast notifications
+        switch (error.code) {
+          case 'VALIDATION_ERROR':
+            console.log('Validation error details:', error.details);
+            toast({
+              title: "Validation Error",
+              description: error.message,
+              variant: "destructive",
+            });
+            break;
+          case 'NETWORK_ERROR':
+            toast({
+              title: "Network Error",
+              description: "Please check your connection and try again.",
+              variant: "destructive",
+            });
+            break;
+          default:
+            toast({
+              title: "Error",
+              description: error.message || "An error occurred while saving. Please try again.",
+              variant: "destructive",
+            });
+        }
+      } else {
+        // Handle unexpected errors
+        toast({
+          title: "Unexpected Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -380,7 +505,12 @@ export default function Buildings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="building-name">{t("buildingName")}</Label>
-                    <Input id="building-name" placeholder={t("enterBuildingName")} />
+                    <Input 
+                      id="building-name" 
+                      placeholder={t("enterBuildingName")} 
+                      value={buildingName}
+                      onChange={(e) => setBuildingName(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="cnpj">{t("cnpj")} *</Label>
@@ -407,7 +537,13 @@ export default function Buildings() {
                   </div>
                   <div>
                     <Label htmlFor="total-units">{t("numberOfUnits")}</Label>
-                    <Input id="total-units" type="number" placeholder="0" />
+                    <Input 
+                      id="total-units" 
+                      type="number" 
+                      placeholder="0" 
+                      value={totalUnits}
+                      onChange={(e) => setTotalUnits(e.target.value)}
+                    />
                   </div>
                 </div>
 
@@ -837,11 +973,21 @@ export default function Buildings() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
                       <Label htmlFor="street">{t("street")} *</Label>
-                      <Input id="street" placeholder={t("enterStreet")} />
+                      <Input 
+                        id="street" 
+                        placeholder={t("enterStreet")} 
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="address-number">{t("addressNumber")} *</Label>
-                      <Input id="address-number" placeholder={t("enterAddressNumber")} />
+                      <Input 
+                        id="address-number" 
+                        placeholder={t("enterAddressNumber")} 
+                        value={addressNumber}
+                        onChange={(e) => setAddressNumber(e.target.value)}
+                      />
                     </div>
                   </div>
                   
@@ -859,7 +1005,12 @@ export default function Buildings() {
                     </div>
                     <div>
                       <Label htmlFor="neighborhood">{t("neighborhood")} *</Label>
-                      <Input id="neighborhood" placeholder={t("enterNeighborhood")} />
+                      <Input 
+                        id="neighborhood" 
+                        placeholder={t("enterNeighborhood")} 
+                        value={neighborhood}
+                        onChange={(e) => setNeighborhood(e.target.value)}
+                      />
                     </div>
                   </div>
                   
@@ -867,11 +1018,21 @@ export default function Buildings() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="city">{t("city")} *</Label>
-                      <Input id="city" placeholder={t("enterCity")} />
+                      <Input 
+                        id="city" 
+                        placeholder={t("enterCity")} 
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="state">{t("state")} *</Label>
-                      <Input id="state" placeholder={t("enterState")} />
+                      <Input 
+                        id="state" 
+                        placeholder={t("enterState")} 
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                      />
                     </div>
                   </div>
                   
@@ -884,11 +1045,21 @@ export default function Buildings() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2">
                           <Label htmlFor="alt-street">{t("street")}</Label>
-                          <Input id="alt-street" placeholder={t("enterStreet")} />
+                          <Input 
+                            id="alt-street" 
+                            placeholder={t("enterStreet")} 
+                            value={altStreet}
+                            onChange={(e) => setAltStreet(e.target.value)}
+                          />
                         </div>
                         <div>
                           <Label htmlFor="alt-address-number">{t("addressNumber")}</Label>
-                          <Input id="alt-address-number" placeholder={t("enterAddressNumber")} />
+                          <Input 
+                            id="alt-address-number" 
+                            placeholder={t("enterAddressNumber")} 
+                            value={altAddressNumber}
+                            onChange={(e) => setAltAddressNumber(e.target.value)}
+                          />
                         </div>
                       </div>
                       
@@ -896,11 +1067,22 @@ export default function Buildings() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="alt-cep">{t("cep")}</Label>
-                          <Input id="alt-cep" placeholder={t("enterCEP")} maxLength={9} />
+                          <Input 
+                            id="alt-cep" 
+                            placeholder={t("enterCEP")} 
+                            maxLength={9} 
+                            value={altCep}
+                            onChange={(e) => setAltCep(formatCEP(e.target.value))}
+                          />
                         </div>
                         <div>
                           <Label htmlFor="alt-neighborhood">{t("neighborhood")}</Label>
-                          <Input id="alt-neighborhood" placeholder={t("enterNeighborhood")} />
+                          <Input 
+                            id="alt-neighborhood" 
+                            placeholder={t("enterNeighborhood")} 
+                            value={altNeighborhood}
+                            onChange={(e) => setAltNeighborhood(e.target.value)}
+                          />
                         </div>
                       </div>
                       
@@ -908,20 +1090,34 @@ export default function Buildings() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="alt-city">{t("city")}</Label>
-                          <Input id="alt-city" placeholder={t("enterCity")} />
+                          <Input 
+                            id="alt-city" 
+                            placeholder={t("enterCity")} 
+                            value={altCity}
+                            onChange={(e) => setAltCity(e.target.value)}
+                          />
                         </div>
                         <div>
                           <Label htmlFor="alt-state">{t("state")}</Label>
-                          <Input id="alt-state" placeholder={t("enterState")} />
+                          <Input 
+                            id="alt-state" 
+                            placeholder={t("enterState")} 
+                            value={altState}
+                            onChange={(e) => setAltState(e.target.value)}
+                          />
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <Button className="w-full gap-2">
+                <Button 
+                  className="w-full gap-2" 
+                  onClick={handleSaveSettings}
+                  disabled={isSaving}
+                >
                   <Plus className="w-4 h-4" />
-                  {t("saveSettings")}
+                  {isSaving ? "Saving..." : t("saveSettings")}
                 </Button>
               </CardContent>
             </Card>
