@@ -48,6 +48,41 @@ export interface BuildingResponse {
   updated_at: string;
 }
 
+export interface UnitData {
+  number: string;
+  block_name: string;
+  floor: number;
+  area: number;
+  key_delivery: 'yes' | 'no';
+  owner: string;
+  owner_phone: string;
+  identification: 'residential' | 'commercial' | 'studio' | 'non-residential' | 'wave';
+  has_deposit: 'yes' | 'no';
+  deposit_location?: string;
+  parking_spaces: number;
+  ideal_fraction: number;
+  status: 'occupied' | 'vacant' | 'maintenance';
+}
+
+export interface UnitResponse {
+  id: number;
+  number: string;
+  block_name: string;
+  floor: number;
+  area: number;
+  key_delivery: 'yes' | 'no';
+  owner: string;
+  owner_phone: string;
+  identification: 'residential' | 'commercial' | 'studio' | 'non-residential' | 'wave';
+  has_deposit: 'yes' | 'no';
+  deposit_location: string | null;
+  parking_spaces: number;
+  ideal_fraction: number;
+  status: 'occupied' | 'vacant' | 'maintenance';
+  created_at: string;
+  updated_at: string;
+}
+
 // Keep the camelCase interface for internal use
 export interface BuildingData {
   buildingName: string;
@@ -262,6 +297,25 @@ export const buildingApi = {
       return await apiClient.delete<{ message: string }>(`${BUILDINGS_ENDPOINT}${id}/`);
     } catch (error) {
       console.error(`Error deleting building ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new unit for a specific building
+   * @param buildingId - Building ID (tower ID from the dropdown)
+   * @param unitData - The unit data to create
+   * @returns Promise<UnitResponse>
+   */
+  async createUnit(buildingId: number, unitData: UnitData): Promise<UnitResponse> {
+    try {
+      const response = await apiClient.post<UnitResponse>(
+        `${BUILDINGS_ENDPOINT}${buildingId}/units/`,
+        unitData
+      );
+      return response;
+    } catch (error) {
+      console.error(`Error creating unit for building ${buildingId}:`, error);
       throw error;
     }
   },

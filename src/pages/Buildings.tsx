@@ -5,7 +5,8 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useBuildings } from "@/hooks/useBuildings";
+import { useBuildings, useCreateUnit } from "@/hooks/useBuildings";
+import { UnitData } from "@/lib/building";
 
 // Import the new components
 import BuildingInformation from "@/components/buildings/BuildingInformation";
@@ -97,6 +98,7 @@ export default function Buildings() {
   
   // Fetch buildings data using ReactQuery
   const { data: buildings = [], isLoading, error } = useBuildings();
+  const createUnitMutation = useCreateUnit();
   
   // Units state
   const [units, setUnits] = useState(mockUnits);
@@ -303,26 +305,55 @@ export default function Buildings() {
     status: "vacant"
   });
 
-  const handleAddUnit = () => {
+  const handleAddUnit = async () => {
     const depositRequired = newUnit.hasDeposit === "yes" ? newUnit.depositLocation : true;
-    if (newUnit.number && newUnit.owner && newUnit.ownerPhone && (parseInt(numberOfTowers) > 1 ? newUnit.blockName : true) && newUnit.floor && newUnit.area && depositRequired && newUnit.parkingSpaces && newUnit.idealFraction) {
-      const unit = {
-        id: Date.now(),
-        number: newUnit.number,
-        blockName: newUnit.blockName,
-        floor: parseInt(newUnit.floor),
-        area: parseFloat(newUnit.area),
-        keyDelivery: newUnit.keyDelivery,
-        owner: newUnit.owner,
-        ownerPhone: newUnit.ownerPhone,
-        identification: newUnit.identification,
-        hasDeposit: newUnit.hasDeposit,
-        depositLocation: newUnit.hasDeposit === "yes" ? newUnit.depositLocation : "",
-        parkingSpaces: parseInt(newUnit.parkingSpaces),
-        idealFraction: parseFloat(newUnit.idealFraction),
-        status: newUnit.status
-      };
-      setUnits([...units, unit]);
+    
+    // Validate required fields
+    if (!newUnit.number || !newUnit.owner || !newUnit.ownerPhone || !newUnit.blockName || !newUnit.floor || !newUnit.area || !depositRequired || !newUnit.parkingSpaces || !newUnit.idealFraction) {
+      toast({
+        title: t("error"),
+        description: t("fillAllRequiredFields"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Find the tower ID based on selected tower name
+    const selectedTower = availableTowers.find(tower => tower.name === newUnit.blockName);
+    if (!selectedTower) {
+      toast({
+        title: t("error"),
+        description: t("selectedTowerNotFound"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare unit data for API
+    const unitData: UnitData = {
+      number: newUnit.number,
+      block_name: newUnit.blockName,
+      floor: parseInt(newUnit.floor),
+      area: parseFloat(newUnit.area),
+      key_delivery: newUnit.keyDelivery as 'yes' | 'no',
+      owner: newUnit.owner,
+      owner_phone: newUnit.ownerPhone,
+      identification: newUnit.identification as 'residential' | 'commercial' | 'studio' | 'non-residential' | 'wave',
+      has_deposit: newUnit.hasDeposit as 'yes' | 'no',
+      deposit_location: newUnit.hasDeposit === "yes" ? newUnit.depositLocation : undefined,
+      parking_spaces: parseInt(newUnit.parkingSpaces),
+      ideal_fraction: parseFloat(newUnit.idealFraction),
+      status: newUnit.status as 'occupied' | 'vacant' | 'maintenance'
+    };
+
+    try {
+      // Send POST request to create unit
+      await createUnitMutation.mutateAsync({
+        buildingId: selectedTower.buildingId,
+        unitData: unitData
+      });
+
+      // Reset form on success
       setNewUnit({
         number: "",
         blockName: "",
@@ -338,6 +369,9 @@ export default function Buildings() {
         idealFraction: "",
         status: "vacant"
       });
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error('Failed to create unit:', error);
     }
   };
 

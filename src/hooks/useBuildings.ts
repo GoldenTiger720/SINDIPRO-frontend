@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import buildingApi, { BuildingData, BuildingResponse } from '@/lib/building';
+import buildingApi, { BuildingData, BuildingResponse, UnitData, UnitResponse } from '@/lib/building';
 import { useToast } from '@/hooks/use-toast';
 
 // Query key for buildings
@@ -94,6 +94,32 @@ export const useDeleteBuilding = () => {
     },
     onError: (error) => {
       const errorMessage = error instanceof Error ? error.message : "Failed to delete building";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook to create a unit
+export const useCreateUnit = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: ({ buildingId, unitData }: { buildingId: number; unitData: UnitData }) => 
+      buildingApi.createUnit(buildingId, unitData),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: BUILDINGS_QUERY_KEY });
+      toast({
+        title: "Success",
+        description: "Unit created successfully",
+      });
+    },
+    onError: (error) => {
+      const errorMessage = error instanceof Error ? error.message : "Failed to create unit";
       toast({
         title: "Error",
         description: errorMessage,

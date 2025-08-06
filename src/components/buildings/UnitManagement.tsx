@@ -159,7 +159,7 @@ export default function UnitManagement(props: UnitManagementProps) {
             {/* Second row - Area and key delivery */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="unit-area">{t("area")} (m²) *</Label>
+                <Label htmlFor="unit-area">{t("area")}*</Label>
                 <Input 
                   id="unit-area" 
                   type="number" 
@@ -303,7 +303,7 @@ export default function UnitManagement(props: UnitManagementProps) {
             {/* Sixth row - Ideal fraction and status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="ideal-fraction">{t("idealFraction")} (%) *</Label>
+                <Label htmlFor="ideal-fraction">{t("idealFraction")} *</Label>
                 <Input 
                   id="ideal-fraction" 
                   type="number" 
