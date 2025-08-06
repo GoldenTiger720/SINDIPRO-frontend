@@ -42,6 +42,7 @@ interface NewUnit {
 }
 
 interface Tower {
+  id: number;
   name: string;
   units: number;
   buildingName: string;
@@ -135,8 +136,8 @@ export default function UnitManagement(props: UnitManagementProps) {
                       <SelectValue placeholder={t("selectTower")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {props.availableTowers.map((tower, index) => (
-                        <SelectItem key={index} value={tower.name}>
+                      {props.availableTowers.map((tower) => (
+                        <SelectItem key={tower.id} value={tower.id.toString()}>
                           {tower.name}
                         </SelectItem>
                       ))}

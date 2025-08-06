@@ -141,7 +141,7 @@ export default function Buildings() {
   // State to track if building data is loaded (only for towers in Unit Management)
   const [hasBuildingData, setHasBuildingData] = useState(false);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
-  const [availableTowers, setAvailableTowers] = useState<{name: string, units: number, buildingName: string, buildingId: number}[]>([]);
+  const [availableTowers, setAvailableTowers] = useState<{id: number, name: string, units: number, buildingName: string, buildingId: number}[]>([]);
   
   // Manager information state
   const [managerName, setManagerName] = useState("");
@@ -174,13 +174,14 @@ export default function Buildings() {
       setHasBuildingData(true);
       
       // Collect all towers from all buildings
-      const allTowers: {name: string, units: number, buildingName: string, buildingId: number}[] = [];
+      const allTowers: {id: number, name: string, units: number, buildingName: string, buildingId: number}[] = [];
       const allTowerNames: string[] = [];
       
       buildings.forEach(building => {
         if (building.towers && building.towers.length > 0) {
           building.towers.forEach(tower => {
             const towerData = {
+              id: tower.id,
               name: tower.name,
               units: tower.units_per_tower,
               buildingName: building.building_name,
@@ -318,8 +319,8 @@ export default function Buildings() {
       return;
     }
 
-    // Find the tower ID based on selected tower name
-    const selectedTower = availableTowers.find(tower => tower.name === newUnit.blockName);
+    // Find the tower data based on selected tower ID
+    const selectedTower = availableTowers.find(tower => tower.id.toString() === newUnit.blockName);
     if (!selectedTower) {
       toast({
         title: t("error"),
@@ -332,7 +333,8 @@ export default function Buildings() {
     // Prepare unit data for API
     const unitData: UnitData = {
       number: newUnit.number,
-      block_name: newUnit.blockName,
+      block_name: selectedTower.name, // Use the tower name for the block_name field
+      block_id: selectedTower.id, // Use the tower ID for the block_id field
       floor: parseInt(newUnit.floor),
       area: parseFloat(newUnit.area),
       key_delivery: newUnit.keyDelivery as 'yes' | 'no',
@@ -347,9 +349,9 @@ export default function Buildings() {
     };
 
     try {
-      // Send POST request to create unit
+      // Send POST request to create unit using tower ID
       await createUnitMutation.mutateAsync({
-        buildingId: selectedTower.buildingId,
+        buildingId: selectedTower.id, // Use tower ID as the endpoint parameter
         unitData: unitData
       });
 

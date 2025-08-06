@@ -14,6 +14,7 @@ export interface Address {
 }
 
 export interface Tower {
+  id: number;
   name: string;
   units_per_tower: number;
   unit_distribution: {
@@ -51,6 +52,7 @@ export interface BuildingResponse {
 export interface UnitData {
   number: string;
   block_name: string;
+  block_id: number;
   floor: number;
   area: number;
   key_delivery: 'yes' | 'no';
