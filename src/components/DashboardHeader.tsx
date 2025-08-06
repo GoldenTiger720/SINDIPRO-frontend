@@ -1,4 +1,4 @@
-import { Menu, User, Globe, ChevronDown, Home, Building2, AlertTriangle, Wrench, BarChart3, Calculator, MessageSquare, FileText, Users, LogOut, Settings } from "lucide-react";
+import { Menu, User, Globe, ChevronDown, Home, Building2, AlertTriangle, Wrench, BarChart3, Calculator, MessageSquare, FileText, Users, LogOut, Settings, Phone } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,7 @@ export const DashboardHeader = ({
     { name: t("fieldManagement"), href: "/field-management", icon: MessageSquare },
     { name: t("reportsNavbar"), href: "/reports", icon: FileText },
     { name: t("users"), href: "/users", icon: Users },
+    { name: t("supplierContacts"), href: "/supplier-contacts", icon: Phone },
   ];
   return (
     <header className="bg-white shadow-sm border-b border-border px-4 py-3 relative">
@@ -158,7 +159,7 @@ export const DashboardHeader = ({
           className="absolute top-full left-4 right-4 sm:right-auto bg-background border border-border shadow-lg z-50 rounded-md"
         >
           <div className="p-4">
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-3">
               {submenuItems.map((item) => {
                 const Icon = item.icon;
                 return (
