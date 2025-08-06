@@ -37,6 +37,7 @@ export const Navbar = () => {
     { name: t("fieldManagement"), href: "/field-management" },
     { name: t("reports"), href: "/reports" },
     { name: t("users"), href: "/users" },
+    { name: t("supplierContacts"), href: "/supplier-contacts" },
   ];
 
   return (

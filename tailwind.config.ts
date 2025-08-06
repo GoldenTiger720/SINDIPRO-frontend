@@ -74,7 +74,8 @@ export default {
 					red: 'hsl(var(--dashboard-red))',
 					gray: 'hsl(var(--dashboard-gray))',
 					teal: 'hsl(var(--dashboard-teal))',
-					pink: 'hsl(var(--dashboard-pink))'
+					pink: 'hsl(var(--dashboard-pink))',
+					indigo: 'hsl(var(--dashboard-indigo))'
 				}
 			},
 			borderRadius: {

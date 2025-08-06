@@ -10,7 +10,8 @@ import {
   FileIcon, 
   Wrench,
   AlertTriangle,
-  Calculator
+  Calculator,
+  Phone
 } from "lucide-react";
 import { DashboardCard } from "./DashboardCard";
 import { DashboardHeader } from "./DashboardHeader";
@@ -79,6 +80,13 @@ export const Dashboard = () => {
       icon: Settings,
       color: "bg-dashboard-pink",
       route: "/users"
+    },
+    {
+      id: "supplier-contacts",
+      title: t("supplierContacts"),
+      icon: Phone,
+      color: "bg-dashboard-indigo",
+      route: "/supplier-contacts"
     }
   ];
 

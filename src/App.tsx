@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import SupplierContacts from "./pages/SupplierContacts";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,11 @@ const App = () => (
           <Route path="/settings" element={
             <AuthGuard>
               <Settings />
+            </AuthGuard>
+          } />
+          <Route path="/supplier-contacts" element={
+            <AuthGuard>
+              <SupplierContacts />
             </AuthGuard>
           } />
           
