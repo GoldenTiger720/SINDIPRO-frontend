@@ -131,7 +131,7 @@ const SupplierContacts = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="directory" className="space-y-4 sm:space-y-6">
+        <Tabs defaultValue="calendar" className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="calendar" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
               <Calendar className="h-4 w-4" />
