@@ -133,31 +133,30 @@ const SupplierContacts = () => {
 
         <Tabs defaultValue="directory" className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="directory" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
-              <Phone className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("phoneDirectory")}</span>
-              <span className="sm:hidden">{t("directory")}</span>
-            </TabsTrigger>
             <TabsTrigger value="calendar" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">{t("appointmentCalendar")}</span>
               <span className="sm:hidden">{t("calendar")}</span>
             </TabsTrigger>
+            <TabsTrigger value="directory" className="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
+              <Phone className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("phoneDirectory")}</span>
+              <span className="sm:hidden">{t("directory")}</span>
+            </TabsTrigger>
           </TabsList>
+          {/* Appointment Calendar Tab */}
+          <TabsContent value="calendar" className="space-y-4 sm:space-y-6">
+            <AppointmentCalendar 
+              appointmentEvents={appointmentEvents} 
+              setAppointmentEvents={setAppointmentEvents} 
+            />
+          </TabsContent>
 
           {/* Phone Directory Tab */}
           <TabsContent value="directory" className="space-y-4 sm:space-y-6">
             <PhoneDirectory 
               supplierContacts={supplierContacts} 
               setSupplierContacts={setSupplierContacts} 
-            />
-          </TabsContent>
-
-          {/* Appointment Calendar Tab */}
-          <TabsContent value="calendar" className="space-y-4 sm:space-y-6">
-            <AppointmentCalendar 
-              appointmentEvents={appointmentEvents} 
-              setAppointmentEvents={setAppointmentEvents} 
             />
           </TabsContent>
         </Tabs>
