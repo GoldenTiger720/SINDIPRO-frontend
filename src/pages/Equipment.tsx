@@ -148,7 +148,7 @@ export default function Equipment() {
         {
           id: "m4",
           date: new Date("2024-02-01"),
-          type: "Battery Replacement",
+          type: "Corrective Maintenance",
           description: "Changed generator batteries",
           technician: "Roberto Alves",
           cost: 1200,
@@ -181,13 +181,7 @@ export default function Equipment() {
 
   const maintenanceTypes = [
     { value: "preventive", label: t("preventiveMaintenance") || "Preventive Maintenance" },
-    { value: "corrective", label: t("correctiveMaintenance") || "Corrective Maintenance" },
-    { value: "battery-replacement", label: t("batteryReplacement") || "Battery Replacement" },
-    { value: "parts-replacement", label: t("partsReplacement") || "Parts Replacement" },
-    { value: "inspection", label: t("inspection") || "Inspection" },
-    { value: "cleaning", label: t("cleaning") || "Cleaning" },
-    { value: "calibration", label: t("calibration") || "Calibration" },
-    { value: "other", label: t("other") || "Other" }
+    { value: "corrective", label: t("correctiveMaintenance") || "Corrective Maintenance" }
   ];
 
   const getStatusColor = (status: Equipment['status']) => {
@@ -442,7 +436,7 @@ export default function Equipment() {
                             id="eq-name"
                             value={equipmentForm.name}
                             onChange={(e) => setEquipmentForm({...equipmentForm, name: e.target.value})}
-                            placeholder={t("equipmentNamePlaceholder")}
+                            placeholder="Elevator"
                             className="h-8 sm:h-10 text-sm"
                           />
                         </div>
@@ -452,7 +446,7 @@ export default function Equipment() {
                             id="eq-type"
                             value={equipmentForm.type}
                             onChange={(e) => setEquipmentForm({...equipmentForm, type: e.target.value})}
-                            placeholder={t("equipmentTypePlaceholder")}
+                            placeholder="Social"
                             className="h-8 sm:h-10 text-sm"
                           />
                         </div>
