@@ -685,6 +685,57 @@ export default function Consumption() {
               </Card>
             </div>
 
+            {/* Summary Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <Droplets className="w-4 h-4 text-blue-500" />
+                      <p className="text-sm font-medium">Water Total (Dec)</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">73.5 m³</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-2xl font-bold">R$ 890.50</p>
+                    <p className="text-xs text-green-600">↓ 1.2% vs Nov</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <Zap className="w-4 h-4 text-yellow-500" />
+                      <p className="text-sm font-medium">Electricity Total (Dec)</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">276.5 kWh</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-2xl font-bold">R$ 1,245.80</p>
+                    <p className="text-xs text-red-600">↑ 3.5% vs Nov</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                      <p className="text-sm font-medium">Gas Total (Dec)</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">38.7 m³</p>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-2xl font-bold">R$ 456.30</p>
+                    <p className="text-xs text-green-600">↓ 0.8% vs Nov</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* All Individual Charts in Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Water Chart */}
@@ -696,13 +747,21 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={monthlyWaterData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value} m³`} />
-                      <Bar dataKey="value" fill="#3b82f6" />
+                      <YAxis yAxisId="left" orientation="left" stroke="#3b82f6" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#6366f1" />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'value' ? `${value} m³` : `R$ ${value.toFixed(2)}`,
+                          name === 'value' ? 'Consumption' : 'Bill Amount'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="value" fill="#3b82f6" name="Consumption (m³)" />
+                      <Bar yAxisId="right" dataKey="bill" fill="#dbeafe" name="Bill (R$)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -717,13 +776,21 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={monthlyElectricityData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value} kWh`} />
-                      <Bar dataKey="value" fill="#eab308" />
+                      <YAxis yAxisId="left" orientation="left" stroke="#eab308" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#facc15" />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'value' ? `${value} kWh` : `R$ ${value.toFixed(2)}`,
+                          name === 'value' ? 'Consumption' : 'Bill Amount'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="value" fill="#eab308" name="Consumption (kWh)" />
+                      <Bar yAxisId="right" dataKey="bill" fill="#fef3c7" name="Bill (R$)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -738,13 +805,21 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={monthlyGasData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value} m³`} />
-                      <Bar dataKey="value" fill="#f97316" />
+                      <YAxis yAxisId="left" orientation="left" stroke="#f97316" />
+                      <YAxis yAxisId="right" orientation="right" stroke="#fb923c" />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'value' ? `${value} m³` : `R$ ${value.toFixed(2)}`,
+                          name === 'value' ? 'Consumption' : 'Bill Amount'
+                        ]}
+                      />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="value" fill="#f97316" name="Consumption (m³)" />
+                      <Bar yAxisId="right" dataKey="bill" fill="#fed7aa" name="Bill (R$)" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
