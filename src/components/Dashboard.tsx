@@ -11,7 +11,7 @@ import {
   Wrench,
   AlertTriangle,
   Calculator,
-  Phone
+  Calendar
 } from "lucide-react";
 import { DashboardCard } from "./DashboardCard";
 import { DashboardHeader } from "./DashboardHeader";
@@ -84,7 +84,7 @@ export const Dashboard = () => {
     {
       id: "supplier-contacts",
       title: t("supplierContacts"),
-      icon: Phone,
+      icon: Calendar,
       color: "bg-dashboard-indigo",
       route: "/supplier-contacts"
     }
