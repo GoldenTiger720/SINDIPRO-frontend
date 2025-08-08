@@ -2,24 +2,154 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Droplets, Zap, Flame, TrendingUp, AlertTriangle, Building, Home, Zap as Generator, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calculator, Droplets, Zap, Flame, TrendingUp, AlertTriangle, Building, Home, Zap as Generator, Calendar, CreditCard, BarChart3 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Consumption() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('consumption');
   const [selectedConsumptionType, setSelectedConsumptionType] = useState('water');
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
   const [gasCategory, setGasCategory] = useState('units');
   const [consumptionValue, setConsumptionValue] = useState('');
   const [billAmount, setBillAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedGraphType, setSelectedGraphType] = useState('water');
+  const [graphPeriod, setGraphPeriod] = useState('monthly');
   const [alerts, setAlerts] = useState([]);
   const [previousConsumption, setPreviousConsumption] = useState({
     water: 2.2,
-    gas: 1.1
+    gas: 1.1,
+    electricity: 8.9
   });
+
+  // Mock data for daily consumption (last 7 days)
+  const dailyWaterData = [
+    { day: 'Mon', value: 2.1, date: '12/02' },
+    { day: 'Tue', value: 2.3, date: '12/03' },
+    { day: 'Wed', value: 2.2, date: '12/04' },
+    { day: 'Thu', value: 2.4, date: '12/05' },
+    { day: 'Fri', value: 2.5, date: '12/06' },
+    { day: 'Sat', value: 2.3, date: '12/07' },
+    { day: 'Sun', value: 2.45, date: '12/08' }
+  ];
+
+  const dailyElectricityData = [
+    { day: 'Mon', value: 18.5, date: '12/02' },
+    { day: 'Tue', value: 19.2, date: '12/03' },
+    { day: 'Wed', value: 18.8, date: '12/04' },
+    { day: 'Thu', value: 20.1, date: '12/05' },
+    { day: 'Fri', value: 19.5, date: '12/06' },
+    { day: 'Sat', value: 17.9, date: '12/07' },
+    { day: 'Sun', value: 18.9, date: '12/08' }
+  ];
+
+  const dailyGasData = [
+    { day: 'Mon', value: 1.15, date: '12/02' },
+    { day: 'Tue', value: 1.22, date: '12/03' },
+    { day: 'Wed', value: 1.18, date: '12/04' },
+    { day: 'Thu', value: 1.25, date: '12/05' },
+    { day: 'Fri', value: 1.20, date: '12/06' },
+    { day: 'Sat', value: 1.28, date: '12/07' },
+    { day: 'Sun', value: 1.24, date: '12/08' }
+  ];
+
+  // Mock data for monthly consumption
+  const monthlyWaterData = [
+    { month: 'Jul', value: 68.5, bill: 798.90 },
+    { month: 'Aug', value: 71.2, bill: 845.20 },
+    { month: 'Sep', value: 69.8, bill: 812.45 },
+    { month: 'Oct', value: 72.4, bill: 856.30 },
+    { month: 'Nov', value: 74.1, bill: 878.90 },
+    { month: 'Dec', value: 73.5, bill: 890.50 }
+  ];
+
+  const monthlyElectricityData = [
+    { month: 'Jul', value: 245.6, bill: 1145.20 },
+    { month: 'Aug', value: 268.9, bill: 1289.40 },
+    { month: 'Sep', value: 252.3, bill: 1198.65 },
+    { month: 'Oct', value: 275.4, bill: 1312.80 },
+    { month: 'Nov', value: 280.2, bill: 1345.90 },
+    { month: 'Dec', value: 276.5, bill: 1245.80 }
+  ];
+
+  const monthlyGasData = [
+    { month: 'Jul', value: 35.2, bill: 398.45 },
+    { month: 'Aug', value: 37.8, bill: 432.10 },
+    { month: 'Sep', value: 36.1, bill: 412.30 },
+    { month: 'Oct', value: 38.5, bill: 445.60 },
+    { month: 'Nov', value: 39.2, bill: 452.80 },
+    { month: 'Dec', value: 38.7, bill: 456.30 }
+  ];
+
+  // Mock data for yearly consumption
+  const yearlyData = {
+    water: [
+      { year: '2020', value: 812.4, bill: 9845.60 },
+      { year: '2021', value: 825.8, bill: 10125.40 },
+      { year: '2022', value: 838.2, bill: 10456.80 },
+      { year: '2023', value: 845.6, bill: 10678.90 },
+      { year: '2024', value: 852.3, bill: 10892.50 }
+    ],
+    electricity: [
+      { year: '2020', value: 2985.6, bill: 13456.80 },
+      { year: '2021', value: 3024.8, bill: 13892.40 },
+      { year: '2022', value: 3156.2, bill: 14325.60 },
+      { year: '2023', value: 3098.4, bill: 14156.90 },
+      { year: '2024', value: 3178.5, bill: 14789.30 }
+    ],
+    gas: [
+      { year: '2020', value: 425.6, bill: 4856.30 },
+      { year: '2021', value: 438.2, bill: 5012.40 },
+      { year: '2022', value: 445.8, bill: 5156.80 },
+      { year: '2023', value: 452.3, bill: 5289.60 },
+      { year: '2024', value: 458.9, bill: 5423.70 }
+    ]
+  };
+
+  const getDailyData = (type) => {
+    switch(type) {
+      case 'water': return dailyWaterData;
+      case 'electricity': return dailyElectricityData;
+      case 'gas': return dailyGasData;
+      default: return dailyWaterData;
+    }
+  };
+
+  const getMonthlyData = (type) => {
+    switch(type) {
+      case 'water': return monthlyWaterData;
+      case 'electricity': return monthlyElectricityData;
+      case 'gas': return monthlyGasData;
+      default: return monthlyWaterData;
+    }
+  };
+
+  const getYearlyData = (type) => {
+    return yearlyData[type] || yearlyData.water;
+  };
+
+  const getChartData = (type, period) => {
+    if (period === 'daily') return getDailyData(type);
+    if (period === 'monthly') return getMonthlyData(type);
+    if (period === 'yearly') return getYearlyData(type);
+    return getDailyData(type);
+  };
+
+  const getChartColor = (type) => {
+    switch(type) {
+      case 'water': return '#3b82f6';
+      case 'electricity': return '#eab308';
+      case 'gas': return '#f97316';
+      default: return '#3b82f6';
+    }
+  };
 
   // Mock function to check for consumption alerts
   const checkConsumptionAlert = (type, currentValue, previousValue) => {
@@ -38,22 +168,27 @@ export default function Consumption() {
     const value = parseFloat(consumptionValue);
     if (!value || !selectedDate) return;
 
-    if ((selectedConsumptionType === 'water' || selectedConsumptionType === 'gas') && selectedPeriod === 'daily') {
-      const alert = checkConsumptionAlert(
-        selectedConsumptionType,
-        value,
-        previousConsumption[selectedConsumptionType]
-      );
-      
-      if (alert) {
-        setAlerts(prev => [...prev, { ...alert, id: Date.now() }]);
-      }
+    const alert = checkConsumptionAlert(
+      selectedConsumptionType,
+      value,
+      previousConsumption[selectedConsumptionType]
+    );
+    
+    if (alert) {
+      setAlerts(prev => [...prev, { ...alert, id: Date.now() }]);
     }
 
-    // Reset form
     setConsumptionValue('');
-    setBillAmount('');
     setSelectedDate('');
+  };
+
+  const handleBillSubmit = () => {
+    const amount = parseFloat(billAmount);
+    if (!amount || !selectedMonth || !paymentDate) return;
+
+    setBillAmount('');
+    setSelectedMonth('');
+    setPaymentDate('');
   };
 
   const dismissAlert = (alertId) => {
@@ -99,323 +234,525 @@ export default function Consumption() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Droplets className="w-5 h-5 text-blue-500" />
-                {t("water")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">2.450 m³</div>
-              <p className="text-sm text-muted-foreground">Daily Reading (m³)</p>
-              <div className="mt-2 text-lg font-semibold text-blue-800">R$ 890.50</div>
-              <p className="text-xs text-muted-foreground">Monthly Bill Amount</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-600">+5% {t("vsLastMonth")}</span>
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="consumption" className="flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
+              <span className="hidden sm:inline">Consumption</span>
+              <span className="sm:hidden">Cons.</span>
+            </TabsTrigger>
+            <TabsTrigger value="account" className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Account</span>
+              <span className="sm:hidden">Acc.</span>
+            </TabsTrigger>
+            <TabsTrigger value="graphics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Graphics</span>
+              <span className="sm:hidden">Graph</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
-                {t("electricity")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">8.920 kWh</div>
-              <p className="text-sm text-muted-foreground">Monthly Bill Only</p>
-              <div className="mt-2 text-lg font-semibold text-yellow-800">R$ 1,245.80</div>
-              <p className="text-xs text-muted-foreground">Monthly Bill Amount</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />
-                <span className="text-sm text-red-600">-3% {t("vsLastMonth")}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="consumption" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Daily Consumption Entry */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calculator className="w-5 h-5" />
+                    Daily Consumption Entry
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="consumption-type">Utility Type</Label>
+                    <select 
+                      className="w-full p-2 border rounded"
+                      value={selectedConsumptionType}
+                      onChange={(e) => setSelectedConsumptionType(e.target.value)}
+                    >
+                      <option value="water">Water (m³)</option>
+                      <option value="electricity">Electricity (kWh)</option>
+                      <option value="gas">Gas (m³)</option>
+                    </select>
+                  </div>
+                  
+                  {selectedConsumptionType === 'gas' && (
+                    <div>
+                      <Label htmlFor="gas-category">Gas Usage Category</Label>
+                      <select 
+                        className="w-full p-2 border rounded"
+                        value={gasCategory}
+                        onChange={(e) => setGasCategory(e.target.value)}
+                      >
+                        <option value="units">🏠 Units (Apartments)</option>
+                        <option value="common">🏊 Common Area (Pool)</option>
+                        <option value="generator">⚡ Generator</option>
+                      </select>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="consumption-date">Date</Label>
+                    <Input 
+                      id="consumption-date" 
+                      type="date" 
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="consumption-value">
+                      {selectedConsumptionType === 'water' ? 'Water Reading (m³)' : 
+                       selectedConsumptionType === 'electricity' ? 'Electricity Reading (kWh)' : 
+                       'Gas Reading (m³)'}
+                    </Label>
+                    <Input 
+                      id="consumption-value" 
+                      type="number" 
+                      step="0.001"
+                      placeholder="0.000"
+                      value={consumptionValue}
+                      onChange={(e) => setConsumptionValue(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button className="w-full" onClick={handleConsumptionSubmit}>
+                    Register Daily Consumption
+                  </Button>
+                  
+                  <div className="text-xs text-muted-foreground mt-2">
+                    ⚠️ System will alert if consumption increases by 10% or more
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-orange-500" />
-                {t("gas")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">1.240 m³</div>
-              <p className="text-sm text-muted-foreground">Daily Reading (m³)</p>
-              <div className="mt-2 text-lg font-semibold text-orange-800">R$ 456.30</div>
-              <p className="text-xs text-muted-foreground">Monthly Bill Amount</p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-green-600">+2% {t("vsLastMonth")}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="w-5 h-5" />
-                Daily/Monthly Consumption Entry
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="consumption-type">Consumption Type</Label>
-                <select 
-                  className="w-full p-2 border rounded"
-                  value={selectedConsumptionType}
-                  onChange={(e) => setSelectedConsumptionType(e.target.value)}
-                >
-                  <option value="water">Water (m³)</option>
-                  <option value="electricity">Electricity (Monthly Bill Only)</option>
-                  <option value="gas">Gas (m³)</option>
-                </select>
-              </div>
-              
-              {selectedConsumptionType !== 'electricity' && (
-                <div>
-                  <Label htmlFor="consumption-period">Period</Label>
-                  <select 
-                    className="w-full p-2 border rounded"
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                  >
-                    <option value="daily">Daily Reading</option>
-                    <option value="monthly">Monthly Bill</option>
-                  </select>
-                </div>
-              )}
-              
-              {selectedConsumptionType === 'gas' && selectedPeriod === 'daily' && (
-                <div>
-                  <Label htmlFor="gas-category">Gas Usage Category</Label>
-                  <select 
-                    className="w-full p-2 border rounded"
-                    value={gasCategory}
-                    onChange={(e) => setGasCategory(e.target.value)}
-                  >
-                    <option value="units">🏠 Units (Apartments)</option>
-                    <option value="common">🏊 Common Area (Pool)</option>
-                    <option value="generator">⚡ Generator</option>
-                  </select>
-                </div>
-              )}
-              
-              <div>
-                <Label htmlFor="consumption-date">Date</Label>
-                <Input 
-                  id="consumption-date" 
-                  type="date" 
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                />
-              </div>
-              
-              {(selectedConsumptionType !== 'electricity' && selectedPeriod === 'daily') && (
-                <div>
-                  <Label htmlFor="consumption-value">
-                    {selectedConsumptionType === 'water' ? 'Water Reading (m³)' : 'Gas Reading (m³)'}
-                  </Label>
-                  <Input 
-                    id="consumption-value" 
-                    type="number" 
-                    step="0.001"
-                    placeholder="0.000"
-                    value={consumptionValue}
-                    onChange={(e) => setConsumptionValue(e.target.value)}
-                  />
-                </div>
-              )}
-              
-              <div>
-                <Label htmlFor="bill-amount">Monthly Bill Amount (R$)</Label>
-                <Input 
-                  id="bill-amount" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00"
-                  value={billAmount}
-                  onChange={(e) => setBillAmount(e.target.value)}
-                />
-              </div>
-              
-              <Button className="w-full" onClick={handleConsumptionSubmit}>
-                Register {selectedConsumptionType === 'electricity' ? 'Bill' : 'Consumption & Bill'}
-              </Button>
-              
-              <div className="text-xs text-muted-foreground mt-2">
-                ⚠️ System will alert if water/gas consumption increases by 10% or more
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Consumption Trend & Monthly Spending
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Responsive chart representation */}
-                <div className="h-48 sm:h-64 bg-muted rounded-lg p-2 sm:p-4 overflow-hidden">
-                  <div className="h-full flex items-end justify-between gap-1 sm:gap-2 px-1">
-                    {/* Mock chart bars for last 6 months - responsive sizing */}
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-12 sm:h-16 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-8 sm:h-12 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-6 sm:h-8 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">Jan</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,592</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">2.5k</div>
-                    </div>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-14 sm:h-18 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-10 sm:h-14 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-7 sm:h-10 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">Feb</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,745</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">2.7k</div>
-                    </div>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-16 sm:h-20 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-7 sm:h-10 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-8 sm:h-12 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">Mar</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,890</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">2.9k</div>
-                    </div>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-13 sm:h-17 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-9 sm:h-13 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-8 sm:h-11 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">Apr</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,654</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">2.7k</div>
-                    </div>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-15 sm:h-19 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-11 sm:h-15 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-9 sm:h-13 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">May</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,983</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">3.0k</div>
-                    </div>
-                    <div className="flex flex-col items-center flex-1 min-w-0">
-                      <div className="bg-blue-500 w-4 sm:w-6 lg:w-8 h-12 sm:h-16 rounded-t mb-1"></div>
-                      <div className="bg-orange-500 w-4 sm:w-6 lg:w-8 h-8 sm:h-12 rounded-t mb-1"></div>
-                      <div className="bg-yellow-500 w-4 sm:w-6 lg:w-8 h-10 sm:h-14 rounded-t mb-2"></div>
-                      <div className="text-xs mt-1 font-medium">Jun</div>
-                      <div className="text-xs text-muted-foreground hidden sm:block">R$2,735</div>
-                      <div className="text-xs text-muted-foreground sm:hidden">2.7k</div>
-                    </div>
+              {/* Individual Inline Graph */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {selectedConsumptionType === 'water' && <Droplets className="w-5 h-5 text-blue-500" />}
+                    {selectedConsumptionType === 'electricity' && <Zap className="w-5 h-5 text-yellow-500" />}
+                    {selectedConsumptionType === 'gas' && <Flame className="w-5 h-5 text-orange-500" />}
+                    {selectedConsumptionType === 'water' ? 'Water' : 
+                     selectedConsumptionType === 'electricity' ? 'Electricity' : 'Gas'} - Daily Evolution
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={getDailyData(selectedConsumptionType)}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `${value} ${selectedConsumptionType === 'electricity' ? 'kWh' : 'm³'}`} />
+                      <Line 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke={getChartColor(selectedConsumptionType)} 
+                        strokeWidth={2}
+                        name={selectedConsumptionType === 'electricity' ? 'kWh' : 'm³'}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  <div className="text-center text-xs text-muted-foreground mt-2">
+                    Last 7 days consumption pattern
                   </div>
-                </div>
-                
-                {/* Responsive Legend */}
-                <div className="flex flex-wrap justify-center gap-3 sm:gap-6 text-xs sm:text-sm">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-blue-500 rounded"></div>
-                    <span>Water</span>
-                  </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-orange-500 rounded"></div>
-                    <span>Gas</span>
-                  </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded"></div>
-                    <span>Electricity</span>
-                  </div>
-                </div>
-                
-                <div className="text-center text-xs sm:text-sm text-muted-foreground px-2">
-                  Monthly spending trends with consumption amounts
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Monthly Consumption & Bills History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5 text-blue-500" />
-                  <h3 className="font-semibold">June 2024</h3>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <p>Water: 2.450 m³ - R$ 890.50</p>
-                  <p>Electricity: 8.920 kWh - R$ 1,245.80</p>
-                  <p>Gas: 1.240 m³ - R$ 456.30</p>
-                  <div className="pt-2 border-t mt-2">
-                    <p className="font-semibold">Total: R$ 2,592.60</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="w-5 h-5 text-blue-500" />
-                  <h3 className="font-semibold">May 2024</h3>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <p>Water: 2.320 m³ - R$ 845.20</p>
-                  <p>Electricity: 9.200 kWh - R$ 1,289.40</p>
-                  <p>Gas: 1.180 m³ - R$ 432.10</p>
-                  <div className="pt-2 border-t mt-2">
-                    <p className="font-semibold">Total: R$ 2,566.70</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                  <h3 className="font-semibold">Alert Settings</h3>
-                </div>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>⚠️ Water: Alert at +10% increase</p>
-                  <p>⚠️ Gas: Alert at +10% increase</p>
-                  <p>📊 Automatic leak detection</p>
-                  <p>📅 Daily readings required</p>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>{t("relatedFeatures")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("directFieldAppEntry")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("directFieldAppEntryDesc")}
-                </p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("periodicConsumptionChart")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("periodicConsumptionChartDesc")}
-                </p>
-              </div>
+            {/* Current Readings Summary */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Droplets className="w-5 h-5 text-blue-500" />
+                    {t("water")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">2.450 m³</div>
+                  <p className="text-sm text-muted-foreground">Today's Reading</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-green-600">+5% vs yesterday</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500" />
+                    {t("electricity")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">18.9 kWh</div>
+                  <p className="text-sm text-muted-foreground">Today's Reading</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />
+                    <span className="text-sm text-red-600">-3% vs yesterday</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    {t("gas")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">1.240 m³</div>
+                  <p className="text-sm text-muted-foreground">Today's Reading</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-green-600">+2% vs yesterday</span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="account" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Monthly Bill Entry */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Monthly Bill Entry
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="bill-type">Utility Type</Label>
+                    <select 
+                      className="w-full p-2 border rounded"
+                      value={selectedConsumptionType}
+                      onChange={(e) => setSelectedConsumptionType(e.target.value)}
+                    >
+                      <option value="water">Water Bill</option>
+                      <option value="electricity">Electricity Bill</option>
+                      <option value="gas">Gas Bill</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="bill-month">Bill Month/Year</Label>
+                    <Input 
+                      id="bill-month" 
+                      type="month" 
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="bill-amount">Bill Amount (R$)</Label>
+                    <Input 
+                      id="bill-amount" 
+                      type="number" 
+                      step="0.01"
+                      placeholder="0.00"
+                      value={billAmount}
+                      onChange={(e) => setBillAmount(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="payment-date">Payment Due Date</Label>
+                    <Input 
+                      id="payment-date" 
+                      type="date" 
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button className="w-full" onClick={handleBillSubmit}>
+                    Register Monthly Bill
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Current Bills Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Current Bills & Due Dates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div className="flex items-center gap-2">
+                        <Droplets className="w-4 h-4 text-blue-500" />
+                        <span className="font-medium">Water - July 2024</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-blue-600">R$ 890.50</div>
+                        <div className="text-xs text-red-600">Due: Aug 15, 2024</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        <span className="font-medium">Electricity - July 2024</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-yellow-600">R$ 1,245.80</div>
+                        <div className="text-xs text-red-600">Due: Aug 20, 2024</div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div className="flex items-center gap-2">
+                        <Flame className="w-4 h-4 text-orange-500" />
+                        <span className="font-medium">Gas - July 2024</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-orange-600">R$ 456.30</div>
+                        <div className="text-xs text-green-600">Paid ✓</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span>Total Pending:</span>
+                      <span className="text-red-600">R$ 2,136.30</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Monthly Bills History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Bills History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-5 h-5 text-blue-500" />
+                      <h3 className="font-semibold">July 2024</h3>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Water: R$ 890.50 (Due: Aug 15)</p>
+                      <p>Electricity: R$ 1,245.80 (Due: Aug 20)</p>
+                      <p>Gas: R$ 456.30 (Paid ✓)</p>
+                      <div className="pt-2 border-t mt-2">
+                        <p className="font-semibold">Total: R$ 2,592.60</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-5 h-5 text-green-500" />
+                      <h3 className="font-semibold">June 2024</h3>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Water: R$ 845.20 (Paid ✓)</p>
+                      <p>Electricity: R$ 1,289.40 (Paid ✓)</p>
+                      <p>Gas: R$ 432.10 (Paid ✓)</p>
+                      <div className="pt-2 border-t mt-2">
+                        <p className="font-semibold">Total: R$ 2,566.70</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="w-5 h-5 text-green-500" />
+                      <h3 className="font-semibold">May 2024</h3>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p>Water: R$ 798.90 (Paid ✓)</p>
+                      <p>Electricity: R$ 1,145.20 (Paid ✓)</p>
+                      <p>Gas: R$ 398.45 (Paid ✓)</p>
+                      <div className="pt-2 border-t mt-2">
+                        <p className="font-semibold">Total: R$ 2,342.55</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="graphics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Chart Controls */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Chart Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="graph-type">Select Utility</Label>
+                    <select 
+                      className="w-full p-2 border rounded"
+                      value={selectedGraphType}
+                      onChange={(e) => setSelectedGraphType(e.target.value)}
+                    >
+                      <option value="water">Water Consumption</option>
+                      <option value="electricity">Electricity Consumption</option>
+                      <option value="gas">Gas Consumption</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="graph-period">Time Period</Label>
+                    <select 
+                      className="w-full p-2 border rounded"
+                      value={graphPeriod}
+                      onChange={(e) => setGraphPeriod(e.target.value)}
+                    >
+                      <option value="daily">Daily (Last 30 days)</option>
+                      <option value="monthly">Monthly (Last 12 months)</option>
+                      <option value="yearly">Yearly (Last 5 years)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <h4 className="font-semibold mb-2">Current Selection:</h4>
+                    <div className="flex items-center gap-2">
+                      {selectedGraphType === 'water' && <Droplets className="w-4 h-4 text-blue-500" />}
+                      {selectedGraphType === 'electricity' && <Zap className="w-4 h-4 text-yellow-500" />}
+                      {selectedGraphType === 'gas' && <Flame className="w-4 h-4 text-orange-500" />}
+                      <span className="capitalize">{selectedGraphType} - {graphPeriod} view</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Individual Chart Display */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {selectedGraphType === 'water' && <Droplets className="w-5 h-5 text-blue-500" />}
+                    {selectedGraphType === 'electricity' && <Zap className="w-5 h-5 text-yellow-500" />}
+                    {selectedGraphType === 'gas' && <Flame className="w-5 h-5 text-orange-500" />}
+                    {selectedGraphType === 'water' ? 'Water' : 
+                     selectedGraphType === 'electricity' ? 'Electricity' : 'Gas'} Evolution - {graphPeriod}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    {graphPeriod === 'daily' ? (
+                      <LineChart data={getChartData(selectedGraphType, graphPeriod)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="day" />
+                        <YAxis />
+                        <Tooltip formatter={(value) => `${value} ${selectedGraphType === 'electricity' ? 'kWh' : 'm³'}`} />
+                        <Line 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke={getChartColor(selectedGraphType)} 
+                          strokeWidth={2}
+                          name={selectedGraphType === 'electricity' ? 'kWh' : 'm³'}
+                        />
+                      </LineChart>
+                    ) : (
+                      <BarChart data={getChartData(selectedGraphType, graphPeriod)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey={graphPeriod === 'monthly' ? 'month' : 'year'} />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value, name) => [
+                            name === 'value' ? 
+                              `${value} ${selectedGraphType === 'electricity' ? 'kWh' : 'm³'}` : 
+                              `R$ ${value.toFixed(2)}`,
+                            name === 'value' ? 'Consumption' : 'Bill Amount'
+                          ]} 
+                        />
+                        <Bar dataKey="value" fill={getChartColor(selectedGraphType)} />
+                        <Bar dataKey="bill" fill="#94a3b8" />
+                      </BarChart>
+                    )}
+                  </ResponsiveContainer>
+                  <div className="text-center text-xs text-muted-foreground mt-2">
+                    Individual {selectedGraphType} consumption evolution
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* All Individual Charts in Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Water Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Droplets className="w-5 h-5 text-blue-500" />
+                    Water - Monthly Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={monthlyWaterData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `${value} m³`} />
+                      <Bar dataKey="value" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Electricity Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-500" />
+                    Electricity - Monthly Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={monthlyElectricityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `${value} kWh`} />
+                      <Bar dataKey="value" fill="#eab308" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Gas Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-orange-500" />
+                    Gas - Monthly Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={monthlyGasData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `${value} m³`} />
+                      <Bar dataKey="value" fill="#f97316" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+
       </div>
       </div>
     </div>
