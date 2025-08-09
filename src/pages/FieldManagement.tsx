@@ -1,198 +1,707 @@
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Camera, MapPin, Clock, Mail, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  MessageSquare, 
+  Camera, 
+  MapPin, 
+  Clock, 
+  Mail, 
+  Plus, 
+  Package, 
+  Wrench, 
+  FileDown, 
+  FileUp,
+  Send,
+  Edit,
+  Trash2,
+  Phone,
+  Eye,
+  CheckCircle,
+  AlertCircle,
+  Download,
+  History,
+  X
+} from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 
+interface MaterialRequest {
+  id: string;
+  title: string;
+  building: string;
+  caretaker: string;
+  items: MaterialItem[];
+  status: 'draft' | 'sent' | 'quoted' | 'approved';
+  createdAt: string;
+  quotes?: Quote[];
+}
+
+interface MaterialItem {
+  id: string;
+  productType: string;
+  quantity: number;
+  observations: string;
+}
+
+interface Quote {
+  id: string;
+  company: string;
+  phone: string;
+  totalValue: number;
+  notes: string;
+  submittedAt: string;
+}
+
+interface TechnicalCall {
+  id: string;
+  title: string;
+  description: string;
+  photos: string[];
+  location: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  createdAt: string;
+  createdBy: string;
+  assignedTo?: string;
+  resolvedAt?: string;
+  companyEmail?: string;
+}
+
 export default function FieldManagement() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState('materials');
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [technicalCalls, setTechnicalCalls] = useState<TechnicalCall[]>([]);
+  const [currentMaterialRequest, setCurrentMaterialRequest] = useState<MaterialRequest>({
+    id: '',
+    title: '',
+    building: '',
+    caretaker: '',
+    items: [],
+    status: 'draft',
+    createdAt: new Date().toISOString(),
+  });
+
+  const [currentTechnicalCall, setCurrentTechnicalCall] = useState<TechnicalCall>({
+    id: '',
+    title: '',
+    description: '',
+    photos: [],
+    location: '',
+    priority: 'medium',
+    status: 'open',
+    createdAt: new Date().toISOString(),
+    createdBy: 'Current User',
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addMaterialItem = () => {
+    const newItem: MaterialItem = {
+      id: Date.now().toString(),
+      productType: '',
+      quantity: 1,
+      observations: ''
+    };
+    setCurrentMaterialRequest(prev => ({
+      ...prev,
+      items: [...prev.items, newItem]
+    }));
+  };
+
+  const removeMaterialItem = (itemId: string) => {
+    setCurrentMaterialRequest(prev => ({
+      ...prev,
+      items: prev.items.filter(item => item.id !== itemId)
+    }));
+  };
+
+  const updateMaterialItem = (itemId: string, field: keyof MaterialItem, value: any) => {
+    setCurrentMaterialRequest(prev => ({
+      ...prev,
+      items: prev.items.map(item => 
+        item.id === itemId ? { ...item, [field]: value } : item
+      )
+    }));
+  };
+
+  const saveMaterialRequest = () => {
+    if (!currentMaterialRequest.title || currentMaterialRequest.items.length === 0) return;
+    
+    const request = {
+      ...currentMaterialRequest,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    setMaterialRequests(prev => [...prev, request]);
+    setCurrentMaterialRequest({
+      id: '',
+      title: '',
+      building: '',
+      caretaker: '',
+      items: [],
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setCurrentTechnicalCall(prev => ({
+            ...prev,
+            photos: [...prev.photos, imageUrl]
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    // Reset the input value to allow uploading the same file again
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setCurrentTechnicalCall(prev => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index)
+    }));
+  };
+
+  const saveTechnicalCall = () => {
+    if (!currentTechnicalCall.title || !currentTechnicalCall.description) return;
+    
+    const call = {
+      ...currentTechnicalCall,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString()
+    };
+    
+    setTechnicalCalls(prev => [...prev, call]);
+    setCurrentTechnicalCall({
+      id: '',
+      title: '',
+      description: '',
+      photos: [],
+      location: '',
+      priority: 'medium',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      createdBy: 'Current User',
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      draft: { color: 'bg-gray-100 text-gray-700', text: t('draft') },
+      sent: { color: 'bg-blue-100 text-blue-700', text: t('sent') },
+      quoted: { color: 'bg-yellow-100 text-yellow-700', text: t('quoted') },
+      approved: { color: 'bg-green-100 text-green-700', text: t('approved') },
+      open: { color: 'bg-red-100 text-red-700', text: t('open') },
+      in_progress: { color: 'bg-yellow-100 text-yellow-700', text: t('inProgress') },
+      resolved: { color: 'bg-green-100 text-green-700', text: t('resolved') },
+      closed: { color: 'bg-gray-100 text-gray-700', text: t('closed') },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
+    return <Badge className={config.color}>{config.text}</Badge>;
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader userName={t("adminSindipro")} />
       <div className="p-4 sm:p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center mb-6">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-purple-500" />
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t("fieldManagementRequests")}</h1>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center mb-6">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-6 h-6 text-purple-500" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t("fieldManagementRequests")}</h1>
+            </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Camera className="w-5 h-5" />
-{t("fieldRegistration")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="photo-upload">{t("problemPhoto")}</Label>
-                <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
-                  <Camera className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">{t("clickToTakePhoto")}</p>
-                  <Button variant="outline" className="mt-2">
-                    <Camera className="w-4 h-4 mr-2" />
-{t("addPhoto")}
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="request-title">{t("requestTitle")}</Label>
-                <Input id="request-title" placeholder={t("requestTitlePlaceholder")} />
-              </div>
-              <div>
-                <Label htmlFor="request-description">{t("problemDescription")}</Label>
-                <textarea 
-                  className="w-full p-2 border rounded resize-none" 
-                  rows={4}
-                  placeholder={t("describeProblem")}
-                ></textarea>
-              </div>
-            </CardContent>
-          </Card>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="materials" className="flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                {t("materialsAndServices")}
+              </TabsTrigger>
+              <TabsTrigger value="technical" className="flex items-center gap-2">
+                <Wrench className="w-4 h-4" />
+                {t("technicalCalls")}
+              </TabsTrigger>
+            </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-{t("locationAndTimestamp")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-blue-500" />
-                  <span className="font-semibold">{t("automaticLocation")}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Lat: -23.5505, Long: -46.6333<br/>
-                  {t("address")}: Rua das Flores, 123 - São Paulo, SP
-                </p>
-              </div>
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-green-500" />
-                  <span className="font-semibold">{t("automaticTimeRegistry")}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {t("date")}: 15/03/2024<br/>
-                  Horário: 14:32:15
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="priority">{t("priority")}</Label>
-                <select className="w-full p-2 border rounded">
-                  <option value="low">{t("low")}</option>
-                  <option value="medium">{t("medium")}</option>
-                  <option value="high">{t("high")}</option>
-                  <option value="urgent">{t("urgent")}</option>
-                </select>
-              </div>
-              <Button className="w-full gap-2">
-                <Plus className="w-4 h-4" />
-{t("createRequest")}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-{t("automaticRequestSending")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="internal-email">{t("internalEmailAdmin")}</Label>
-                <Input id="internal-email" type="email" placeholder="admin@condominio.com" />
-              </div>
-              <div>
-                <Label htmlFor="contractor-email">{t("contractorSupplierEmail")}</Label>
-                <Input id="contractor-email" type="email" placeholder="manutencao@empresa.com" />
-              </div>
-            </div>
-            <div className="mt-4 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
-                📧 {t("requestsAutomaticallySent")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>{t("recentRequests")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold">{t("bathroomLeak")} - {t("apartment")} 302</h3>
-                    <p className="text-sm text-muted-foreground">{t("createdBy")}: João Silva ({t("janitor")})</p>
+            <TabsContent value="materials" className="space-y-6">
+              {/* Materials Request Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    {t("newMaterialRequest")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="request-title">{t("materialRequestTitle")}</Label>
+                      <Input 
+                        id="request-title" 
+                        placeholder={t("materialRequestTitlePlaceholder")}
+                        value={currentMaterialRequest.title}
+                        onChange={(e) => setCurrentMaterialRequest(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="building">{t("buildingName")}</Label>
+                      <Input 
+                        id="building" 
+                        placeholder={t("buildingNamePlaceholder")}
+                        value={currentMaterialRequest.building}
+                        onChange={(e) => setCurrentMaterialRequest(prev => ({ ...prev, building: e.target.value }))}
+                      />
+                    </div>
                   </div>
-                  <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm">{t("highPriority")}</span>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span><MapPin className="w-3 h-3 inline mr-1" />3º {t("floor")} - {t("block")} A</span>
-                  <span><Clock className="w-3 h-3 inline mr-1" />15/03/2024 14:32</span>
-                  <span><Mail className="w-3 h-3 inline mr-1" />{t("sentForMaintenance")}</span>
-                </div>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="font-semibold">{t("burnedOutBulb")} - Hall principal</h3>
-                    <p className="text-sm text-muted-foreground">{t("createdBy")}: Maria Santos ({t("reception")})</p>
+                    <Label htmlFor="caretaker">{t("caretakerName")}</Label>
+                    <Input 
+                      id="caretaker" 
+                      placeholder={t("caretakerNamePlaceholder")}
+                      value={currentMaterialRequest.caretaker}
+                      onChange={(e) => setCurrentMaterialRequest(prev => ({ ...prev, caretaker: e.target.value }))}
+                    />
                   </div>
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">{t("mediumPriority")}</span>
-                </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span><MapPin className="w-3 h-3 inline mr-1" />{t("lobby")} - Hall</span>
-                  <span><Clock className="w-3 h-3 inline mr-1" />14/03/2024 09:15</span>
-                  <span><Mail className="w-3 h-3 inline mr-1" />{t("awaitingResponse")}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  
+                  {/* Spreadsheet-like table for materials */}
+                  <div className="border rounded-lg">
+                    <div className="p-4 bg-muted border-b">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold">{t("materialsList")}</h3>
+                        <Button onClick={addMaterialItem} size="sm" className="gap-2">
+                          <Plus className="w-4 h-4" />
+                          {t("addItem")}
+                        </Button>
+                      </div>
+                    </div>
+                    {currentMaterialRequest.items.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t("productType")}</TableHead>
+                            <TableHead className="w-24">{t("quantity")}</TableHead>
+                            <TableHead>{t("observations")}</TableHead>
+                            <TableHead className="w-16">{t("actions")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {currentMaterialRequest.items.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <Input 
+                                  placeholder={t("productTypePlaceholder")}
+                                  value={item.productType}
+                                  onChange={(e) => updateMaterialItem(item.id, 'productType', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input 
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateMaterialItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input 
+                                  placeholder={t("observationsPlaceholder")}
+                                  value={item.observations}
+                                  onChange={(e) => updateMaterialItem(item.id, 'observations', e.target.value)}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => removeMaterialItem(item.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="p-8 text-center text-muted-foreground">
+                        <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p>{t("noItemsAdded")}</p>
+                        <p className="text-sm">{t("clickAddToStart")}</p>
+                      </div>
+                    )}
+                  </div>
 
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>{t("relatedFeatures")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("roleBasedAccessControl")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("roleBasedAccessControlDesc")}
-                </p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("requestHistoryManagement")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("requestHistoryManagementDesc")}
-                </p>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h3 className="font-semibold mb-2">{t("inspectionRegistryReport")}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {t("inspectionRegistryReportDesc")}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="flex gap-2">
+                    <Button onClick={saveMaterialRequest} className="gap-2">
+                      <Send className="w-4 h-4" />
+                      {t("saveRequest")}
+                    </Button>
+                    <Button variant="outline" className="gap-2">
+                      <FileDown className="w-4 h-4" />
+                      {t("exportExcel")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quote Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="w-5 h-5" />
+                    {t("quotingSystem")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold mb-2">{t("company1")}</h3>
+                      <div className="space-y-2">
+                        <Input placeholder={t("companyName")} />
+                        <Input placeholder={t("telephone")} />
+                        <Input placeholder={t("email")} />
+                      </div>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold mb-2">{t("company2")}</h3>
+                      <div className="space-y-2">
+                        <Input placeholder={t("companyName")} />
+                        <Input placeholder={t("telephone")} />
+                        <Input placeholder={t("email")} />
+                      </div>
+                    </div>
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold mb-2">{t("company3")}</h3>
+                      <div className="space-y-2">
+                        <Input placeholder={t("companyName")} />
+                        <Input placeholder={t("telephone")} />
+                        <Input placeholder={t("email")} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      📧 {t("requestsAutoSent")}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Material Requests History */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5" />
+                      {t("requestHistory")}
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Download className="w-4 h-4" />
+                      {t("export")}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {materialRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {materialRequests.map((request) => (
+                        <div key={request.id} className="p-4 border rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="font-semibold">{request.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {request.building} - {request.caretaker}
+                              </p>
+                            </div>
+                            {getStatusBadge(request.status)}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                            <span>{request.items.length} {t("items")}</span>
+                            <span>{t("createdOn")}: {new Date(request.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <Eye className="w-4 h-4" />
+                              {t("viewDetails")}
+                            </Button>
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <Edit className="w-4 h-4" />
+                              {t("useAsTemplate")}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>{t("noMaterialRequests")}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="technical" className="space-y-6">
+              {/* Technical Call Form */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Wrench className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {t("openTechnicalCall")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="call-title">{t("callTitle")}</Label>
+                      <Input 
+                        id="call-title" 
+                        placeholder={t("callTitlePlaceholder")}
+                        value={currentTechnicalCall.title}
+                        onChange={(e) => setCurrentTechnicalCall(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="call-location">{t("callLocation")}</Label>
+                      <Input 
+                        id="call-location" 
+                        placeholder={t("callLocationPlaceholder")}
+                        value={currentTechnicalCall.location}
+                        onChange={(e) => setCurrentTechnicalCall(prev => ({ ...prev, location: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <Label htmlFor="call-priority">{t("priority")}</Label>
+                      <Select 
+                        value={currentTechnicalCall.priority} 
+                        onValueChange={(value: any) => setCurrentTechnicalCall(prev => ({ ...prev, priority: value }))}
+                      >
+                        <SelectTrigger className="text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">{t("low")}</SelectItem>
+                          <SelectItem value="medium">{t("medium")}</SelectItem>
+                          <SelectItem value="high">{t("high")}</SelectItem>
+                          <SelectItem value="urgent">{t("urgent")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="company-email" className="text-sm">{t("companyEmail")}</Label>
+                      <Input 
+                        id="company-email" 
+                        type="email"
+                        placeholder={t("companyEmailPlaceholder")}
+                        className="text-sm"
+                        value={currentTechnicalCall.companyEmail || ''}
+                        onChange={(e) => setCurrentTechnicalCall(prev => ({ ...prev, companyEmail: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="call-description">{t("problemDescription")}</Label>
+                    <Textarea 
+                      id="call-description" 
+                      placeholder={t("problemDescriptionPlaceholder")}
+                      rows={4}
+                      value={currentTechnicalCall.description}
+                      onChange={(e) => setCurrentTechnicalCall(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Photo Upload */}
+                  <div>
+                    <Label>{t("problemPhotos")}</Label>
+                    
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    
+                    {/* Upload Area */}
+                    <div className="border-2 border-dashed border-muted rounded-lg p-4 sm:p-6 lg:p-8 text-center">
+                      <Camera className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-2 sm:mb-3 lg:mb-4 text-muted-foreground" />
+                      <p className="text-muted-foreground mb-3 sm:mb-4 text-xs sm:text-sm">{t("addPhotosToDocument")}</p>
+                      <div className="flex justify-center">
+                        <Button 
+                          variant="outline" 
+                          className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
+                          onClick={() => fileInputRef.current?.click()}
+                          type="button"
+                        >
+                          <FileUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                          {t("upload")}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Photo Preview Grid */}
+                    {currentTechnicalCall.photos.length > 0 && (
+                      <div className="mt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {currentTechnicalCall.photos.map((photo, index) => (
+                            <div key={index} className="relative group">
+                              <img 
+                                src={photo} 
+                                alt={`Problem photo ${index + 1}`}
+                                className="w-full h-24 sm:h-32 object-cover rounded-lg border"
+                              />
+                              <button
+                                onClick={() => removePhoto(index)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                type="button"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-center">
+                    <Button onClick={saveTechnicalCall} className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2">
+                      <Send className="w-3 h-3 sm:w-4 sm:h-4" />
+                      {t("send")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Technical Calls List */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-base sm:text-lg">
+                      <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      {t("technicalCallsList")}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                        <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden xs:inline">{t("emailList")}</span>
+                        <span className="xs:hidden">{t("email")}</span>
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                        <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                        {t("report")}
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6">
+                  <div className="space-y-2 mb-4">
+                    <div className="grid grid-cols-2 sm:flex gap-2">
+                      <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">{t("all")}</Button>
+                      <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">{t("open")}</Button>
+                      <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">{t("inProgress")}</Button>
+                      <Button variant="outline" size="sm" className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">{t("resolved")}</Button>
+                    </div>
+                  </div>
+                  
+                  {technicalCalls.length > 0 ? (
+                    <div className="space-y-4">
+                      {technicalCalls.map((call) => (
+                        <div key={call.id} className="p-4 border rounded-lg">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="font-semibold">{call.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {t("createdBy")}: {call.createdBy} - {call.location}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              {getStatusBadge(call.status)}
+                              <Badge className={`${
+                                call.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                call.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                                call.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {call.priority === 'urgent' ? t('urgent') :
+                                 call.priority === 'high' ? t('high') :
+                                 call.priority === 'medium' ? t('medium') : t('low')}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm mb-3">{call.description}</p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                            <span><Clock className="w-3 h-3 inline mr-1" />
+                              {new Date(call.createdAt).toLocaleDateString()}
+                            </span>
+                            {call.photos.length > 0 && (
+                              <span><Camera className="w-3 h-3 inline mr-1" />
+                                {call.photos.length} {t("photos")}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                              <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                              {t("viewDetails")}
+                            </Button>
+                            {call.status === 'open' && (
+                              <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline">{t("markAsResolved")}</span>
+                                <span className="xs:hidden">{t("resolved")}</span>
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                              <Mail className="w-3 h-3 sm:w-4 sm:h-4" />
+                              <span className="hidden xs:inline">{t("sendUpdate")}</span>
+                              <span className="xs:hidden">{t("update")}</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Wrench className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>{t("noTechnicalCalls")}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+        </div>
       </div>
     </div>
   );
