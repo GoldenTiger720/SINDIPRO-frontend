@@ -183,6 +183,57 @@ export default function FieldManagement() {
     }));
   };
 
+  const takePhoto = async () => {
+    try {
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Use back camera if available
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
+      });
+      
+      // Create video element to capture frame
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      
+      // Wait for video to be ready
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+      });
+      
+      // Create canvas to capture frame
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      
+      if (ctx) {
+        // Draw current frame to canvas
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to base64 image
+        const imageUrl = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Add to photos
+        setCurrentTechnicalCall(prev => ({
+          ...prev,
+          photos: [...prev.photos, imageUrl]
+        }));
+      }
+      
+      // Stop camera stream
+      stream.getTracks().forEach(track => track.stop());
+      
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      // Fallback to file upload if camera access fails
+      alert('Camera access denied or unavailable. Please use the Upload button instead.');
+    }
+  };
+
   const saveTechnicalCall = () => {
     if (!currentTechnicalCall.title || !currentTechnicalCall.description) return;
     
@@ -555,7 +606,16 @@ export default function FieldManagement() {
                     <div className="border-2 border-dashed border-muted rounded-lg p-4 sm:p-6 lg:p-8 text-center">
                       <Camera className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-2 sm:mb-3 lg:mb-4 text-muted-foreground" />
                       <p className="text-muted-foreground mb-3 sm:mb-4 text-xs sm:text-sm">{t("addPhotosToDocument")}</p>
-                      <div className="flex justify-center">
+                      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                        <Button 
+                          variant="outline" 
+                          className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
+                          onClick={takePhoto}
+                          type="button"
+                        >
+                          <Camera className="w-3 h-3 sm:w-4 sm:h-4" />
+                          {t("takePhoto")}
+                        </Button>
                         <Button 
                           variant="outline" 
                           className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
