@@ -6,10 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Upload, TrendingUp, DollarSign, FileSpreadsheet, Calculator, Home, PieChart, FileText, Download, Edit, Plus, Trash2 } from "lucide-react";
+import { BarChart3, Upload, TrendingUp, DollarSign, FileSpreadsheet, Calculator, Home, PieChart, FileText, Download, Edit, Plus, Trash2, Building2, X, Check } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useBuildings } from "@/hooks/useBuildings";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -80,8 +83,71 @@ const mockMonthlyExpenses = [
   { month: "Março", expenses: { 1001: 2500, 1002: 1000, 1003: 520, 2001: 1500, 2002: 1200, 2003: 400, 3001: 1500, 3002: 480, 4001: 4000, 4002: 1200 } },
 ];
 
+// Types for chart of accounts
+type Account = {
+  id: number;
+  code: string;
+  name: string;
+  type: 'main' | 'sub';
+  expectedAmount?: number;
+  actualAmount?: number;
+  parentId: number | null;
+  subAccounts?: Account[];
+};
+
+type CollectionAccount = {
+  id: number;
+  name: string;
+  purpose: string;
+  monthlyAmount: number;
+  startDate: string;
+  endDate?: string;
+  active: boolean;
+};
+
 export default function Financial() {
   const { t } = useTranslation();
+  const { data: buildings = [], isLoading: buildingsLoading } = useBuildings();
+  
+  // State for building selection
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
+  const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
+  
+  // Chart of Accounts state
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [showAccountDialog, setShowAccountDialog] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [newAccount, setNewAccount] = useState<Partial<Account>>({
+    code: '',
+    name: '',
+    type: 'main',
+    expectedAmount: 0,
+    actualAmount: 0,
+    parentId: null
+  });
+  
+  // Collection accounts state
+  const [collectionAccounts, setCollectionAccounts] = useState<CollectionAccount[]>([
+    {
+      id: 1,
+      name: t('condominiumFee'),
+      purpose: t('operatingExpenses'),
+      monthlyAmount: 50000,
+      startDate: '2024-01-01',
+      active: true
+    }
+  ]);
+  const [showCollectionDialog, setShowCollectionDialog] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<CollectionAccount | null>(null);
+  
+  // Market values state
+  const [marketValues, setMarketValues] = useState({
+    saleMin: '',
+    saleMax: '',
+    rentalMin: '',
+    rentalMax: ''
+  });
+  
   const [calculationData, setCalculationData] = useState({
     totalExpense: "5000",
     calculationType: "area",
@@ -91,6 +157,136 @@ export default function Financial() {
     }), {} as Record<number, string>)
   });
 
+  // Effect to set first building as default
+  useEffect(() => {
+    if (buildings.length > 0 && !selectedBuildingId) {
+      setSelectedBuildingId(buildings[0].id.toString());
+      setSelectedBuilding(buildings[0]);
+    }
+  }, [buildings, selectedBuildingId]);
+  
+  // Initialize accounts with mock data
+  useEffect(() => {
+    if (accounts.length === 0) {
+      setAccounts([
+        {
+          id: 1,
+          code: "1000",
+          name: t("administration"),
+          type: "main",
+          expectedAmount: 48000,
+          actualAmount: 45000,
+          parentId: null,
+          subAccounts: [
+            { id: 11, code: "1001", name: t("salaries"), type: "sub", expectedAmount: 30000, actualAmount: 28000, parentId: 1 },
+            { id: 12, code: "1002", name: t("socialCharges"), type: "sub", expectedAmount: 12000, actualAmount: 11000, parentId: 1 },
+            { id: 13, code: "1003", name: t("officeSupplies"), type: "sub", expectedAmount: 6000, actualAmount: 6000, parentId: 1 },
+          ]
+        },
+        {
+          id: 2,
+          code: "2000",
+          name: t("maintenance"),
+          type: "main",
+          expectedAmount: 36000,
+          actualAmount: 38000,
+          parentId: null,
+          subAccounts: [
+            { id: 21, code: "2001", name: t("elevatorMaintenance"), type: "sub", expectedAmount: 18000, actualAmount: 20000, parentId: 2 },
+            { id: 22, code: "2002", name: t("electricalMaintenance"), type: "sub", expectedAmount: 12000, actualAmount: 12000, parentId: 2 },
+            { id: 23, code: "2003", name: t("plumbingMaintenance"), type: "sub", expectedAmount: 6000, actualAmount: 6000, parentId: 2 },
+          ]
+        }
+      ]);
+    }
+  }, [accounts, t]);
+  
+  // Handle building selection
+  const handleBuildingChange = (buildingId: string) => {
+    setSelectedBuildingId(buildingId);
+    const building = buildings.find(b => b.id.toString() === buildingId);
+    setSelectedBuilding(building);
+  };
+  
+  // Handle account creation/editing
+  const handleSaveAccount = () => {
+    if (editingAccount) {
+      // Update existing account
+      setAccounts(accounts.map(acc => {
+        if (acc.id === editingAccount.id) {
+          return { ...acc, ...newAccount };
+        }
+        if (acc.subAccounts) {
+          acc.subAccounts = acc.subAccounts.map(sub => 
+            sub.id === editingAccount.id ? { ...sub, ...newAccount } : sub
+          );
+        }
+        return acc;
+      }));
+    } else {
+      // Create new account
+      const newId = Math.max(...accounts.map(a => a.id), ...accounts.flatMap(a => a.subAccounts?.map(s => s.id) || [])) + 1;
+      const accountToAdd: Account = {
+        id: newId,
+        code: newAccount.code!,
+        name: newAccount.name!,
+        type: newAccount.type as 'main' | 'sub',
+        expectedAmount: newAccount.expectedAmount || 0,
+        actualAmount: newAccount.actualAmount || 0,
+        parentId: newAccount.parentId || null,
+        subAccounts: newAccount.type === 'main' ? [] : undefined
+      };
+      
+      if (newAccount.type === 'main') {
+        setAccounts([...accounts, accountToAdd]);
+      } else {
+        // Add as sub-account
+        setAccounts(accounts.map(acc => {
+          if (acc.id === newAccount.parentId) {
+            return {
+              ...acc,
+              subAccounts: [...(acc.subAccounts || []), accountToAdd]
+            };
+          }
+          return acc;
+        }));
+      }
+    }
+    
+    setShowAccountDialog(false);
+    setEditingAccount(null);
+    setNewAccount({
+      code: '',
+      name: '',
+      type: 'main',
+      expectedAmount: 0,
+      actualAmount: 0,
+      parentId: null
+    });
+  };
+  
+  // Handle collection account save
+  const handleSaveCollection = () => {
+    if (editingCollection) {
+      setCollectionAccounts(collectionAccounts.map(col => 
+        col.id === editingCollection.id ? { ...col, ...editingCollection } : col
+      ));
+    } else {
+      const newId = Math.max(...collectionAccounts.map(c => c.id), 0) + 1;
+      setCollectionAccounts([...collectionAccounts, {
+        id: newId,
+        name: editingCollection?.name || '',
+        purpose: editingCollection?.purpose || '',
+        monthlyAmount: editingCollection?.monthlyAmount || 0,
+        startDate: editingCollection?.startDate || new Date().toISOString().split('T')[0],
+        active: true
+      }]);
+    }
+    
+    setShowCollectionDialog(false);
+    setEditingCollection(null);
+  };
+  
   // Brazilian system state
   const [brazilianData, setBrazilianData] = useState({
     budgetAccounts: mockBudgetAccounts,
@@ -196,13 +392,232 @@ export default function Financial() {
               <Calculator className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
               <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("condominiumCalculations")}</span>
             </TabsTrigger>
-            <TabsTrigger value="brazilian-system" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-[10px] sm:text-xs lg:text-sm">
-              <FileText className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
-              <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("brazilianSystem")}</span>
+            <TabsTrigger value="marketing-values" className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1 p-1 sm:p-2 text-[10px] sm:text-xs lg:text-sm">
+              <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 lg:w-4 lg:h-4" />
+              <span className="text-center leading-none sm:leading-tight truncate max-w-full">{t("marketingValues")}</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="budget-management" className="space-y-6">
+            {/* Building Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  {t("selectBuilding")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("selectBuildingPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buildings.map((building) => (
+                      <SelectItem key={building.id} value={building.id.toString()}>
+                        {building.building_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+            
+            {/* Chart of Accounts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <span className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    {t("chartOfAccounts")}
+                  </span>
+                  <Button 
+                    onClick={() => {
+                      setEditingAccount(null);
+                      setNewAccount({
+                        code: '',
+                        name: '',
+                        type: 'main',
+                        expectedAmount: 0,
+                        actualAmount: 0,
+                        parentId: null
+                      });
+                      setShowAccountDialog(true);
+                    }}
+                    size="sm"
+                    className="w-full sm:w-auto"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    {t("addAccount")}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {accounts.map((account) => (
+                    <div key={account.id} className="border rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                          <Badge className="flex-shrink-0">{account.code}</Badge>
+                          <h4 className="font-semibold text-sm sm:text-base truncate">{account.name}</h4>
+                        </div>
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                            onClick={() => {
+                              setEditingAccount(null);
+                              setNewAccount({
+                                code: '',
+                                name: '',
+                                type: 'sub',
+                                expectedAmount: 0,
+                                actualAmount: 0,
+                                parentId: account.id
+                              });
+                              setShowAccountDialog(true);
+                            }}
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span className="hidden sm:inline ml-1">{t("addSub")}</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                            onClick={() => {
+                              setEditingAccount(account);
+                              setNewAccount(account);
+                              setShowAccountDialog(true);
+                            }}
+                          >
+                            <Edit className="w-3 h-3" />
+                            <span className="hidden sm:inline ml-1">{t("edit")}</span>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
+                        <div className="flex justify-between sm:block">
+                          <p className="text-muted-foreground">{t("expectedAmount")}</p>
+                          <p className="font-semibold">R$ {account.expectedAmount?.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div className="flex justify-between sm:block">
+                          <p className="text-muted-foreground">{t("actualAmount")}</p>
+                          <p className="font-semibold">R$ {account.actualAmount?.toLocaleString('pt-BR')}</p>
+                        </div>
+                        <div className="flex justify-between sm:block">
+                          <p className="text-muted-foreground">{t("variance")}</p>
+                          <p className={`font-semibold ${(account.actualAmount || 0) > (account.expectedAmount || 0) ? 'text-red-600' : 'text-green-600'}`}>
+                            {((account.actualAmount || 0) - (account.expectedAmount || 0) > 0 ? '+' : '')}
+                            R$ {Math.abs((account.actualAmount || 0) - (account.expectedAmount || 0)).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      {account.subAccounts && account.subAccounts.length > 0 && (
+                        <div className="mt-3 ml-0 sm:ml-6 space-y-2">
+                          {account.subAccounts.map((sub) => (
+                            <div key={sub.id} className="p-2 bg-gray-50 rounded">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">{sub.code}</Badge>
+                                  <span className="text-xs sm:text-sm truncate">{sub.name}</span>
+                                </div>
+                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 text-xs sm:text-sm">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 min-w-0">
+                                    <span className="text-muted-foreground whitespace-nowrap">
+                                      {t("expected")}: <span className="font-semibold">R$ {sub.expectedAmount?.toLocaleString('pt-BR')}</span>
+                                    </span>
+                                    <span className="text-muted-foreground whitespace-nowrap">
+                                      {t("actual")}: <span className="font-semibold">R$ {sub.actualAmount?.toLocaleString('pt-BR')}</span>
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 flex-shrink-0"
+                                    onClick={() => {
+                                      setEditingAccount(sub);
+                                      setNewAccount(sub);
+                                      setShowAccountDialog(true);
+                                    }}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Budget vs Actual Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <BarChart3 className="w-5 h-5" />
+                  {t("budgetVsActualChart")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-6">
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={accounts.map(account => ({
+                    name: account.name.length > 10 ? account.name.substring(0, 10) + '...' : account.name,
+                    expected: account.expectedAmount || 0,
+                    actual: account.actualAmount || 0,
+                    variance: (account.actualAmount || 0) - (account.expectedAmount || 0)
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Legend />
+                    <Bar dataKey="expected" fill="#8884d8" name={t("expected")} />
+                    <Bar dataKey="actual" fill="#82ca9d" name={t("actual")} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
+            {/* Expense Distribution Pie Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <PieChart className="w-5 h-5" />
+                  {t("expenseDistribution")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-6">
+                <ResponsiveContainer width="100%" height={250}>
+                  <RePieChart>
+                    <Pie
+                      data={accounts.filter(account => (account.actualAmount || 0) > 0).map(account => ({
+                        name: account.name,
+                        value: account.actualAmount || 0
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {accounts.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#4ECDC4'][index % 7]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                  </RePieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
@@ -353,6 +768,133 @@ export default function Financial() {
           </TabsContent>
 
           <TabsContent value="condominium-calculations" className="space-y-6">
+            {/* Collection Accounts Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    {t("collectionAccounts")}
+                  </span>
+                  <Button
+                    onClick={() => {
+                      setEditingCollection({
+                        id: 0,
+                        name: '',
+                        purpose: '',
+                        monthlyAmount: 0,
+                        startDate: new Date().toISOString().split('T')[0],
+                        active: true
+                      });
+                      setShowCollectionDialog(true);
+                    }}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    {t("addCollection")}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {collectionAccounts.map((collection) => (
+                    <div key={collection.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <h4 className="font-semibold">{collection.name}</h4>
+                          <p className="text-sm text-muted-foreground">{collection.purpose}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={collection.active ? "default" : "secondary"}>
+                            {collection.active ? t("active") : t("inactive")}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingCollection(collection);
+                              setShowCollectionDialog(true);
+                            }}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span>{t("monthlyAmount")}: <strong>R$ {collection.monthlyAmount.toLocaleString('pt-BR')}</strong></span>
+                        <span>{t("startDate")}: {new Date(collection.startDate).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Total Collections */}
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">{t("totalMonthlyCollections")}:</span>
+                      <span className="font-bold text-lg">
+                        R$ {collectionAccounts.filter(c => c.active).reduce((sum, c) => sum + c.monthlyAmount, 0).toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Collection Accounts Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  {t("collectionAccountsChart")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={collectionAccounts.filter(c => c.active).map(collection => ({
+                    name: collection.name.length > 12 ? collection.name.substring(0, 12) + '...' : collection.name,
+                    amount: collection.monthlyAmount
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Bar dataKey="amount" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
+            {/* Monthly Expense Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  {t("monthlyExpenseTrends")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={[
+                    { month: 'Jan', expenses: 45000, collections: 50000, balance: 5000 },
+                    { month: 'Fev', expenses: 48000, collections: 50000, balance: 2000 },
+                    { month: 'Mar', expenses: 46000, collections: 52000, balance: 6000 },
+                    { month: 'Abr', expenses: 47000, collections: 52000, balance: 5000 },
+                    { month: 'Mai', expenses: 49000, collections: 52000, balance: 3000 },
+                    { month: 'Jun', expenses: 45000, collections: 52000, balance: 7000 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Legend />
+                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" name={t("expenses")} strokeWidth={2} />
+                    <Line type="monotone" dataKey="collections" stroke="#10b981" name={t("collections")} strokeWidth={2} />
+                    <Line type="monotone" dataKey="balance" stroke="#3b82f6" name={t("balance")} strokeWidth={2} strokeDasharray="5 5" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
             {/* Calculation Settings */}
             <Card>
               <CardHeader>
@@ -484,16 +1026,98 @@ export default function Financial() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="brazilian-system" className="space-y-6">
-            {/* Ideal Fractions Management */}
+          <TabsContent value="marketing-values" className="space-y-6">
+            {/* Building and Location Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  {t("buildingInformation")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedBuilding ? (
+                  <div className="space-y-2">
+                    <p><strong>{t("building")}:</strong> {selectedBuilding.building_name}</p>
+                    <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
+                    <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">{t("selectBuildingFirst")}</p>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Market Values */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  {t("marketValueRanges")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-3">{t("saleValuePerM2")}</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label>{t("minimum")}</Label>
+                        <Input
+                          placeholder="R$ 10.000,00"
+                          value={marketValues.saleMin}
+                          onChange={(e) => setMarketValues({...marketValues, saleMin: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t("maximum")}</Label>
+                        <Input
+                          placeholder="R$ 14.000,00"
+                          value={marketValues.saleMax}
+                          onChange={(e) => setMarketValues({...marketValues, saleMax: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-3">{t("rentalValuePerM2")}</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label>{t("minimum")}</Label>
+                        <Input
+                          placeholder="R$ 45,00"
+                          value={marketValues.rentalMin}
+                          onChange={(e) => setMarketValues({...marketValues, rentalMin: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <Label>{t("maximum")}</Label>
+                        <Input
+                          placeholder="R$ 65,00"
+                          value={marketValues.rentalMax}
+                          onChange={(e) => setMarketValues({...marketValues, rentalMax: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    {t("marketValueNote")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Units Market Values */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <Home className="w-5 h-5" />
-                  {t("idealFractionsManagement")}
+                  {t("unitsMarketValues")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  {t("configureIdealFractions")}
+                  {t("unitValueAnalysis")}
                 </div>
               </CardHeader>
               <CardContent>
@@ -517,230 +1141,177 @@ export default function Financial() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="min-w-[60px]">{t("unit")}</TableHead>
-                          <TableHead className="min-w-[120px]">{t("owner")}</TableHead>
-                          <TableHead className="min-w-[60px]">{t("area")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("idealFraction")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("monthlyFee")}</TableHead>
-                          <TableHead className="min-w-[80px]">{t("actions")}</TableHead>
+                          <TableHead className="min-w-[60px]">{t("area")} (m²)</TableHead>
+                          <TableHead className="min-w-[100px]">{t("condominiumPerM2")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("rentalPerM2")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("salePerM2")}</TableHead>
+                          <TableHead className="min-w-[100px]">{t("totalSaleValue")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {brazilianData.units.map((unit) => (
-                          <TableRow key={unit.id}>
-                            <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
-                            <TableCell className="text-xs sm:text-sm">{unit.owner}</TableCell>
-                            <TableCell className="text-xs sm:text-sm">{unit.area}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                className="w-16 sm:w-20 text-xs"
-                                value={unit.idealFraction}
-                                onChange={(e) => {
-                                  const newUnits = brazilianData.units.map(u => 
-                                    u.id === unit.id ? {...u, idealFraction: parseFloat(e.target.value) || 0} : u
-                                  );
-                                  setBrazilianData({...brazilianData, units: newUnits});
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
-                              R$ {calculateUnitMonthlyFee(unit).toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
-                                <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {brazilianData.units.map((unit) => {
+                          const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
+                          const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                            (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                             parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
+                          const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                            (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                             parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
+                          
+                          return (
+                            <TableRow key={unit.id}>
+                              <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">{unit.area.toFixed(1)}</TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                R$ {condominiumPerM2.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                R$ {avgRentalPerM2.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-xs sm:text-sm">
+                                R$ {avgSalePerM2.toLocaleString('pt-BR')}
+                              </TableCell>
+                              <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
+                                R$ {(unit.area * avgSalePerM2).toLocaleString('pt-BR')}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
                   
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs sm:text-sm">{t("totalIdealFractions")}:</span>
-                      <span className="font-bold text-xs sm:text-sm">
-                        {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0).toFixed(3)}
-                        {brazilianData.units.reduce((sum, unit) => sum + unit.idealFraction, 0) !== 1.0 && 
-                          <span className="text-red-500 ml-2 text-xs">{t("shouldEqualOne")}</span>
-                        }
-                      </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <h4 className="font-semibold text-green-900 mb-2">{t("marketAnalysis")}</h4>
+                      <p className="text-sm text-green-800">
+                        {t("totalBuildingValue")}: <strong>R$ {brazilianData.units.reduce((sum, unit) => {
+                          const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                            (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                             parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
+                          return sum + (unit.area * avgSalePerM2);
+                        }, 0).toLocaleString('pt-BR')}</strong>
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <h4 className="font-semibold text-blue-900 mb-2">{t("exportOptions")}</h4>
+                      <Button variant="outline" className="w-full" onClick={exportToExcel}>
+                        <Download className="w-4 h-4 mr-2" />
+                        {t("exportMarketAnalysis")}
+                      </Button>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Budget Matrix Editor */}
+            
+            {/* Market Values Comparison Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                  <FileSpreadsheet className="w-5 h-5" />
-                  {t("annualBudgetMatrix")}
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  {t("marketValuesComparison")}
                 </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  {t("mainAccountsSubaccounts")}
-                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {brazilianData.budgetAccounts.map((account) => (
-                    <div key={account.id} className="border rounded-lg p-3 sm:p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                          <Badge variant="default" className="bg-slate-700 w-fit">
-                            {account.code}
-                          </Badge>
-                          <h3 className="font-bold text-sm sm:text-base truncate">{account.name}</h3>
-                          <span className="text-sm sm:text-base lg:text-lg font-bold text-green-600">
-                            R$ {account.annualBudget.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
-                            <Plus className="w-3 h-3 sm:mr-1" />
-                            <span className="hidden sm:inline">{t("addSubAccount")}</span>
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
-                            <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div className="ml-0 sm:ml-6 space-y-2">
-                        {account.subAccounts?.map((subAccount) => (
-                          <div key={subAccount.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 bg-gray-50 rounded">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                              <Badge variant="outline" className="w-fit">{subAccount.code}</Badge>
-                              <span className="text-xs sm:text-sm truncate">{subAccount.name}</span>
-                              <span className="font-semibold text-green-600 text-xs sm:text-sm">
-                                R$ {subAccount.annualBudget.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex gap-1 flex-shrink-0 self-start sm:self-center">
-                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
-                                <Edit className="w-2 h-2 sm:w-3 sm:h-3" />
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-auto">
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={brazilianData.units.slice(0, 8).map(unit => {
+                    const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                      (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                       parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
+                    const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                      (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                       parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
+                    
+                    return {
+                      unit: unit.number,
+                      rental: unit.area * avgRentalPerM2,
+                      saleValue: unit.area * avgSalePerM2 / 1000, // Divide by 1000 to show in thousands
+                      condoFee: calculateUnitMonthlyFee(unit)
+                    };
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="unit" />
+                    <YAxis yAxisId="left" orientation="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip formatter={(value, name) => {
+                      if (name === t("monthlyRental") || name === t("condoFee")) return `R$ ${value.toLocaleString('pt-BR')}`;
+                      return `R$ ${(value * 1000).toLocaleString('pt-BR')}`;
+                    }} />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="rental" fill="#8884d8" name={t("monthlyRental")} />
+                    <Bar yAxisId="left" dataKey="condoFee" fill="#ff7300" name={t("condoFee")} />
+                    <Bar yAxisId="right" dataKey="saleValue" fill="#82ca9d" name={t("saleValueThousands")} />
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
-
-            {/* Monthly Tracking vs Forecast */}
+            
+            {/* Unit Characteristics Radar Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
+                <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
-                  {t("monthlyTrackingForecast")}
+                  {t("unitCharacteristics")}
                 </CardTitle>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                  <Label className="text-xs sm:text-sm">{t("selectMonth")}:</Label>
-                  <Select value={brazilianData.selectedMonth} onValueChange={(value) => setBrazilianData({...brazilianData, selectedMonth: value})}>
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
-                        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map(month => (
-                        <SelectItem key={month} value={month}>{month}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[80px]">{t("code")}</TableHead>
-                        <TableHead className="min-w-[120px]">{t("account")}</TableHead>
-                        <TableHead className="min-w-[100px]">{t("monthlyBudget")}</TableHead>
-                        <TableHead className="min-w-[100px]">{t("actualExpense")}</TableHead>
-                        <TableHead className="min-w-[80px]">{t("variance")}</TableHead>
-                        <TableHead className="min-w-[60px]">%</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {getAllSubAccounts().map((subAccount) => {
-                        const monthlyBudget = getMonthlyBudget(subAccount.id);
-                        const actualExpense = getMonthlyExpense(subAccount.id, brazilianData.selectedMonth);
-                        const variance = actualExpense - monthlyBudget;
-                        const variancePercent = monthlyBudget > 0 ? (variance / monthlyBudget) * 100 : 0;
-                        
-                        return (
-                          <TableRow key={subAccount.id}>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">{subAccount.code}</Badge>
-                            </TableCell>
-                            <TableCell className="text-xs sm:text-sm">{subAccount.name}</TableCell>
-                            <TableCell className="text-xs sm:text-sm">R$ {monthlyBudget.toFixed(2)}</TableCell>
-                            <TableCell className="text-xs sm:text-sm">R$ {actualExpense.toFixed(2)}</TableCell>
-                            <TableCell className={variance >= 0 ? "text-red-600 text-xs sm:text-sm" : "text-green-600 text-xs sm:text-sm"}>
-                              R$ {Math.abs(variance).toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={Math.abs(variancePercent) > 10 ? "destructive" : variancePercent > 0 ? "secondary" : "default"} className="text-xs">
-                                {variancePercent > 0 ? "+" : ""}{variancePercent.toFixed(1)}%
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={[
+                    { subject: t("area"), unit101: 85, unit102: 90, unit201: 85, fullMark: 100 },
+                    { subject: t("location"), unit101: 90, unit102: 85, unit201: 88, fullMark: 100 },
+                    { subject: t("condition"), unit101: 86, unit102: 95, unit201: 80, fullMark: 100 },
+                    { subject: t("amenities"), unit101: 80, unit102: 88, unit201: 85, fullMark: 100 },
+                    { subject: t("view"), unit101: 85, unit102: 90, unit201: 75, fullMark: 100 },
+                    { subject: t("parking"), unit101: 100, unit102: 100, unit201: 100, fullMark: 100 },
+                  ]}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="subject" />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar name="Unit 101" dataKey="unit101" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                    <Radar name="Unit 102" dataKey="unit102" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                    <Radar name="Unit 201" dataKey="unit201" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
+            {/* Price Trends Over Time */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  {t("marketTrends")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[
+                    { month: 'Jan 2024', salePrice: 11500, rentalPrice: 52, condoFee: 15 },
+                    { month: 'Fev 2024', salePrice: 11800, rentalPrice: 53, condoFee: 15 },
+                    { month: 'Mar 2024', salePrice: 12000, rentalPrice: 54, condoFee: 16 },
+                    { month: 'Abr 2024', salePrice: 12200, rentalPrice: 55, condoFee: 16 },
+                    { month: 'Mai 2024', salePrice: 12400, rentalPrice: 56, condoFee: 16 },
+                    { month: 'Jun 2024', salePrice: 12500, rentalPrice: 57, condoFee: 17 }
+                  ]}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip formatter={(value, name) => {
+                      if (name.includes('Price')) return `R$ ${value.toLocaleString('pt-BR')}/m²`;
+                      return `R$ ${value}/m²`;
+                    }} />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="salePrice" stroke="#8884d8" name={t("salePrice")} strokeWidth={2} />
+                    <Line yAxisId="right" type="monotone" dataKey="rentalPrice" stroke="#82ca9d" name={t("rentalPrice")} strokeWidth={2} />
+                    <Line yAxisId="right" type="monotone" dataKey="condoFee" stroke="#ff7300" name={t("condoFeePerM2")} strokeWidth={2} strokeDasharray="5 5" />
+                  </LineChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Template Generator */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                  <FileSpreadsheet className="w-5 h-5" />
-                  {t("standardTemplateGenerator")}
-                </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  {t("generateStandardizedSpreadsheets")}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Button className="gap-2 text-xs sm:text-sm px-3 py-2">
-                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="truncate">{t("downloadMonthlyExpenseTemplate")}</span>
-                  </Button>
-                  <Button variant="outline" className="gap-2 text-xs sm:text-sm px-3 py-2">
-                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="truncate">{t("downloadBudgetTemplate")}</span>
-                  </Button>
-                  <Button variant="outline" className="gap-2 text-xs sm:text-sm px-3 py-2 sm:col-span-2 lg:col-span-1">
-                    <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                    <span className="truncate">{t("downloadIdealFractionsTemplate")}</span>
-                  </Button>
-                </div>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-900 mb-2 text-xs sm:text-sm">{t("templateInstructions")}</h4>
-                  <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
-                    <li>{t("templatesIncludeStructures")}</li>
-                    <li>{t("prefilledBudgetValues")}</li>
-                    <li>{t("colorCodedCells")}</li>
-                    <li>{t("builtInValidation")}</li>
-                    <li>{t("readyForImport")}</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
 
@@ -800,6 +1371,159 @@ export default function Financial() {
         </Card>
       </div>
       </div>
+      
+      {/* Account Dialog */}
+      <Dialog open={showAccountDialog} onOpenChange={setShowAccountDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingAccount ? t("editAccount") : t("addAccount")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t("accountCode")}</Label>
+              <Input
+                value={newAccount.code}
+                onChange={(e) => setNewAccount({...newAccount, code: e.target.value})}
+                placeholder="1000"
+              />
+            </div>
+            <div>
+              <Label>{t("accountName")}</Label>
+              <Input
+                value={newAccount.name}
+                onChange={(e) => setNewAccount({...newAccount, name: e.target.value})}
+                placeholder={t("accountNamePlaceholder")}
+              />
+            </div>
+            <div>
+              <Label>{t("accountType")}</Label>
+              <Select 
+                value={newAccount.type} 
+                onValueChange={(value) => setNewAccount({...newAccount, type: value as 'main' | 'sub'})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="main">{t("mainAccount")}</SelectItem>
+                  <SelectItem value="sub">{t("subAccount")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newAccount.type === 'sub' && (
+              <div>
+                <Label>{t("parentAccount")}</Label>
+                <Select 
+                  value={newAccount.parentId?.toString()} 
+                  onValueChange={(value) => setNewAccount({...newAccount, parentId: parseInt(value)})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.filter(a => a.type === 'main').map(account => (
+                      <SelectItem key={account.id} value={account.id.toString()}>
+                        {account.code} - {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>{t("expectedAmount")}</Label>
+              <Input
+                type="number"
+                value={newAccount.expectedAmount}
+                onChange={(e) => setNewAccount({...newAccount, expectedAmount: parseFloat(e.target.value) || 0})}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label>{t("actualAmount")}</Label>
+              <Input
+                type="number"
+                value={newAccount.actualAmount}
+                onChange={(e) => setNewAccount({...newAccount, actualAmount: parseFloat(e.target.value) || 0})}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAccountDialog(false)}>
+              {t("cancel")}
+            </Button>
+            <Button onClick={handleSaveAccount}>
+              {editingAccount ? t("save") : t("add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Collection Dialog */}
+      <Dialog open={showCollectionDialog} onOpenChange={setShowCollectionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingCollection?.id ? t("editCollection") : t("addCollection")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t("collectionName")}</Label>
+              <Input
+                value={editingCollection?.name || ''}
+                onChange={(e) => setEditingCollection({...editingCollection!, name: e.target.value})}
+                placeholder={t("collectionNamePlaceholder")}
+              />
+            </div>
+            <div>
+              <Label>{t("purpose")}</Label>
+              <Input
+                value={editingCollection?.purpose || ''}
+                onChange={(e) => setEditingCollection({...editingCollection!, purpose: e.target.value})}
+                placeholder={t("purposePlaceholder")}
+              />
+            </div>
+            <div>
+              <Label>{t("monthlyAmount")}</Label>
+              <Input
+                type="number"
+                value={editingCollection?.monthlyAmount || ''}
+                onChange={(e) => setEditingCollection({...editingCollection!, monthlyAmount: parseFloat(e.target.value) || 0})}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label>{t("startDate")}</Label>
+              <Input
+                type="date"
+                value={editingCollection?.startDate || ''}
+                onChange={(e) => setEditingCollection({...editingCollection!, startDate: e.target.value})}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="active"
+                checked={editingCollection?.active || false}
+                onChange={(e) => setEditingCollection({...editingCollection!, active: e.target.checked})}
+              />
+              <Label htmlFor="active">{t("activeCollection")}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCollectionDialog(false)}>
+              {t("cancel")}
+            </Button>
+            <Button onClick={handleSaveCollection}>
+              {editingCollection?.id ? t("save") : t("add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
