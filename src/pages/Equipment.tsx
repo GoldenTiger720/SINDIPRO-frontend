@@ -14,6 +14,8 @@ import { Wrench, MapPin, Calendar, Plus, Bell, Building2, Phone, Clock, History,
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { useCreateEquipment, useAddMaintenanceRecord } from "@/hooks/useEquipment";
+import { useToast } from "@/hooks/use-toast";
 
 interface MaintenanceRecord {
   id: string;
@@ -43,6 +45,12 @@ interface Equipment {
 
 export default function Equipment() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  
+  // ReactQuery hooks
+  const createEquipmentMutation = useCreateEquipment();
+  const addMaintenanceRecordMutation = useAddMaintenanceRecord();
+  
   const [selectedCondominium, setSelectedCondominium] = useState<string>("all");
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
   const [isMaintenanceDialogOpen, setIsMaintenanceDialogOpen] = useState(false);
@@ -214,70 +222,69 @@ export default function Equipment() {
     }
   };
 
-  const handleAddEquipment = () => {
-    const newEquipment: Equipment = {
-      id: Date.now().toString(),
-      name: equipmentForm.name,
-      type: equipmentForm.type,
-      location: equipmentForm.location,
-      purchaseDate: new Date(equipmentForm.purchaseDate),
-      contractorName: equipmentForm.contractorName,
-      contractorPhone: equipmentForm.contractorPhone,
-      maintenanceFrequency: equipmentForm.maintenanceFrequency,
-      status: equipmentForm.status,
-      condominium: equipmentForm.condominium,
-      maintenanceHistory: []
-    };
+  const handleAddEquipment = async () => {
+    try {
+      await createEquipmentMutation.mutateAsync({
+        name: equipmentForm.name,
+        type: equipmentForm.type,
+        location: equipmentForm.location,
+        purchaseDate: equipmentForm.purchaseDate,
+        contractorName: equipmentForm.contractorName,
+        contractorPhone: equipmentForm.contractorPhone,
+        maintenanceFrequency: equipmentForm.maintenanceFrequency,
+        status: equipmentForm.status,
+        condominium: equipmentForm.condominium,
+      });
 
-    setEquipmentList([...equipmentList, newEquipment]);
-    setIsAddEquipmentOpen(false);
-    setEquipmentForm({
-      name: '',
-      type: '',
-      location: '',
-      purchaseDate: '',
-      contractorName: '',
-      contractorPhone: '',
-      maintenanceFrequency: 'monthly',
-      condominium: '',
-      status: 'operational'
-    });
+      // Reset form and close modal on success
+      setEquipmentForm({
+        name: '',
+        type: '',
+        location: '',
+        purchaseDate: '',
+        contractorName: '',
+        contractorPhone: '',
+        maintenanceFrequency: 'monthly',
+        condominium: '',
+        status: 'operational'
+      });
+      setIsAddEquipmentOpen(false);
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error('Failed to create equipment:', error);
+    }
   };
 
-  const handleAddMaintenanceRecord = () => {
+  const handleAddMaintenanceRecord = async () => {
     if (!selectedEquipment) return;
 
-    const newRecord: MaintenanceRecord = {
-      id: Date.now().toString(),
-      date: new Date(maintenanceForm.date),
-      type: maintenanceForm.type,
-      description: maintenanceForm.description,
-      technician: maintenanceForm.technician,
-      cost: maintenanceForm.cost ? parseFloat(maintenanceForm.cost) : undefined,
-      notes: maintenanceForm.notes
-    };
+    try {
+      await addMaintenanceRecordMutation.mutateAsync({
+        equipmentId: selectedEquipment.id,
+        data: {
+          date: maintenanceForm.date,
+          type: maintenanceForm.type,
+          description: maintenanceForm.description,
+          technician: maintenanceForm.technician,
+          cost: maintenanceForm.cost ? parseFloat(maintenanceForm.cost) : undefined,
+          notes: maintenanceForm.notes || undefined,
+        }
+      });
 
-    const updatedEquipment = equipmentList.map(eq => {
-      if (eq.id === selectedEquipment.id) {
-        return {
-          ...eq,
-          maintenanceHistory: [newRecord, ...eq.maintenanceHistory],
-          lastMaintenance: new Date(maintenanceForm.date)
-        };
-      }
-      return eq;
-    });
-
-    setEquipmentList(updatedEquipment);
-    setIsMaintenanceDialogOpen(false);
-    setMaintenanceForm({
-      date: new Date().toISOString().split('T')[0],
-      type: '',
-      description: '',
-      technician: '',
-      cost: '',
-      notes: ''
-    });
+      // Reset form and close modal on success
+      setMaintenanceForm({
+        date: new Date().toISOString().split('T')[0],
+        type: '',
+        description: '',
+        technician: '',
+        cost: '',
+        notes: ''
+      });
+      setIsMaintenanceDialogOpen(false);
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error('Failed to add maintenance record:', error);
+    }
   };
 
   return (
@@ -563,10 +570,10 @@ export default function Equipment() {
                       <Button 
                         type="submit" 
                         onClick={handleAddEquipment}
-                        disabled={!equipmentForm.name || !equipmentForm.type || !equipmentForm.condominium}
+                        disabled={!equipmentForm.name || !equipmentForm.type || !equipmentForm.condominium || createEquipmentMutation.isPending}
                         className="w-full sm:w-auto"
                       >
-                        {t("save")}
+                        {createEquipmentMutation.isPending ? t("saving") || "Saving..." : t("save")}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -951,10 +958,10 @@ export default function Equipment() {
                 <Button
                   type="submit"
                   onClick={handleAddMaintenanceRecord}
-                  disabled={!maintenanceForm.type || !maintenanceForm.description || !maintenanceForm.technician}
+                  disabled={!maintenanceForm.type || !maintenanceForm.description || !maintenanceForm.technician || addMaintenanceRecordMutation.isPending}
                   className="w-full sm:w-auto"
                 >
-                  {t("saveRecord") || "Save Record"}
+                  {addMaintenanceRecordMutation.isPending ? t("savingRecord") || "Saving Record..." : t("saveRecord") || "Save Record"}
                 </Button>
               </DialogFooter>
             </DialogContent>
