@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -177,6 +177,7 @@ export default function LegalObligations() {
   // Template management state
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [deletingTemplate, setDeletingTemplate] = useState(null);
   const [newTemplate, setNewTemplate] = useState({
     name: "",
     description: "",
@@ -292,17 +293,22 @@ export default function LegalObligations() {
   };
   
   // Handle template deletion
-  const handleDeleteTemplate = async (template) => {
-    if (!window.confirm(`Are you sure you want to delete "${template.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDeleteTemplate = (template) => {
+    setDeletingTemplate(template);
+  };
+
+  // Confirm template deletion
+  const confirmDeleteTemplate = async () => {
+    if (!deletingTemplate) return;
 
     try {
-      await deleteTemplateMutation.mutateAsync(template.id.toString());
+      await deleteTemplateMutation.mutateAsync(deletingTemplate.id.toString());
       // Template will be automatically removed from the list when ReactQuery refetches
+      setDeletingTemplate(null);
     } catch (error) {
       // Error is handled by the mutation hook
       console.error('Failed to delete template:', error);
+      // Don't close modal if deletion failed
     }
   };
 
@@ -1056,6 +1062,49 @@ export default function LegalObligations() {
             </Button>
           </div>
         </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deletingTemplate} onOpenChange={(open) => !open && setDeletingTemplate(null)}>
+        <DialogPortal>
+          <DialogOverlay className="bg-black/60 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="w-5 h-5" />
+                Delete Template
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete <strong>"{deletingTemplate?.name}"</strong>?
+              </p>
+              <p className="text-sm text-red-600 font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+            
+            <div className="flex gap-2 mt-6">
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteTemplate}
+                disabled={deleteTemplateMutation.isPending}
+                className="flex-1"
+              >
+                {deleteTemplateMutation.isPending ? "Deleting..." : "Delete Template"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDeletingTemplate(null)}
+                disabled={deleteTemplateMutation.isPending}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
     </div>
   );
