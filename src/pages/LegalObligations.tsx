@@ -13,7 +13,7 @@ import { AlertTriangle, Calendar, FileText, Upload, Bell, Plus, Building2, Edit,
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
-import { useCreateLegalTemplate, useLegalTemplates } from "@/hooks/useLegal";
+import { useCreateLegalTemplate, useLegalTemplates, useUpdateLegalTemplate, useDeleteLegalTemplate } from "@/hooks/useLegal";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for legal obligation templates
@@ -146,6 +146,8 @@ export default function LegalObligations() {
   
   // ReactQuery hooks
   const createTemplateMutation = useCreateLegalTemplate();
+  const updateTemplateMutation = useUpdateLegalTemplate();
+  const deleteTemplateMutation = useDeleteLegalTemplate();
   const { data: templatesData = [], isLoading: isLoadingTemplates, error: templatesError } = useLegalTemplates();
   
   // Transform backend data to match expected format
@@ -230,9 +232,29 @@ export default function LegalObligations() {
   // Handle template creation/editing
   const handleSaveTemplate = async () => {
     if (editingTemplate) {
-      // TODO: Implement update API call with ReactQuery
-      console.log('Update template:', editingTemplate.id, newTemplate);
-      setEditingTemplate(null);
+      // Use ReactQuery mutation to update template
+      try {
+        await updateTemplateMutation.mutateAsync({
+          id: editingTemplate.id.toString(),
+          data: {
+            name: newTemplate.name,
+            description: newTemplate.description,
+            buildingTypes: newTemplate.buildingTypes,
+            frequency: newTemplate.frequency,
+            daysBeforeExpiry: newTemplate.daysBeforeExpiry,
+            requiresQuote: newTemplate.requiresQuote,
+            active: newTemplate.active,
+            conditions: newTemplate.conditions || undefined
+          }
+        });
+        
+        // Template will be automatically updated in the list when ReactQuery refetches
+        setEditingTemplate(null);
+      } catch (error) {
+        // Error is handled by the mutation hook
+        console.error('Failed to update template:', error);
+        return; // Don't close modal if update failed
+      }
     } else {
       // Use ReactQuery mutation to create template
       try {
@@ -269,6 +291,21 @@ export default function LegalObligations() {
     setIsCreatingTemplate(false);
   };
   
+  // Handle template deletion
+  const handleDeleteTemplate = async (template) => {
+    if (!window.confirm(`Are you sure you want to delete "${template.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteTemplateMutation.mutateAsync(template.id.toString());
+      // Template will be automatically removed from the list when ReactQuery refetches
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error('Failed to delete template:', error);
+    }
+  };
+
   // Handle building obligation assignment
   const handleAssignObligations = () => {
     if (!selectedBuilding) return;
@@ -422,13 +459,13 @@ export default function LegalObligations() {
                               variant="outline"
                               size="sm"
                               className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
-                              onClick={() => {
-                                // TODO: Implement delete API call with ReactQuery
-                                console.log('Delete template:', template.id);
-                              }}
+                              onClick={() => handleDeleteTemplate(template)}
+                              disabled={deleteTemplateMutation.isPending}
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                              <span className="hidden sm:inline ml-1">Delete</span>
+                              <span className="hidden sm:inline ml-1">
+                                {deleteTemplateMutation.isPending ? "Deleting..." : "Delete"}
+                              </span>
                             </Button>
                           </div>
                         </div>
@@ -987,9 +1024,16 @@ export default function LegalObligations() {
             <Button 
               onClick={handleSaveTemplate} 
               className="flex-1"
-              disabled={createTemplateMutation.isPending}
+              disabled={createTemplateMutation.isPending || updateTemplateMutation.isPending}
             >
-              {createTemplateMutation.isPending ? "Creating..." : editingTemplate ? "Update Template" : "Create Template"}
+              {editingTemplate 
+                ? updateTemplateMutation.isPending 
+                  ? "Updating..." 
+                  : "Update Template" 
+                : createTemplateMutation.isPending 
+                  ? "Creating..." 
+                  : "Create Template"
+              }
             </Button>
             <Button
               variant="outline"
