@@ -128,3 +128,16 @@ export const useCreateUnit = () => {
     },
   });
 };
+
+// Query key for units
+export const UNITS_QUERY_KEY = ['units'];
+
+// Hook to fetch all units
+export const useUnits = () => {
+  return useQuery({
+    queryKey: UNITS_QUERY_KEY,
+    queryFn: () => buildingApi.getUnits(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+};

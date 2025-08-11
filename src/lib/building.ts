@@ -68,18 +68,21 @@ export interface UnitData {
 
 export interface UnitResponse {
   id: number;
-  number: string;
+  area: string;
+  block_id: number;
   block_name: string;
+  building_id: number;
+  building_name: string;
+  deposit_location: string;
   floor: number;
-  area: number;
+  has_deposit: 'yes' | 'no';
+  ideal_fraction: string;
+  identification: 'residential' | 'commercial' | 'studio' | 'non-residential' | 'wave';
   key_delivery: 'yes' | 'no';
+  number: string;
   owner: string;
   owner_phone: string;
-  identification: 'residential' | 'commercial' | 'studio' | 'non-residential' | 'wave';
-  has_deposit: 'yes' | 'no';
-  deposit_location: string | null;
   parking_spaces: number;
-  ideal_fraction: number;
   status: 'occupied' | 'vacant' | 'maintenance';
   created_at: string;
   updated_at: string;
@@ -318,6 +321,19 @@ export const buildingApi = {
       return response;
     } catch (error) {
       console.error(`Error creating unit for building ${buildingId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all units across all buildings
+   * @returns Promise<UnitResponse[]>
+   */
+  async getUnits(): Promise<UnitResponse[]> {
+    try {
+      return await apiClient.get<UnitResponse[]>(`${BUILDINGS_ENDPOINT}units/`);
+    } catch (error) {
+      console.error('Error fetching units:', error);
       throw error;
     }
   },

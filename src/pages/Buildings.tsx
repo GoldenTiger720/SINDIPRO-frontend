@@ -5,7 +5,7 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useBuildings, useCreateUnit } from "@/hooks/useBuildings";
+import { useBuildings, useCreateUnit, useUnits } from "@/hooks/useBuildings";
 import { UnitData } from "@/lib/building";
 
 // Import the new components
@@ -100,12 +100,32 @@ export default function Buildings() {
   const { data: buildings = [], isLoading, error } = useBuildings();
   const createUnitMutation = useCreateUnit();
   
-  // Units state
+  // Fetch units data using ReactQuery
+  const { data: unitsData = [], isLoading: isLoadingUnits, error: unitsError } = useUnits();
+  
+  // Units state - use real data from backend or fallback to mock data
   const [units, setUnits] = useState(mockUnits);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUnit, setSelectedUnit] = useState<typeof mockUnits[0] | null>(null);
   const [isEditingOwner, setIsEditingOwner] = useState(false);
   const [editOwnerName, setEditOwnerName] = useState("");
+  
+  // Transform backend data to match expected format
+  const transformedUnits = unitsData.map(unit => ({
+    id: unit.id,
+    number: unit.number,
+    blockName: unit.block_name,
+    floor: unit.floor,
+    area: parseFloat(unit.area),
+    keyDelivery: unit.key_delivery,
+    owner: unit.owner,
+    identification: unit.identification,
+    hasDeposit: unit.has_deposit,
+    depositLocation: unit.deposit_location,
+    parkingSpaces: unit.parking_spaces,
+    idealFraction: parseFloat(unit.ideal_fraction),
+    status: unit.status
+  }));
   
   // Query tab state
   const [queryUnitNumber, setQueryUnitNumber] = useState("");
@@ -405,10 +425,17 @@ export default function Buildings() {
 
   // Query tab functions
   const handleSearchUnit = () => {
-    const foundUnit = units.find(unit => 
-      unit.number === queryUnitNumber && 
-      unit.blockName.toLowerCase() === queryBlockName.toLowerCase()
-    );
+    const foundUnit = transformedUnits.find(unit => {
+      const unitNumberMatch = queryUnitNumber ? unit.number === queryUnitNumber : true;
+      const blockNameMatch = queryBlockName ? unit.blockName.toLowerCase() === queryBlockName.toLowerCase() : true;
+      
+      // If both fields are provided, both must match
+      if (queryUnitNumber && queryBlockName) {
+        return unitNumberMatch && blockNameMatch;
+      }
+      // If only one field is provided, only that field needs to match
+      return unitNumberMatch && blockNameMatch;
+    });
     setQueryResult(foundUnit || null);
     if (foundUnit) {
       setQueryEditOwnerName(foundUnit.owner);
@@ -440,7 +467,7 @@ export default function Buildings() {
     setIsQueryEditingOwner(false);
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingUnits) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader userName={t("adminSindipro")} />
@@ -458,7 +485,7 @@ export default function Buildings() {
     );
   }
 
-  if (error) {
+  if (error || unitsError) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader userName={t("adminSindipro")} />
@@ -467,7 +494,9 @@ export default function Buildings() {
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <p className="text-destructive mb-2">{t("errorLoadingBuildings")}</p>
-                <p className="text-sm text-muted-foreground">{error instanceof Error ? error.message : 'Unknown error'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error ? error.message : unitsError instanceof Error ? unitsError.message : 'Unknown error'}
+                </p>
               </div>
             </div>
           </div>
@@ -610,7 +639,7 @@ export default function Buildings() {
                 studioUnits={studioUnits}
                 towerNames={availableTowers.map(tower => tower.name)}
                 availableTowers={availableTowers}
-                units={units}
+                units={transformedUnits}
                 setUnits={setUnits}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
@@ -635,7 +664,7 @@ export default function Buildings() {
 
           <TabsContent value="unit-query" className="space-y-6">
             <UnitQuery
-              units={units}
+              units={transformedUnits}
               queryUnitNumber={queryUnitNumber}
               setQueryUnitNumber={setQueryUnitNumber}
               queryBlockName={queryBlockName}

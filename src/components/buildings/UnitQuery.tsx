@@ -56,11 +56,11 @@ export default function UnitQuery(props: UnitQueryProps) {
         <CardContent>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {t("searchByUnitOrBlock")}
+              {t("searchByUnitOrBlock")} {t("eitherFieldOptional")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="query-unit-number">{t("unitNumber")} *</Label>
+                <Label htmlFor="query-unit-number">{t("unitNumber")}</Label>
                 <Input 
                   id="query-unit-number" 
                   placeholder={t("enterUnitNumber")} 
@@ -69,7 +69,7 @@ export default function UnitQuery(props: UnitQueryProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="query-block-name">{t("blockName")} *</Label>
+                <Label htmlFor="query-block-name">{t("blockName")}</Label>
                 <Input 
                   id="query-block-name" 
                   placeholder={t("enterBlockNumber")} 
@@ -81,7 +81,7 @@ export default function UnitQuery(props: UnitQueryProps) {
                 <Button 
                   onClick={props.handleSearchUnit}
                   className="gap-2"
-                  disabled={!props.queryUnitNumber || !props.queryBlockName}
+                  disabled={!props.queryUnitNumber && !props.queryBlockName}
                 >
                   <Search className="w-4 h-4" />
                   {t("searchButton")}
@@ -211,7 +211,7 @@ export default function UnitQuery(props: UnitQueryProps) {
       )}
 
       {/* No Results Message */}
-      {props.queryUnitNumber && props.queryBlockName && props.queryResult === null && (
+      {(props.queryUnitNumber || props.queryBlockName) && props.queryResult === null && (
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">{t("unitNotFound")}</p>
