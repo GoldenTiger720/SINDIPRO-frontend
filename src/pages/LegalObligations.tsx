@@ -13,6 +13,8 @@ import { AlertTriangle, Calendar, FileText, Upload, Bell, Plus, Building2, Edit,
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { useCreateLegalTemplate } from "@/hooks/useLegal";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data for legal obligation templates
 const mockObligationTemplates = [
@@ -140,6 +142,10 @@ const mockBuildingObligations = [
 
 export default function LegalObligations() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  
+  // ReactQuery mutation for creating legal templates
+  const createTemplateMutation = useCreateLegalTemplate();
   
   // State management
   const [obligationTemplates, setObligationTemplates] = useState(mockObligationTemplates);
@@ -204,20 +210,41 @@ export default function LegalObligations() {
   };
   
   // Handle template creation/editing
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (editingTemplate) {
+      // Handle editing logic (not implemented in this request)
       setObligationTemplates(prev => prev.map(t => 
         t.id === editingTemplate.id ? { ...newTemplate, id: editingTemplate.id } : t
       ));
       setEditingTemplate(null);
     } else {
-      const template = {
-        ...newTemplate,
-        id: Date.now()
-      };
-      setObligationTemplates(prev => [...prev, template]);
+      // Use ReactQuery mutation to create template
+      try {
+        await createTemplateMutation.mutateAsync({
+          name: newTemplate.name,
+          description: newTemplate.description,
+          buildingTypes: newTemplate.buildingTypes,
+          frequency: newTemplate.frequency,
+          daysBeforeExpiry: newTemplate.daysBeforeExpiry,
+          requiresQuote: newTemplate.requiresQuote,
+          active: newTemplate.active,
+          conditions: newTemplate.conditions || undefined
+        });
+        
+        // Add to local state for immediate UI update (optional since ReactQuery will refetch)
+        const template = {
+          ...newTemplate,
+          id: Date.now()
+        };
+        setObligationTemplates(prev => [...prev, template]);
+      } catch (error) {
+        // Error is handled by the mutation hook
+        console.error('Failed to create template:', error);
+        return; // Don't close modal if creation failed
+      }
     }
     
+    // Reset form and close modal on success
     setNewTemplate({
       name: "",
       description: "",
@@ -921,8 +948,12 @@ export default function LegalObligations() {
           </div>
           
           <div className="flex gap-2 mt-6">
-            <Button onClick={handleSaveTemplate} className="flex-1">
-              {editingTemplate ? "Update Template" : "Create Template"}
+            <Button 
+              onClick={handleSaveTemplate} 
+              className="flex-1"
+              disabled={createTemplateMutation.isPending}
+            >
+              {createTemplateMutation.isPending ? "Creating..." : editingTemplate ? "Update Template" : "Create Template"}
             </Button>
             <Button
               variant="outline"
