@@ -165,8 +165,8 @@ export default function LegalObligations() {
     updated_at: template.updated_at
   }));
 
-  // Use real data when available, fallback to mock data
-  const obligationTemplates = transformedTemplates.length > 0 ? transformedTemplates : mockObligationTemplates;
+  // Use only backend data
+  const obligationTemplates = transformedTemplates;
 
   // State management
   const [buildings, setBuildings] = useState(mockBuildings);
