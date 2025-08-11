@@ -25,8 +25,12 @@ export interface TemplateResponse {
   requiresQuote: boolean;
   active: boolean;
   conditions: string | null;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplatesListResponse {
+  templates: TemplateResponse[];
 }
 
 interface ApiErrorData {
@@ -163,7 +167,8 @@ export const legalApi = {
    */
   async getTemplates(): Promise<TemplateResponse[]> {
     try {
-      return await apiClient.get<TemplateResponse[]>(`${LEGAL_ENDPOINT}/templates`);
+      const response = await apiClient.get<TemplatesListResponse>(`${LEGAL_ENDPOINT}/template/`);
+      return response.templates;
     } catch (error) {
       console.error('Error fetching legal templates:', error);
       throw error;

@@ -13,7 +13,7 @@ import { AlertTriangle, Calendar, FileText, Upload, Bell, Plus, Building2, Edit,
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
-import { useCreateLegalTemplate } from "@/hooks/useLegal";
+import { useCreateLegalTemplate, useLegalTemplates } from "@/hooks/useLegal";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock data for legal obligation templates
@@ -144,11 +144,29 @@ export default function LegalObligations() {
   const { t } = useTranslation();
   const { toast } = useToast();
   
-  // ReactQuery mutation for creating legal templates
+  // ReactQuery hooks
   const createTemplateMutation = useCreateLegalTemplate();
+  const { data: templatesData = [], isLoading: isLoadingTemplates, error: templatesError } = useLegalTemplates();
   
+  // Transform backend data to match expected format
+  const transformedTemplates = templatesData.map(template => ({
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    buildingTypes: template.buildingTypes,
+    frequency: template.frequency,
+    daysBeforeExpiry: template.daysBeforeExpiry,
+    requiresQuote: template.requiresQuote,
+    active: template.active,
+    conditions: template.conditions,
+    created_at: template.created_at,
+    updated_at: template.updated_at
+  }));
+
+  // Use real data when available, fallback to mock data
+  const obligationTemplates = transformedTemplates.length > 0 ? transformedTemplates : mockObligationTemplates;
+
   // State management
-  const [obligationTemplates, setObligationTemplates] = useState(mockObligationTemplates);
   const [buildings, setBuildings] = useState(mockBuildings);
   const [buildingObligations, setBuildingObligations] = useState(mockBuildingObligations);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
@@ -212,10 +230,8 @@ export default function LegalObligations() {
   // Handle template creation/editing
   const handleSaveTemplate = async () => {
     if (editingTemplate) {
-      // Handle editing logic (not implemented in this request)
-      setObligationTemplates(prev => prev.map(t => 
-        t.id === editingTemplate.id ? { ...newTemplate, id: editingTemplate.id } : t
-      ));
+      // TODO: Implement update API call with ReactQuery
+      console.log('Update template:', editingTemplate.id, newTemplate);
       setEditingTemplate(null);
     } else {
       // Use ReactQuery mutation to create template
@@ -231,12 +247,7 @@ export default function LegalObligations() {
           conditions: newTemplate.conditions || undefined
         });
         
-        // Add to local state for immediate UI update (optional since ReactQuery will refetch)
-        const template = {
-          ...newTemplate,
-          id: Date.now()
-        };
-        setObligationTemplates(prev => [...prev, template]);
+        // Template will be automatically added to the list when ReactQuery refetches
       } catch (error) {
         // Error is handled by the mutation hook
         console.error('Failed to create template:', error);
@@ -340,8 +351,30 @@ export default function LegalObligations() {
                     Manage the master list of legal obligations that can be assigned to buildings based on their type.
                   </p>
                   
-                  <div className="space-y-4">
-                    {obligationTemplates.map((template) => (
+                  {isLoadingTemplates ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading templates...</p>
+                      </div>
+                    </div>
+                  ) : templatesError ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <p className="text-destructive mb-2">Error loading templates</p>
+                        <p className="text-sm text-muted-foreground">
+                          {templatesError instanceof Error ? templatesError.message : 'Unknown error'}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {obligationTemplates.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No templates found. Click "Add Template" to create your first template.
+                        </div>
+                      ) : (
+                        obligationTemplates.map((template) => (
                       <div key={template.id} className="p-3 sm:p-4 border rounded-lg">
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                           <div className="flex-1 w-full">
@@ -390,7 +423,8 @@ export default function LegalObligations() {
                               size="sm"
                               className="h-8 w-8 sm:h-9 sm:w-auto px-2 sm:px-3"
                               onClick={() => {
-                                setObligationTemplates(prev => prev.filter(t => t.id !== template.id));
+                                // TODO: Implement delete API call with ReactQuery
+                                console.log('Delete template:', template.id);
                               }}
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -399,8 +433,10 @@ export default function LegalObligations() {
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
