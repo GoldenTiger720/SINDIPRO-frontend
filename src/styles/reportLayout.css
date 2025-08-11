@@ -1,0 +1,199 @@
+/* Professional Report Layout Styles */
+
+/* Print-specific styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .report-content,
+  .report-content * {
+    visibility: visible;
+  }
+  
+  .report-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20mm;
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Professional page setup */
+  @page {
+    size: A4;
+    margin: 20mm;
+  }
+  
+  /* Headers and footers */
+  .report-header {
+    text-align: center;
+    border-bottom: 2px solid #333;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .report-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10pt;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+  }
+}
+
+/* Report preview styles */
+.report-preview {
+  background: white;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.report-preview h1 {
+  font-size: 28px;
+  color: #1a1a1a;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.report-preview h2 {
+  font-size: 20px;
+  color: #333;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e5e5;
+  font-weight: 600;
+}
+
+.report-preview h3 {
+  font-size: 16px;
+  color: #555;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.report-preview p {
+  line-height: 1.6;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+.report-preview ul,
+.report-preview ol {
+  margin-left: 20px;
+  margin-bottom: 15px;
+}
+
+.report-preview li {
+  margin-bottom: 5px;
+  line-height: 1.6;
+}
+
+/* Info blocks */
+.report-info-block {
+  background: #f8f9fa;
+  border-left: 4px solid #0ea5e9;
+  padding: 15px 20px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.report-info-block strong {
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Financial values styling */
+.financial-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0ea5e9;
+  margin: 5px 0;
+}
+
+/* Meeting and activity sections */
+.meeting-item,
+.activity-item {
+  background: #fafafa;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #e5e5e5;
+}
+
+/* Elegant table styling */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+.report-table th {
+  background: #f3f4f6;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e5e5;
+}
+
+.report-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.report-table tr:hover {
+  background: #fafafa;
+}
+
+/* Professional signature area */
+.signature-area {
+  margin-top: 60px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.signature-line {
+  border-top: 1px solid #333;
+  padding-top: 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: #10b981;
+  color: white;
+}
+
+.status-badge.warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.status-badge.info {
+  background: #3b82f6;
+  color: white;
+}
