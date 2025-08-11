@@ -131,6 +131,7 @@ export default function Buildings() {
   const [queryUnitNumber, setQueryUnitNumber] = useState("");
   const [queryBlockName, setQueryBlockName] = useState("");
   const [queryResult, setQueryResult] = useState<typeof mockUnits[0] | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
   const [isQueryEditingOwner, setIsQueryEditingOwner] = useState(false);
   const [queryEditOwnerName, setQueryEditOwnerName] = useState("");
   
@@ -425,6 +426,7 @@ export default function Buildings() {
 
   // Query tab functions
   const handleSearchUnit = () => {
+    setHasSearched(true);
     const foundUnit = transformedUnits.find(unit => {
       const unitNumberMatch = queryUnitNumber ? unit.number === queryUnitNumber : true;
       const blockNameMatch = queryBlockName ? unit.blockName.toLowerCase() === queryBlockName.toLowerCase() : true;
@@ -446,6 +448,7 @@ export default function Buildings() {
     setQueryUnitNumber("");
     setQueryBlockName("");
     setQueryResult(null);
+    setHasSearched(false);
     setIsQueryEditingOwner(false);
     setQueryEditOwnerName("");
   };
@@ -465,6 +468,23 @@ export default function Buildings() {
   const handleQueryCancelEdit = () => {
     setQueryEditOwnerName(queryResult?.owner || "");
     setIsQueryEditingOwner(false);
+  };
+
+  // Custom handlers to clear results when typing
+  const handleQueryUnitNumberChange = (value: string) => {
+    setQueryUnitNumber(value);
+    if (hasSearched) {
+      setQueryResult(null);
+      setHasSearched(false);
+    }
+  };
+
+  const handleQueryBlockNameChange = (value: string) => {
+    setQueryBlockName(value);
+    if (hasSearched) {
+      setQueryResult(null);
+      setHasSearched(false);
+    }
   };
 
   if (isLoading || isLoadingUnits) {
@@ -666,11 +686,12 @@ export default function Buildings() {
             <UnitQuery
               units={transformedUnits}
               queryUnitNumber={queryUnitNumber}
-              setQueryUnitNumber={setQueryUnitNumber}
+              setQueryUnitNumber={handleQueryUnitNumberChange}
               queryBlockName={queryBlockName}
-              setQueryBlockName={setQueryBlockName}
+              setQueryBlockName={handleQueryBlockNameChange}
               queryResult={queryResult}
               setQueryResult={setQueryResult}
+              hasSearched={hasSearched}
               isQueryEditingOwner={isQueryEditingOwner}
               setIsQueryEditingOwner={setIsQueryEditingOwner}
               queryEditOwnerName={queryEditOwnerName}

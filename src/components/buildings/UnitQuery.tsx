@@ -30,6 +30,7 @@ interface UnitQueryProps {
   setQueryBlockName: (value: string) => void;
   queryResult: Unit | null;
   setQueryResult: (unit: Unit | null) => void;
+  hasSearched: boolean;
   isQueryEditingOwner: boolean;
   setIsQueryEditingOwner: (editing: boolean) => void;
   queryEditOwnerName: string;
@@ -100,7 +101,7 @@ export default function UnitQuery(props: UnitQueryProps) {
       </Card>
 
       {/* Query Results */}
-      {props.queryResult && (
+      {props.hasSearched && props.queryResult && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -211,7 +212,7 @@ export default function UnitQuery(props: UnitQueryProps) {
       )}
 
       {/* No Results Message */}
-      {(props.queryUnitNumber || props.queryBlockName) && props.queryResult === null && (
+      {props.hasSearched && (props.queryUnitNumber || props.queryBlockName) && props.queryResult === null && (
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">{t("unitNotFound")}</p>
