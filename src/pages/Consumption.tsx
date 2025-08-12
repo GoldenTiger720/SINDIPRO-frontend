@@ -8,9 +8,17 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useToast } from "@/hooks/use-toast";
+import { useRegisterDailyConsumption, useRegisterMonthlyBill } from "@/hooks/useConsumption";
 
 export default function Consumption() {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  
+  // React Query hooks for consumption and bill registration
+  const registerConsumptionMutation = useRegisterDailyConsumption();
+  const registerBillMutation = useRegisterMonthlyBill();
+  
   const [activeTab, setActiveTab] = useState('consumption');
   const [selectedConsumptionType, setSelectedConsumptionType] = useState('water');
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
@@ -28,6 +36,32 @@ export default function Consumption() {
     gas: 1.1,
     electricity: 8.9
   });
+  
+  // State for current consumption readings (will be updated from user input)
+  const [currentReadings, setCurrentReadings] = useState({
+    water: { value: 0, date: '', trend: 0 },
+    electricity: { value: 0, date: '', trend: 0 },
+    gas: { value: 0, date: '', trend: 0 }
+  });
+  
+  // State for current bills (will be updated from user input)
+  const [currentBills, setCurrentBills] = useState<Array<{
+    utilityType: 'water' | 'electricity' | 'gas';
+    month: string;
+    amount: number;
+    paymentDate: string;
+    isPaid: boolean;
+  }>>([]);
+  
+  // State for bills history (will be updated from user input)
+  const [billsHistoryData, setBillsHistoryData] = useState<Array<{
+    month: string;
+    bills: Array<{
+      utilityType: 'water' | 'electricity' | 'gas';
+      amount: number;
+      isPaid: boolean;
+    }>;
+  }>>([]);
 
   // Mock data for daily consumption (last 7 days)
   const dailyWaterData = [
@@ -164,31 +198,173 @@ export default function Consumption() {
     return null;
   };
 
-  const handleConsumptionSubmit = () => {
+  const handleConsumptionSubmit = async () => {
     const value = parseFloat(consumptionValue);
-    if (!value || !selectedDate) return;
+    if (!value || !selectedDate) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    // Calculate trend vs previous consumption
+    const previousValue = previousConsumption[selectedConsumptionType as keyof typeof previousConsumption];
+    const trendPercentage = ((value - previousValue) / previousValue) * 100;
+
+    // Check for alerts
     const alert = checkConsumptionAlert(
       selectedConsumptionType,
       value,
-      previousConsumption[selectedConsumptionType]
+      previousValue
     );
     
     if (alert) {
       setAlerts(prev => [...prev, { ...alert, id: Date.now() }]);
     }
 
-    setConsumptionValue('');
-    setSelectedDate('');
+    // Update current readings immediately (optimistic update)
+    setCurrentReadings(prev => ({
+      ...prev,
+      [selectedConsumptionType]: {
+        value,
+        date: selectedDate,
+        trend: trendPercentage
+      }
+    }));
+
+    // Use ReactQuery mutation to send authenticated POST request
+    try {
+      await registerConsumptionMutation.mutateAsync({
+        utilityType: selectedConsumptionType as 'water' | 'electricity' | 'gas',
+        gasCategory: selectedConsumptionType === 'gas' ? gasCategory as 'units' | 'common' | 'generator' : undefined,
+        date: selectedDate,
+        value
+      });
+
+      // Update previous consumption for next comparison
+      setPreviousConsumption(prev => ({
+        ...prev,
+        [selectedConsumptionType]: value
+      }));
+
+      // Clear form
+      setConsumptionValue('');
+      setSelectedDate('');
+
+    } catch (error) {
+      // If API call fails, revert the optimistic update
+      setCurrentReadings(prev => ({
+        ...prev,
+        [selectedConsumptionType]: {
+          value: previousValue,
+          date: '',
+          trend: 0
+        }
+      }));
+    }
   };
 
-  const handleBillSubmit = () => {
+  const handleBillSubmit = async () => {
     const amount = parseFloat(billAmount);
-    if (!amount || !selectedMonth || !paymentDate) return;
+    if (!amount || !selectedMonth || !paymentDate) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setBillAmount('');
-    setSelectedMonth('');
-    setPaymentDate('');
+    // Create new bill object for optimistic update
+    const newBill = {
+      utilityType: selectedConsumptionType as 'water' | 'electricity' | 'gas',
+      month: selectedMonth,
+      amount,
+      paymentDate,
+      isPaid: false
+    };
+
+    // Update current bills immediately (optimistic update)
+    setCurrentBills(prev => {
+      const filtered = prev.filter(bill => 
+        !(bill.utilityType === newBill.utilityType && bill.month === newBill.month)
+      );
+      return [...filtered, newBill];
+    });
+
+    // Update bills history immediately
+    const monthYear = new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    setBillsHistoryData(prev => {
+      const existingMonthIndex = prev.findIndex(item => item.month === monthYear);
+      
+      if (existingMonthIndex >= 0) {
+        const updated = [...prev];
+        const existingBillIndex = updated[existingMonthIndex].bills.findIndex(
+          bill => bill.utilityType === newBill.utilityType
+        );
+        
+        if (existingBillIndex >= 0) {
+          updated[existingMonthIndex].bills[existingBillIndex] = {
+            utilityType: newBill.utilityType,
+            amount: newBill.amount,
+            isPaid: false
+          };
+        } else {
+          updated[existingMonthIndex].bills.push({
+            utilityType: newBill.utilityType,
+            amount: newBill.amount,
+            isPaid: false
+          });
+        }
+        
+        return updated;
+      } else {
+        return [...prev, {
+          month: monthYear,
+          bills: [{
+            utilityType: newBill.utilityType,
+            amount: newBill.amount,
+            isPaid: false
+          }]
+        }].sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime());
+      }
+    });
+
+    // Use ReactQuery mutation to send authenticated POST request
+    try {
+      await registerBillMutation.mutateAsync({
+        utilityType: selectedConsumptionType as 'water' | 'electricity' | 'gas',
+        month: selectedMonth,
+        amount,
+        paymentDate
+      });
+
+      // Clear form on success
+      setBillAmount('');
+      setSelectedMonth('');
+      setPaymentDate('');
+
+    } catch (error) {
+      // If API call fails, revert the optimistic updates
+      setCurrentBills(prev => prev.filter(bill => 
+        !(bill.utilityType === newBill.utilityType && bill.month === newBill.month)
+      ));
+      
+      // Revert bills history update
+      setBillsHistoryData(prev => {
+        return prev.map(monthData => {
+          if (monthData.month === monthYear) {
+            return {
+              ...monthData,
+              bills: monthData.bills.filter(bill => bill.utilityType !== newBill.utilityType)
+            };
+          }
+          return monthData;
+        }).filter(monthData => monthData.bills.length > 0);
+      });
+    }
   };
 
   const dismissAlert = (alertId) => {
@@ -318,8 +494,12 @@ export default function Consumption() {
                     />
                   </div>
                   
-                  <Button className="w-full" onClick={handleConsumptionSubmit}>
-                    Register Daily Consumption
+                  <Button 
+                    className="w-full" 
+                    onClick={handleConsumptionSubmit}
+                    disabled={!consumptionValue || !selectedDate || registerConsumptionMutation.isPending}
+                  >
+                    {registerConsumptionMutation.isPending ? 'Registering...' : 'Register Daily Consumption'}
                   </Button>
                   
                   <div className="text-xs text-muted-foreground mt-2">
@@ -372,12 +552,20 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">2.450 m³</div>
-                  <p className="text-sm text-muted-foreground">Today's Reading</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-green-600">+5% vs yesterday</span>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {currentReadings.water.value > 0 ? `${currentReadings.water.value.toFixed(3)} m³` : 'No reading'}
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    {currentReadings.water.date ? `Reading from ${currentReadings.water.date}` : 'Latest Reading'}
+                  </p>
+                  {currentReadings.water.trend !== 0 && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <TrendingUp className={`w-4 h-4 ${currentReadings.water.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
+                      <span className={`text-sm ${currentReadings.water.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {currentReadings.water.trend > 0 ? '+' : ''}{currentReadings.water.trend.toFixed(1)}% vs previous
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -389,12 +577,20 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">18.9 kWh</div>
-                  <p className="text-sm text-muted-foreground">Today's Reading</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="w-4 h-4 text-red-500 rotate-180" />
-                    <span className="text-sm text-red-600">-3% vs yesterday</span>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {currentReadings.electricity.value > 0 ? `${currentReadings.electricity.value.toFixed(3)} kWh` : 'No reading'}
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    {currentReadings.electricity.date ? `Reading from ${currentReadings.electricity.date}` : 'Latest Reading'}
+                  </p>
+                  {currentReadings.electricity.trend !== 0 && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <TrendingUp className={`w-4 h-4 ${currentReadings.electricity.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
+                      <span className={`text-sm ${currentReadings.electricity.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {currentReadings.electricity.trend > 0 ? '+' : ''}{currentReadings.electricity.trend.toFixed(1)}% vs previous
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -406,12 +602,20 @@ export default function Consumption() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">1.240 m³</div>
-                  <p className="text-sm text-muted-foreground">Today's Reading</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    <TrendingUp className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-green-600">+2% vs yesterday</span>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {currentReadings.gas.value > 0 ? `${currentReadings.gas.value.toFixed(3)} m³` : 'No reading'}
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    {currentReadings.gas.date ? `Reading from ${currentReadings.gas.date}` : 'Latest Reading'}
+                  </p>
+                  {currentReadings.gas.trend !== 0 && (
+                    <div className="flex items-center gap-1 mt-2">
+                      <TrendingUp className={`w-4 h-4 ${currentReadings.gas.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
+                      <span className={`text-sm ${currentReadings.gas.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {currentReadings.gas.trend > 0 ? '+' : ''}{currentReadings.gas.trend.toFixed(1)}% vs previous
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -473,8 +677,12 @@ export default function Consumption() {
                     />
                   </div>
                   
-                  <Button className="w-full" onClick={handleBillSubmit}>
-                    Register Monthly Bill
+                  <Button 
+                    className="w-full" 
+                    onClick={handleBillSubmit}
+                    disabled={!billAmount || !selectedMonth || !paymentDate || registerBillMutation.isPending}
+                  >
+                    {registerBillMutation.isPending ? 'Registering...' : 'Register Monthly Bill'}
                   </Button>
                 </CardContent>
               </Card>
@@ -485,47 +693,49 @@ export default function Consumption() {
                   <CardTitle>Current Bills & Due Dates</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 border rounded">
-                      <div className="flex items-center gap-2">
-                        <Droplets className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium">Water - July 2024</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-blue-600">R$ 890.50</div>
-                        <div className="text-xs text-red-600">Due: Aug 15, 2024</div>
+                  {currentBills.length > 0 ? (
+                    <div className="space-y-4">
+                      {currentBills.map((bill, index) => {
+                        const IconComponent = bill.utilityType === 'water' ? Droplets : 
+                                            bill.utilityType === 'electricity' ? Zap : Flame;
+                        const colorClass = bill.utilityType === 'water' ? 'text-blue-500' : 
+                                          bill.utilityType === 'electricity' ? 'text-yellow-500' : 'text-orange-500';
+                        const amountColorClass = bill.utilityType === 'water' ? 'text-blue-600' : 
+                                               bill.utilityType === 'electricity' ? 'text-yellow-600' : 'text-orange-600';
+                        const monthYear = new Date(bill.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                        
+                        return (
+                          <div key={index} className="flex justify-between items-center p-3 border rounded">
+                            <div className="flex items-center gap-2">
+                              <IconComponent className={`w-4 h-4 ${colorClass}`} />
+                              <span className="font-medium capitalize">{bill.utilityType} - {monthYear}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className={`font-semibold ${amountColorClass}`}>R$ {bill.amount.toFixed(2)}</div>
+                              <div className={`text-xs ${bill.isPaid ? 'text-green-600' : 'text-red-600'}`}>
+                                {bill.isPaid ? 'Paid ✓' : `Due: ${new Date(bill.paymentDate).toLocaleDateString()}`}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex justify-between items-center font-semibold">
+                          <span>Total Pending:</span>
+                          <span className="text-red-600">
+                            R$ {currentBills.filter(bill => !bill.isPaid).reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-3 border rounded">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4 text-yellow-500" />
-                        <span className="font-medium">Electricity - July 2024</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-yellow-600">R$ 1,245.80</div>
-                        <div className="text-xs text-red-600">Due: Aug 20, 2024</div>
-                      </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                      <p className="text-sm text-muted-foreground">No bills registered yet</p>
+                      <p className="text-xs text-muted-foreground mt-1">Add your first bill using the form on the left</p>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-3 border rounded">
-                      <div className="flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-orange-500" />
-                        <span className="font-medium">Gas - July 2024</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-orange-600">R$ 456.30</div>
-                        <div className="text-xs text-green-600">Paid ✓</div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center font-semibold">
-                      <span>Total Pending:</span>
-                      <span className="text-red-600">R$ 2,136.30</span>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -536,50 +746,39 @@ export default function Consumption() {
                 <CardTitle>Bills History</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="w-5 h-5 text-blue-500" />
-                      <h3 className="font-semibold">July 2024</h3>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p>Water: R$ 890.50 (Due: Aug 15)</p>
-                      <p>Electricity: R$ 1,245.80 (Due: Aug 20)</p>
-                      <p>Gas: R$ 456.30 (Paid ✓)</p>
-                      <div className="pt-2 border-t mt-2">
-                        <p className="font-semibold">Total: R$ 2,592.60</p>
-                      </div>
-                    </div>
+                {billsHistoryData.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {billsHistoryData.map((monthData, index) => {
+                      const totalAmount = monthData.bills.reduce((sum, bill) => sum + bill.amount, 0);
+                      const allPaid = monthData.bills.every(bill => bill.isPaid);
+                      
+                      return (
+                        <div key={index} className="p-4 border rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className={`w-5 h-5 ${allPaid ? 'text-green-500' : 'text-blue-500'}`} />
+                            <h3 className="font-semibold">{monthData.month}</h3>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            {monthData.bills.map((bill, billIndex) => (
+                              <p key={billIndex} className="capitalize">
+                                {bill.utilityType}: R$ {bill.amount.toFixed(2)} {bill.isPaid ? '(Paid ✓)' : '(Pending)'}
+                              </p>
+                            ))}
+                            <div className="pt-2 border-t mt-2">
+                              <p className="font-semibold">Total: R$ {totalAmount.toFixed(2)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="w-5 h-5 text-green-500" />
-                      <h3 className="font-semibold">June 2024</h3>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p>Water: R$ 845.20 (Paid ✓)</p>
-                      <p>Electricity: R$ 1,289.40 (Paid ✓)</p>
-                      <p>Gas: R$ 432.10 (Paid ✓)</p>
-                      <div className="pt-2 border-t mt-2">
-                        <p className="font-semibold">Total: R$ 2,566.70</p>
-                      </div>
-                    </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <p className="text-sm text-muted-foreground">No bills history yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Bills you register will appear here by month</p>
                   </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="w-5 h-5 text-green-500" />
-                      <h3 className="font-semibold">May 2024</h3>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p>Water: R$ 798.90 (Paid ✓)</p>
-                      <p>Electricity: R$ 1,145.20 (Paid ✓)</p>
-                      <p>Gas: R$ 398.45 (Paid ✓)</p>
-                      <div className="pt-2 border-t mt-2">
-                        <p className="font-semibold">Total: R$ 2,342.55</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

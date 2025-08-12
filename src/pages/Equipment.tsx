@@ -14,7 +14,7 @@ import { Wrench, MapPin, Calendar, Plus, Bell, Building2, Phone, Clock, History,
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { useCreateEquipment, useAddMaintenanceRecord } from "@/hooks/useEquipment";
+import { useCreateEquipment, useAddMaintenanceRecord, useEquipment } from "@/hooks/useEquipment";
 import { useToast } from "@/hooks/use-toast";
 
 interface MaintenanceRecord {
@@ -50,6 +50,7 @@ export default function Equipment() {
   // ReactQuery hooks
   const createEquipmentMutation = useCreateEquipment();
   const addMaintenanceRecordMutation = useAddMaintenanceRecord();
+  const { data: equipmentData, isLoading, isError } = useEquipment();
   
   const [selectedCondominium, setSelectedCondominium] = useState<string>("all");
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
@@ -79,107 +80,57 @@ export default function Equipment() {
     notes: ''
   });
 
-  // Mock data with updated structure
-  const [equipmentList, setEquipmentList] = useState<Equipment[]>([
-    {
-      id: "1",
-      name: t("socialElevator"),
-      type: "Elevator",
-      location: t("mainHall"),
-      purchaseDate: new Date("2020-01-15"),
-      contractorName: "Elevadores ABC Ltda",
-      contractorPhone: "(11) 3333-4444",
-      maintenanceFrequency: "monthly",
-      lastMaintenance: new Date("2024-02-15"),
-      nextMaintenance: new Date("2024-03-15"),
-      status: "operational",
-      condominium: "Edifício Central",
-      maintenanceHistory: [
-        {
-          id: "m1",
-          date: new Date("2024-02-15"),
-          type: "Preventive Maintenance",
-          description: "Monthly inspection and lubrication",
-          technician: "João Silva",
-          cost: 450,
-          notes: "All systems functioning normally"
-        },
-        {
-          id: "m2",
-          date: new Date("2024-01-15"),
-          type: "Preventive Maintenance",
-          description: "Monthly inspection",
-          technician: "João Silva",
-          cost: 450
+  // Transform API data to match component interface
+  const transformEquipmentData = (apiData: any[]): Equipment[] => {
+    return apiData?.map(item => {
+      // Calculate next maintenance date based on purchase date and frequency
+      const purchaseDate = new Date(item.purchaseDate);
+      const getNextMaintenanceDate = (frequency: string, baseDate: Date): Date => {
+        const next = new Date(baseDate);
+        switch (frequency) {
+          case 'monthly':
+            next.setMonth(next.getMonth() + 1);
+            break;
+          case 'quarterly':
+            next.setMonth(next.getMonth() + 3);
+            break;
+          case 'semiannual':
+            next.setMonth(next.getMonth() + 6);
+            break;
+          case 'annual':
+            next.setFullYear(next.getFullYear() + 1);
+            break;
+          default:
+            next.setMonth(next.getMonth() + 1);
         }
-      ]
-    },
-    {
-      id: "2",
-      name: t("recirculationPump"),
-      type: "Pump",
-      location: t("machineRoom"),
-      purchaseDate: new Date("2019-06-20"),
-      contractorName: "Hidráulica Total",
-      contractorPhone: "(11) 4444-5555",
-      maintenanceFrequency: "quarterly",
-      lastMaintenance: new Date("2023-12-22"),
-      nextMaintenance: new Date("2024-03-22"),
-      status: "maintenance",
-      condominium: "Edifício Central",
-      maintenanceHistory: [
-        {
-          id: "m3",
-          date: new Date("2023-12-22"),
-          type: "Corrective Maintenance",
-          description: "Bearing replacement",
-          technician: "Carlos Mendes",
-          cost: 850,
-          notes: "Requires monitoring for next 30 days"
-        }
-      ]
-    },
-    {
-      id: "3",
-      name: "Generator",
-      type: "Generator",
-      location: "Basement",
-      purchaseDate: new Date("2021-03-10"),
-      contractorName: "Geradores Power",
-      contractorPhone: "(11) 5555-6666",
-      maintenanceFrequency: "monthly",
-      lastMaintenance: new Date("2024-02-01"),
-      nextMaintenance: new Date("2024-03-01"),
-      status: "operational",
-      condominium: "Residencial Park",
-      maintenanceHistory: [
-        {
-          id: "m4",
-          date: new Date("2024-02-01"),
-          type: "Corrective Maintenance",
-          description: "Changed generator batteries",
-          technician: "Roberto Alves",
-          cost: 1200,
-          notes: "New batteries installed, 2-year warranty"
-        },
-        {
-          id: "m5",
-          date: new Date("2024-01-01"),
-          type: "Preventive Maintenance",
-          description: "Monthly test and inspection",
-          technician: "Roberto Alves",
-          cost: 300
-        }
-      ]
-    }
-  ]);
+        return next;
+      };
 
-  // Available condominiums (in real app, this would come from an API)
+      return {
+        id: item.id.toString(),
+        name: item.name,
+        type: item.type,
+        location: item.location,
+        purchaseDate: purchaseDate,
+        contractorName: item.contractorName,
+        contractorPhone: item.contractorPhone,
+        maintenanceFrequency: item.maintenanceFrequency,
+        lastMaintenance: undefined, // API doesn't provide this yet
+        nextMaintenance: getNextMaintenanceDate(item.maintenanceFrequency, purchaseDate),
+        status: item.status as 'operational' | 'maintenance' | 'repair' | 'inactive',
+        condominium: item.condominium,
+        maintenanceHistory: [] // Will be populated when maintenance records API is implemented
+      };
+    }) || [];
+  };
+
+  const equipmentList = transformEquipmentData(equipmentData);
+
+  // Generate dynamic condominiums list from equipment data
   const condominiums = [
     { value: "all", label: t("allCondominiums") || "All Condominiums" },
-    { value: "Edifício Central", label: "Edifício Central" },
-    { value: "Residencial Park", label: "Residencial Park" },
-    { value: "Torre Sul", label: "Torre Sul" }
+    ...Array.from(new Set(equipmentList.map(eq => eq.condominium)))
+      .map(condo => ({ value: condo, label: condo }))
   ];
 
   // Filter equipment by selected condominium
@@ -485,6 +436,14 @@ export default function Equipment() {
                                   {condo.label}
                                 </SelectItem>
                               ))}
+                              {/* Add manual options if no equipment exists yet */}
+                              {equipmentList.length === 0 && (
+                                <>
+                                  <SelectItem value="Edifício Central">Edifício Central</SelectItem>
+                                  <SelectItem value="Residencial Park">Residencial Park</SelectItem>
+                                  <SelectItem value="Torre Sul">Torre Sul</SelectItem>
+                                </>
+                              )}
                             </SelectContent>
                           </Select>
                         </div>
@@ -580,8 +539,46 @@ export default function Equipment() {
                 </Dialog>
               </div>
 
+              {/* Loading and Error States */}
+              {isLoading && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-sm text-muted-foreground">{t("loadingEquipment") || "Loading equipment..."}</p>
+                  </div>
+                </div>
+              )}
+
+              {isError && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <p className="text-sm text-destructive mb-2">{t("errorLoadingEquipment") || "Error loading equipment"}</p>
+                    <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                      {t("retry") || "Retry"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {!isLoading && !isError && equipmentList.length === 0 && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Wrench className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-medium mb-2">{t("noEquipmentYet") || "No Equipment Yet"}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {t("addFirstEquipment") || "Add your first piece of equipment to get started"}
+                    </p>
+                    <Button onClick={() => setIsAddEquipmentOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      {t("addEquipment") || "Add Equipment"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Equipment Grid/List */}
-              {viewMode === 'grid' ? (
+              {!isLoading && !isError && equipmentList.length > 0 && viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {filteredEquipment.map((equipment) => (
                     <Card key={equipment.id} className="hover:shadow-lg transition-shadow">
@@ -650,7 +647,7 @@ export default function Equipment() {
                     </CardContent>
                   </Card>
                 </div>
-              ) : (
+              ) : !isLoading && !isError && equipmentList.length > 0 ? (
                 <Card>
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -717,7 +714,7 @@ export default function Equipment() {
                     </div>
                   </CardContent>
                 </Card>
-              )}
+              ) : null}
             </TabsContent>
 
             {/* Maintenance Schedule Tab */}

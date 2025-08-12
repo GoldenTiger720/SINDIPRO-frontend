@@ -193,8 +193,8 @@ export const equipmentApi = {
    */
   async getEquipment(): Promise<EquipmentResponse[]> {
     try {
-      const response = await apiClient.get<EquipmentListResponse>(`${EQUIPMENT_ENDPOINT}/`);
-      return response.equipment;
+      const response = await apiClient.get<EquipmentResponse[]>(`${EQUIPMENT_ENDPOINT}/`);
+      return response || []; // Return empty array if response is falsy
     } catch (error) {
       console.error('Error fetching equipment:', error);
       throw error;
