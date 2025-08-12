@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getStoredToken } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,10 +19,10 @@ export interface MonthlyBillData {
 
 export interface ConsumptionResponse {
   id: number;
-  utilityType: string;
-  gasCategory?: string;
+  utility_type: string;
+  gas_category?: string | null;
   date: string;
-  value: number;
+  value: string;
   created_at: string;
   updated_at: string;
 }
@@ -148,9 +148,86 @@ const registerMonthlyBill = async (billData: MonthlyBillData): Promise<BillRespo
   return response.json();
 };
 
+// API function to fetch consumption data
+const fetchConsumptionData = async (): Promise<ConsumptionResponse[]> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/consumption/register`;
+  const requestOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  };
+
+  console.log('Fetch Consumption Data API Request:', {
+    url,
+    method: requestOptions.method,
+    headers: requestOptions.headers
+  });
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// API function to fetch account/bills data
+const fetchAccountData = async (): Promise<BillResponse[]> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/consumption/account`;
+  const requestOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  };
+
+  console.log('Fetch Account Data API Request:', {
+    url,
+    method: requestOptions.method,
+    headers: requestOptions.headers
+  });
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 // React Query hook for registering daily consumption
 export const useRegisterDailyConsumption = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: registerDailyConsumption,
@@ -159,6 +236,8 @@ export const useRegisterDailyConsumption = () => {
         title: "Success",
         description: "Daily consumption registered successfully",
       });
+      // Invalidate and refetch consumption data
+      queryClient.invalidateQueries({ queryKey: ['consumption-data'] });
     },
     onError: (error: Error) => {
       console.error('Error registering consumption:', error);
@@ -188,6 +267,44 @@ export const useRegisterMonthlyBill = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to register monthly bill. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// React Query hook for fetching consumption data
+export const useGetConsumptionData = () => {
+  const { toast } = useToast();
+
+  return useQuery({
+    queryKey: ['consumption-data'],
+    queryFn: fetchConsumptionData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error: Error) => {
+      console.error('Error fetching consumption data:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch consumption data. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// React Query hook for fetching account/bills data
+export const useGetAccountData = () => {
+  const { toast } = useToast();
+
+  return useQuery({
+    queryKey: ['account-data'],
+    queryFn: fetchAccountData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error: Error) => {
+      console.error('Error fetching account data:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch account data. Please try again.",
         variant: "destructive",
       });
     },

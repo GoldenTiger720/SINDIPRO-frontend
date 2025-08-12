@@ -4,9 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calculator, AlertTriangle, CreditCard, BarChart3 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useRegisterDailyConsumption, useRegisterMonthlyBill } from "@/hooks/useConsumption";
+import { useRegisterDailyConsumption, useRegisterMonthlyBill, useGetConsumptionData, useGetAccountData } from "@/hooks/useConsumption";
 
 // Import the new tab components
 import { ConsumptionTab } from "@/components/consumption/ConsumptionTab";
@@ -20,6 +20,87 @@ export default function Consumption() {
   // React Query hooks for consumption and bill registration
   const registerConsumptionMutation = useRegisterDailyConsumption();
   const registerBillMutation = useRegisterMonthlyBill();
+  
+  // React Query hooks for fetching data on page load
+  const { data: consumptionData, isLoading: isLoadingConsumption, error: consumptionError } = useGetConsumptionData();
+  const { data: accountData, isLoading: isLoadingAccount, error: accountError } = useGetAccountData();
+
+  // Transform backend consumption data for use in components
+  const transformedConsumptionData = useMemo(() => {
+    if (!consumptionData) return { water: [], electricity: [], gas: [] };
+
+    const groupedData = {
+      water: [] as Array<{ date: string; value: number; day?: string }>,
+      electricity: [] as Array<{ date: string; value: number; day?: string }>,
+      gas: [] as Array<{ date: string; value: number; day?: string }>
+    };
+
+    consumptionData.forEach(item => {
+      const utilityType = item.utility_type as 'water' | 'electricity' | 'gas';
+      const value = parseFloat(item.value);
+      const date = new Date(item.date);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const dateStr = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' });
+
+      if (groupedData[utilityType]) {
+        groupedData[utilityType].push({
+          date: item.date,
+          value,
+          day: dayName,
+          dateStr
+        });
+      }
+    });
+
+    // Sort by date (newest first) and take last 7 days for daily view
+    Object.keys(groupedData).forEach(key => {
+      groupedData[key as keyof typeof groupedData] = groupedData[key as keyof typeof groupedData]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 7)
+        .reverse(); // Show chronological order (oldest to newest)
+    });
+
+    return groupedData;
+  }, [consumptionData]);
+
+  // Calculate current readings from backend data
+  const currentReadings = useMemo(() => {
+    if (!consumptionData) {
+      return {
+        water: { value: 0, date: '', trend: 0 },
+        electricity: { value: 0, date: '', trend: 0 },
+        gas: { value: 0, date: '', trend: 0 }
+      };
+    }
+
+    const latestReadings = {
+      water: { value: 0, date: '', trend: 0 },
+      electricity: { value: 0, date: '', trend: 0 },
+      gas: { value: 0, date: '', trend: 0 }
+    };
+
+    // Get the latest reading for each utility type
+    ['water', 'electricity', 'gas'].forEach(utilityType => {
+      const readings = consumptionData
+        .filter(item => item.utility_type === utilityType)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      if (readings.length > 0) {
+        const latest = readings[0];
+        const previous = readings[1];
+        
+        latestReadings[utilityType as keyof typeof latestReadings] = {
+          value: parseFloat(latest.value),
+          date: latest.date,
+          trend: previous ? 
+            ((parseFloat(latest.value) - parseFloat(previous.value)) / parseFloat(previous.value)) * 100 : 
+            0
+        };
+      }
+    });
+
+    return latestReadings;
+  }, [consumptionData]);
   
   const [activeTab, setActiveTab] = useState('consumption');
   const [selectedConsumptionType, setSelectedConsumptionType] = useState('water');
@@ -37,13 +118,6 @@ export default function Consumption() {
     water: 2.2,
     gas: 1.1,
     electricity: 8.9
-  });
-  
-  // State for current consumption readings (will be updated from user input)
-  const [currentReadings, setCurrentReadings] = useState({
-    water: { value: 0, date: '', trend: 0 },
-    electricity: { value: 0, date: '', trend: 0 },
-    gas: { value: 0, date: '', trend: 0 }
   });
   
   // State for current bills (will be updated from user input)
@@ -65,36 +139,6 @@ export default function Consumption() {
     }>;
   }>>([]);
 
-  // Mock data for daily consumption (last 7 days)
-  const dailyWaterData = [
-    { day: 'Mon', value: 2.1, date: '12/02' },
-    { day: 'Tue', value: 2.3, date: '12/03' },
-    { day: 'Wed', value: 2.2, date: '12/04' },
-    { day: 'Thu', value: 2.4, date: '12/05' },
-    { day: 'Fri', value: 2.5, date: '12/06' },
-    { day: 'Sat', value: 2.3, date: '12/07' },
-    { day: 'Sun', value: 2.45, date: '12/08' }
-  ];
-
-  const dailyElectricityData = [
-    { day: 'Mon', value: 18.5, date: '12/02' },
-    { day: 'Tue', value: 19.2, date: '12/03' },
-    { day: 'Wed', value: 18.8, date: '12/04' },
-    { day: 'Thu', value: 20.1, date: '12/05' },
-    { day: 'Fri', value: 19.5, date: '12/06' },
-    { day: 'Sat', value: 17.9, date: '12/07' },
-    { day: 'Sun', value: 18.9, date: '12/08' }
-  ];
-
-  const dailyGasData = [
-    { day: 'Mon', value: 1.15, date: '12/02' },
-    { day: 'Tue', value: 1.22, date: '12/03' },
-    { day: 'Wed', value: 1.18, date: '12/04' },
-    { day: 'Thu', value: 1.25, date: '12/05' },
-    { day: 'Fri', value: 1.20, date: '12/06' },
-    { day: 'Sat', value: 1.28, date: '12/07' },
-    { day: 'Sun', value: 1.24, date: '12/08' }
-  ];
 
   // Mock data for monthly consumption
   const monthlyWaterData = [
@@ -150,12 +194,8 @@ export default function Consumption() {
   };
 
   const getDailyData = (type) => {
-    switch(type) {
-      case 'water': return dailyWaterData;
-      case 'electricity': return dailyElectricityData;
-      case 'gas': return dailyGasData;
-      default: return dailyWaterData;
-    }
+    const data = transformedConsumptionData[type as keyof typeof transformedConsumptionData] || [];
+    return data.length > 0 ? data : [];
   };
 
   const getMonthlyData = (type) => {
@@ -211,9 +251,10 @@ export default function Consumption() {
       return;
     }
 
-    // Calculate trend vs previous consumption
-    const previousValue = previousConsumption[selectedConsumptionType as keyof typeof previousConsumption];
-    const trendPercentage = ((value - previousValue) / previousValue) * 100;
+    // Calculate trend vs latest reading from backend data
+    const currentReading = currentReadings[selectedConsumptionType as keyof typeof currentReadings];
+    const previousValue = currentReading.value || previousConsumption[selectedConsumptionType as keyof typeof previousConsumption];
+    const trendPercentage = previousValue > 0 ? ((value - previousValue) / previousValue) * 100 : 0;
 
     // Check for alerts
     const alert = checkConsumptionAlert(
@@ -226,16 +267,6 @@ export default function Consumption() {
       setAlerts(prev => [...prev, { ...alert, id: Date.now() }]);
     }
 
-    // Update current readings immediately (optimistic update)
-    setCurrentReadings(prev => ({
-      ...prev,
-      [selectedConsumptionType]: {
-        value,
-        date: selectedDate,
-        trend: trendPercentage
-      }
-    }));
-
     // Use ReactQuery mutation to send authenticated POST request
     try {
       await registerConsumptionMutation.mutateAsync({
@@ -245,26 +276,13 @@ export default function Consumption() {
         value
       });
 
-      // Update previous consumption for next comparison
-      setPreviousConsumption(prev => ({
-        ...prev,
-        [selectedConsumptionType]: value
-      }));
-
       // Clear form
       setConsumptionValue('');
       setSelectedDate('');
 
     } catch (error) {
-      // If API call fails, revert the optimistic update
-      setCurrentReadings(prev => ({
-        ...prev,
-        [selectedConsumptionType]: {
-          value: previousValue,
-          date: '',
-          trend: 0
-        }
-      }));
+      // Error is already handled by the mutation
+      console.error('Failed to submit consumption:', error);
     }
   };
 
@@ -372,6 +390,31 @@ export default function Consumption() {
   const dismissAlert = (alertId) => {
     setAlerts(prev => prev.filter(alert => alert.id !== alertId));
   };
+
+  // Show loading state while fetching data
+  if (isLoadingConsumption || isLoadingAccount) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={t("adminSindipro")} />
+        <div className="p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Calculator className="w-6 h-6 text-blue-500" />
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t("consumptionModule")}</h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading consumption data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
