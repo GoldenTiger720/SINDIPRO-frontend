@@ -1,15 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, Droplets, Zap, Flame, TrendingUp, AlertTriangle, Building, Home, Zap as Generator, Calendar, CreditCard, BarChart3 } from "lucide-react";
+import { Calculator, AlertTriangle, CreditCard, BarChart3 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useRegisterDailyConsumption, useRegisterMonthlyBill } from "@/hooks/useConsumption";
+
+// Import the new tab components
+import { ConsumptionTab } from "@/components/consumption/ConsumptionTab";
+import { AccountTab } from "@/components/consumption/AccountTab";
+import { GraphicsTab } from "@/components/consumption/GraphicsTab";
 
 export default function Consumption() {
   const { t } = useTranslation();
@@ -430,600 +432,52 @@ export default function Consumption() {
           </TabsList>
 
           <TabsContent value="consumption" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Daily Consumption Entry */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calculator className="w-5 h-5" />
-                    Daily Consumption Entry
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="consumption-type">Utility Type</Label>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      value={selectedConsumptionType}
-                      onChange={(e) => setSelectedConsumptionType(e.target.value)}
-                    >
-                      <option value="water">Water (m³)</option>
-                      <option value="electricity">Electricity (kWh)</option>
-                      <option value="gas">Gas (m³)</option>
-                    </select>
-                  </div>
-                  
-                  {selectedConsumptionType === 'gas' && (
-                    <div>
-                      <Label htmlFor="gas-category">Gas Usage Category</Label>
-                      <select 
-                        className="w-full p-2 border rounded"
-                        value={gasCategory}
-                        onChange={(e) => setGasCategory(e.target.value)}
-                      >
-                        <option value="units">🏠 Units (Apartments)</option>
-                        <option value="common">🏊 Common Area (Pool)</option>
-                        <option value="generator">⚡ Generator</option>
-                      </select>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <Label htmlFor="consumption-date">Date</Label>
-                    <Input 
-                      id="consumption-date" 
-                      type="date" 
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="consumption-value">
-                      {selectedConsumptionType === 'water' ? 'Water Reading (m³)' : 
-                       selectedConsumptionType === 'electricity' ? 'Electricity Reading (kWh)' : 
-                       'Gas Reading (m³)'}
-                    </Label>
-                    <Input 
-                      id="consumption-value" 
-                      type="number" 
-                      step="0.001"
-                      placeholder="0.000"
-                      value={consumptionValue}
-                      onChange={(e) => setConsumptionValue(e.target.value)}
-                    />
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={handleConsumptionSubmit}
-                    disabled={!consumptionValue || !selectedDate || registerConsumptionMutation.isPending}
-                  >
-                    {registerConsumptionMutation.isPending ? 'Registering...' : 'Register Daily Consumption'}
-                  </Button>
-                  
-                  <div className="text-xs text-muted-foreground mt-2">
-                    ⚠️ System will alert if consumption increases by 10% or more
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Individual Inline Graph */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {selectedConsumptionType === 'water' && <Droplets className="w-5 h-5 text-blue-500" />}
-                    {selectedConsumptionType === 'electricity' && <Zap className="w-5 h-5 text-yellow-500" />}
-                    {selectedConsumptionType === 'gas' && <Flame className="w-5 h-5 text-orange-500" />}
-                    {selectedConsumptionType === 'water' ? 'Water' : 
-                     selectedConsumptionType === 'electricity' ? 'Electricity' : 'Gas'} - Daily Evolution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <LineChart data={getDailyData(selectedConsumptionType)}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${value} ${selectedConsumptionType === 'electricity' ? 'kWh' : 'm³'}`} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke={getChartColor(selectedConsumptionType)} 
-                        strokeWidth={2}
-                        name={selectedConsumptionType === 'electricity' ? 'kWh' : 'm³'}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <div className="text-center text-xs text-muted-foreground mt-2">
-                    Last 7 days consumption pattern
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Current Readings Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Droplets className="w-5 h-5 text-blue-500" />
-                    {t("water")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {currentReadings.water.value > 0 ? `${currentReadings.water.value.toFixed(3)} m³` : 'No reading'}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {currentReadings.water.date ? `Reading from ${currentReadings.water.date}` : 'Latest Reading'}
-                  </p>
-                  {currentReadings.water.trend !== 0 && (
-                    <div className="flex items-center gap-1 mt-2">
-                      <TrendingUp className={`w-4 h-4 ${currentReadings.water.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
-                      <span className={`text-sm ${currentReadings.water.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {currentReadings.water.trend > 0 ? '+' : ''}{currentReadings.water.trend.toFixed(1)}% vs previous
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-500" />
-                    {t("electricity")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {currentReadings.electricity.value > 0 ? `${currentReadings.electricity.value.toFixed(3)} kWh` : 'No reading'}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {currentReadings.electricity.date ? `Reading from ${currentReadings.electricity.date}` : 'Latest Reading'}
-                  </p>
-                  {currentReadings.electricity.trend !== 0 && (
-                    <div className="flex items-center gap-1 mt-2">
-                      <TrendingUp className={`w-4 h-4 ${currentReadings.electricity.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
-                      <span className={`text-sm ${currentReadings.electricity.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {currentReadings.electricity.trend > 0 ? '+' : ''}{currentReadings.electricity.trend.toFixed(1)}% vs previous
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                    {t("gas")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">
-                    {currentReadings.gas.value > 0 ? `${currentReadings.gas.value.toFixed(3)} m³` : 'No reading'}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {currentReadings.gas.date ? `Reading from ${currentReadings.gas.date}` : 'Latest Reading'}
-                  </p>
-                  {currentReadings.gas.trend !== 0 && (
-                    <div className="flex items-center gap-1 mt-2">
-                      <TrendingUp className={`w-4 h-4 ${currentReadings.gas.trend > 0 ? 'text-red-500' : 'text-green-500 rotate-180'}`} />
-                      <span className={`text-sm ${currentReadings.gas.trend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {currentReadings.gas.trend > 0 ? '+' : ''}{currentReadings.gas.trend.toFixed(1)}% vs previous
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <ConsumptionTab
+              selectedConsumptionType={selectedConsumptionType}
+              setSelectedConsumptionType={setSelectedConsumptionType}
+              gasCategory={gasCategory}
+              setGasCategory={setGasCategory}
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              consumptionValue={consumptionValue}
+              setConsumptionValue={setConsumptionValue}
+              handleConsumptionSubmit={handleConsumptionSubmit}
+              registerConsumptionMutation={registerConsumptionMutation}
+              currentReadings={currentReadings}
+              getDailyData={getDailyData}
+              getChartColor={getChartColor}
+            />
           </TabsContent>
 
           <TabsContent value="account" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Monthly Bill Entry */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5" />
-                    Monthly Bill Entry
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="bill-type">Utility Type</Label>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      value={selectedConsumptionType}
-                      onChange={(e) => setSelectedConsumptionType(e.target.value)}
-                    >
-                      <option value="water">Water Bill</option>
-                      <option value="electricity">Electricity Bill</option>
-                      <option value="gas">Gas Bill</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="bill-month">Bill Month/Year</Label>
-                    <Input 
-                      id="bill-month" 
-                      type="month" 
-                      value={selectedMonth}
-                      onChange={(e) => setSelectedMonth(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="bill-amount">Bill Amount (R$)</Label>
-                    <Input 
-                      id="bill-amount" 
-                      type="number" 
-                      step="0.01"
-                      placeholder="0.00"
-                      value={billAmount}
-                      onChange={(e) => setBillAmount(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="payment-date">Payment Due Date</Label>
-                    <Input 
-                      id="payment-date" 
-                      type="date" 
-                      value={paymentDate}
-                      onChange={(e) => setPaymentDate(e.target.value)}
-                    />
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    onClick={handleBillSubmit}
-                    disabled={!billAmount || !selectedMonth || !paymentDate || registerBillMutation.isPending}
-                  >
-                    {registerBillMutation.isPending ? 'Registering...' : 'Register Monthly Bill'}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Current Bills Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Current Bills & Due Dates</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {currentBills.length > 0 ? (
-                    <div className="space-y-4">
-                      {currentBills.map((bill, index) => {
-                        const IconComponent = bill.utilityType === 'water' ? Droplets : 
-                                            bill.utilityType === 'electricity' ? Zap : Flame;
-                        const colorClass = bill.utilityType === 'water' ? 'text-blue-500' : 
-                                          bill.utilityType === 'electricity' ? 'text-yellow-500' : 'text-orange-500';
-                        const amountColorClass = bill.utilityType === 'water' ? 'text-blue-600' : 
-                                               bill.utilityType === 'electricity' ? 'text-yellow-600' : 'text-orange-600';
-                        const monthYear = new Date(bill.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                        
-                        return (
-                          <div key={index} className="flex justify-between items-center p-3 border rounded">
-                            <div className="flex items-center gap-2">
-                              <IconComponent className={`w-4 h-4 ${colorClass}`} />
-                              <span className="font-medium capitalize">{bill.utilityType} - {monthYear}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className={`font-semibold ${amountColorClass}`}>R$ {bill.amount.toFixed(2)}</div>
-                              <div className={`text-xs ${bill.isPaid ? 'text-green-600' : 'text-red-600'}`}>
-                                {bill.isPaid ? 'Paid ✓' : `Due: ${new Date(bill.paymentDate).toLocaleDateString()}`}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex justify-between items-center font-semibold">
-                          <span>Total Pending:</span>
-                          <span className="text-red-600">
-                            R$ {currentBills.filter(bill => !bill.isPaid).reduce((sum, bill) => sum + bill.amount, 0).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                      <p className="text-sm text-muted-foreground">No bills registered yet</p>
-                      <p className="text-xs text-muted-foreground mt-1">Add your first bill using the form on the left</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Monthly Bills History */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Bills History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {billsHistoryData.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {billsHistoryData.map((monthData, index) => {
-                      const totalAmount = monthData.bills.reduce((sum, bill) => sum + bill.amount, 0);
-                      const allPaid = monthData.bills.every(bill => bill.isPaid);
-                      
-                      return (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Calendar className={`w-5 h-5 ${allPaid ? 'text-green-500' : 'text-blue-500'}`} />
-                            <h3 className="font-semibold">{monthData.month}</h3>
-                          </div>
-                          <div className="space-y-1 text-sm">
-                            {monthData.bills.map((bill, billIndex) => (
-                              <p key={billIndex} className="capitalize">
-                                {bill.utilityType}: R$ {bill.amount.toFixed(2)} {bill.isPaid ? '(Paid ✓)' : '(Pending)'}
-                              </p>
-                            ))}
-                            <div className="pt-2 border-t mt-2">
-                              <p className="font-semibold">Total: R$ {totalAmount.toFixed(2)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <p className="text-sm text-muted-foreground">No bills history yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Bills you register will appear here by month</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <AccountTab
+              selectedConsumptionType={selectedConsumptionType}
+              setSelectedConsumptionType={setSelectedConsumptionType}
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              billAmount={billAmount}
+              setBillAmount={setBillAmount}
+              paymentDate={paymentDate}
+              setPaymentDate={setPaymentDate}
+              handleBillSubmit={handleBillSubmit}
+              registerBillMutation={registerBillMutation}
+              currentBills={currentBills}
+              billsHistoryData={billsHistoryData}
+            />
           </TabsContent>
 
           <TabsContent value="graphics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Chart Controls */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Chart Settings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="graph-type">Select Utility</Label>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      value={selectedGraphType}
-                      onChange={(e) => setSelectedGraphType(e.target.value)}
-                    >
-                      <option value="water">Water Consumption</option>
-                      <option value="electricity">Electricity Consumption</option>
-                      <option value="gas">Gas Consumption</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="graph-period">Time Period</Label>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      value={graphPeriod}
-                      onChange={(e) => setGraphPeriod(e.target.value)}
-                    >
-                      <option value="daily">Daily (Last 30 days)</option>
-                      <option value="monthly">Monthly (Last 12 months)</option>
-                      <option value="yearly">Yearly (Last 5 years)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="pt-4">
-                    <h4 className="font-semibold mb-2">Current Selection:</h4>
-                    <div className="flex items-center gap-2">
-                      {selectedGraphType === 'water' && <Droplets className="w-4 h-4 text-blue-500" />}
-                      {selectedGraphType === 'electricity' && <Zap className="w-4 h-4 text-yellow-500" />}
-                      {selectedGraphType === 'gas' && <Flame className="w-4 h-4 text-orange-500" />}
-                      <span className="capitalize">{selectedGraphType} - {graphPeriod} view</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Individual Chart Display */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {selectedGraphType === 'water' && <Droplets className="w-5 h-5 text-blue-500" />}
-                    {selectedGraphType === 'electricity' && <Zap className="w-5 h-5 text-yellow-500" />}
-                    {selectedGraphType === 'gas' && <Flame className="w-5 h-5 text-orange-500" />}
-                    {selectedGraphType === 'water' ? 'Water' : 
-                     selectedGraphType === 'electricity' ? 'Electricity' : 'Gas'} Evolution - {graphPeriod}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    {graphPeriod === 'daily' ? (
-                      <LineChart data={getChartData(selectedGraphType, graphPeriod)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="day" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => `${value} ${selectedGraphType === 'electricity' ? 'kWh' : 'm³'}`} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke={getChartColor(selectedGraphType)} 
-                          strokeWidth={2}
-                          name={selectedGraphType === 'electricity' ? 'kWh' : 'm³'}
-                        />
-                      </LineChart>
-                    ) : (
-                      <BarChart data={getChartData(selectedGraphType, graphPeriod)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={graphPeriod === 'monthly' ? 'month' : 'year'} />
-                        <YAxis />
-                        <Tooltip 
-                          formatter={(value, name) => [
-                            name === 'value' ? 
-                              `${value} ${selectedGraphType === 'electricity' ? 'kWh' : 'm³'}` : 
-                              `R$ ${value.toFixed(2)}`,
-                            name === 'value' ? 'Consumption' : 'Bill Amount'
-                          ]} 
-                        />
-                        <Bar dataKey="value" fill={getChartColor(selectedGraphType)} />
-                        <Bar dataKey="bill" fill="#94a3b8" />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                  <div className="text-center text-xs text-muted-foreground mt-2">
-                    Individual {selectedGraphType} consumption evolution
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Summary Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <Droplets className="w-4 h-4 text-blue-500" />
-                      <p className="text-sm font-medium">Water Total (Dec)</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">73.5 m³</p>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-2xl font-bold">R$ 890.50</p>
-                    <p className="text-xs text-green-600">↓ 1.2% vs Nov</p>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-4 h-4 text-yellow-500" />
-                      <p className="text-sm font-medium">Electricity Total (Dec)</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">276.5 kWh</p>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-2xl font-bold">R$ 1,245.80</p>
-                    <p className="text-xs text-red-600">↑ 3.5% vs Nov</p>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between space-x-2">
-                    <div className="flex items-center space-x-2">
-                      <Flame className="w-4 h-4 text-orange-500" />
-                      <p className="text-sm font-medium">Gas Total (Dec)</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">38.7 m³</p>
-                  </div>
-                  <div className="mt-2">
-                    <p className="text-2xl font-bold">R$ 456.30</p>
-                    <p className="text-xs text-green-600">↓ 0.8% vs Nov</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* All Individual Charts in Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Water Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Droplets className="w-5 h-5 text-blue-500" />
-                    Water - Monthly Trend
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={monthlyWaterData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis yAxisId="left" orientation="left" stroke="#3b82f6" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#6366f1" />
-                      <Tooltip 
-                        formatter={(value, name) => [
-                          name === 'value' ? `${value} m³` : `R$ ${value.toFixed(2)}`,
-                          name === 'value' ? 'Consumption' : 'Bill Amount'
-                        ]}
-                      />
-                      <Legend />
-                      <Bar yAxisId="left" dataKey="value" fill="#3b82f6" name="Consumption (m³)" />
-                      <Bar yAxisId="right" dataKey="bill" fill="#dbeafe" name="Bill (R$)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Electricity Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-500" />
-                    Electricity - Monthly Trend
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={monthlyElectricityData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis yAxisId="left" orientation="left" stroke="#eab308" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#facc15" />
-                      <Tooltip 
-                        formatter={(value, name) => [
-                          name === 'value' ? `${value} kWh` : `R$ ${value.toFixed(2)}`,
-                          name === 'value' ? 'Consumption' : 'Bill Amount'
-                        ]}
-                      />
-                      <Legend />
-                      <Bar yAxisId="left" dataKey="value" fill="#eab308" name="Consumption (kWh)" />
-                      <Bar yAxisId="right" dataKey="bill" fill="#fef3c7" name="Bill (R$)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Gas Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                    Gas - Monthly Trend
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={monthlyGasData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis yAxisId="left" orientation="left" stroke="#f97316" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#fb923c" />
-                      <Tooltip 
-                        formatter={(value, name) => [
-                          name === 'value' ? `${value} m³` : `R$ ${value.toFixed(2)}`,
-                          name === 'value' ? 'Consumption' : 'Bill Amount'
-                        ]}
-                      />
-                      <Legend />
-                      <Bar yAxisId="left" dataKey="value" fill="#f97316" name="Consumption (m³)" />
-                      <Bar yAxisId="right" dataKey="bill" fill="#fed7aa" name="Bill (R$)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
+            <GraphicsTab
+              selectedGraphType={selectedGraphType}
+              setSelectedGraphType={setSelectedGraphType}
+              graphPeriod={graphPeriod}
+              setGraphPeriod={setGraphPeriod}
+              getChartData={getChartData}
+              getChartColor={getChartColor}
+              monthlyWaterData={monthlyWaterData}
+              monthlyElectricityData={monthlyElectricityData}
+              monthlyGasData={monthlyGasData}
+            />
           </TabsContent>
         </Tabs>
 
