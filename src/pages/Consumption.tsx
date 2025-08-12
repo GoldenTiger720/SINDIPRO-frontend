@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calculator, AlertTriangle, CreditCard, BarChart3 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useRegisterDailyConsumption, useRegisterMonthlyBill, useGetConsumptionData, useGetAccountData } from "@/hooks/useConsumption";
 
@@ -120,6 +120,71 @@ export default function Consumption() {
     electricity: 8.9
   });
   
+  // Transform backend account data for current bills and history
+  const transformedAccountData = useMemo(() => {
+    if (!accountData) return { currentBills: [], billsHistory: [] };
+
+    // Get current date for comparison
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+
+    // Separate bills into current (unpaid or recent) and history
+    const currentBillsList: Array<{
+      utilityType: 'water' | 'electricity' | 'gas';
+      month: string;
+      amount: number;
+      paymentDate: string;
+      isPaid: boolean;
+    }> = [];
+
+    // Group bills by month for history
+    const billsByMonth: Record<string, Array<{
+      utilityType: 'water' | 'electricity' | 'gas';
+      amount: number;
+      isPaid: boolean;
+    }>> = {};
+
+    accountData.forEach(bill => {
+      const paymentDate = new Date(bill.payment_date);
+      const isPaid = paymentDate < currentDate;
+      
+      const billData = {
+        utilityType: bill.utility_type as 'water' | 'electricity' | 'gas',
+        month: bill.month,
+        amount: parseFloat(bill.amount),
+        paymentDate: bill.payment_date,
+        isPaid
+      };
+
+      // Add to current bills if unpaid or payment date is within 30 days
+      const daysDiff = Math.floor((currentDate.getTime() - paymentDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (!isPaid || daysDiff <= 30) {
+        currentBillsList.push(billData);
+      }
+
+      // Add to history grouped by month
+      const monthYear = new Date(bill.month + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      if (!billsByMonth[monthYear]) {
+        billsByMonth[monthYear] = [];
+      }
+      billsByMonth[monthYear].push({
+        utilityType: bill.utility_type as 'water' | 'electricity' | 'gas',
+        amount: parseFloat(bill.amount),
+        isPaid
+      });
+    });
+
+    // Convert history to array format
+    const billsHistoryArray = Object.entries(billsByMonth)
+      .map(([month, bills]) => ({ month, bills }))
+      .sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime());
+
+    return {
+      currentBills: currentBillsList,
+      billsHistory: billsHistoryArray
+    };
+  }, [accountData]);
+
   // State for current bills (will be updated from user input)
   const [currentBills, setCurrentBills] = useState<Array<{
     utilityType: 'water' | 'electricity' | 'gas';
@@ -127,7 +192,7 @@ export default function Consumption() {
     amount: number;
     paymentDate: string;
     isPaid: boolean;
-  }>>([]);
+  }>>(transformedAccountData.currentBills);
   
   // State for bills history (will be updated from user input)
   const [billsHistoryData, setBillsHistoryData] = useState<Array<{
@@ -137,7 +202,15 @@ export default function Consumption() {
       amount: number;
       isPaid: boolean;
     }>;
-  }>>([]);
+  }>>(transformedAccountData.billsHistory);
+
+  // Update states when backend data changes
+  useEffect(() => {
+    if (accountData) {
+      setCurrentBills(transformedAccountData.currentBills);
+      setBillsHistoryData(transformedAccountData.billsHistory);
+    }
+  }, [accountData, transformedAccountData]);
 
 
   // Mock data for monthly consumption
