@@ -213,75 +213,148 @@ export default function Consumption() {
   }, [accountData, transformedAccountData]);
 
 
-  // Mock data for monthly consumption
-  const monthlyWaterData = [
-    { month: 'Jul', value: 68.5, bill: 798.90 },
-    { month: 'Aug', value: 71.2, bill: 845.20 },
-    { month: 'Sep', value: 69.8, bill: 812.45 },
-    { month: 'Oct', value: 72.4, bill: 856.30 },
-    { month: 'Nov', value: 74.1, bill: 878.90 },
-    { month: 'Dec', value: 73.5, bill: 890.50 }
-  ];
+  // Transform consumption and account data for monthly and yearly graphs
+  const graphData = useMemo(() => {
+    // Helper to aggregate consumption data by month
+    const aggregateByMonth = (data: any[], utilityType: string) => {
+      const monthlyAgg: Record<string, { sum: number; count: number; bill?: number }> = {};
+      
+      data.forEach(item => {
+        if (item.utility_type === utilityType) {
+          const date = new Date(item.date);
+          const monthKey = date.toISOString().substring(0, 7); // YYYY-MM format
+          
+          if (!monthlyAgg[monthKey]) {
+            monthlyAgg[monthKey] = { sum: 0, count: 0 };
+          }
+          
+          monthlyAgg[monthKey].sum += parseFloat(item.value);
+          monthlyAgg[monthKey].count += 1;
+        }
+      });
 
-  const monthlyElectricityData = [
-    { month: 'Jul', value: 245.6, bill: 1145.20 },
-    { month: 'Aug', value: 268.9, bill: 1289.40 },
-    { month: 'Sep', value: 252.3, bill: 1198.65 },
-    { month: 'Oct', value: 275.4, bill: 1312.80 },
-    { month: 'Nov', value: 280.2, bill: 1345.90 },
-    { month: 'Dec', value: 276.5, bill: 1245.80 }
-  ];
+      // Add bill data from accountData
+      if (accountData) {
+        accountData.forEach(bill => {
+          if (bill.utility_type === utilityType && monthlyAgg[bill.month]) {
+            monthlyAgg[bill.month].bill = parseFloat(bill.amount);
+          }
+        });
+      }
 
-  const monthlyGasData = [
-    { month: 'Jul', value: 35.2, bill: 398.45 },
-    { month: 'Aug', value: 37.8, bill: 432.10 },
-    { month: 'Sep', value: 36.1, bill: 412.30 },
-    { month: 'Oct', value: 38.5, bill: 445.60 },
-    { month: 'Nov', value: 39.2, bill: 452.80 },
-    { month: 'Dec', value: 38.7, bill: 456.30 }
-  ];
+      // Convert to array and sort by date
+      return Object.entries(monthlyAgg)
+        .map(([month, data]) => ({
+          month: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+          value: parseFloat((data.sum / data.count).toFixed(2)), // Average daily consumption
+          bill: data.bill || 0
+        }))
+        .sort((a, b) => {
+          const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+        })
+        .slice(-6); // Last 6 months
+    };
 
-  // Mock data for yearly consumption
-  const yearlyData = {
-    water: [
-      { year: '2020', value: 812.4, bill: 9845.60 },
-      { year: '2021', value: 825.8, bill: 10125.40 },
-      { year: '2022', value: 838.2, bill: 10456.80 },
-      { year: '2023', value: 845.6, bill: 10678.90 },
-      { year: '2024', value: 852.3, bill: 10892.50 }
-    ],
-    electricity: [
-      { year: '2020', value: 2985.6, bill: 13456.80 },
-      { year: '2021', value: 3024.8, bill: 13892.40 },
-      { year: '2022', value: 3156.2, bill: 14325.60 },
-      { year: '2023', value: 3098.4, bill: 14156.90 },
-      { year: '2024', value: 3178.5, bill: 14789.30 }
-    ],
-    gas: [
-      { year: '2020', value: 425.6, bill: 4856.30 },
-      { year: '2021', value: 438.2, bill: 5012.40 },
-      { year: '2022', value: 445.8, bill: 5156.80 },
-      { year: '2023', value: 452.3, bill: 5289.60 },
-      { year: '2024', value: 458.9, bill: 5423.70 }
-    ]
-  };
+    // Helper to aggregate by year
+    const aggregateByYear = (data: any[], utilityType: string) => {
+      const yearlyAgg: Record<string, { sum: number; count: number; billSum: number }> = {};
+      
+      data.forEach(item => {
+        if (item.utility_type === utilityType) {
+          const year = new Date(item.date).getFullYear().toString();
+          
+          if (!yearlyAgg[year]) {
+            yearlyAgg[year] = { sum: 0, count: 0, billSum: 0 };
+          }
+          
+          yearlyAgg[year].sum += parseFloat(item.value);
+          yearlyAgg[year].count += 1;
+        }
+      });
+
+      // Add bill data from accountData
+      if (accountData) {
+        accountData.forEach(bill => {
+          if (bill.utility_type === utilityType) {
+            const year = bill.month.substring(0, 4);
+            if (yearlyAgg[year]) {
+              yearlyAgg[year].billSum += parseFloat(bill.amount);
+            }
+          }
+        });
+      }
+
+      // Convert to array and sort by year
+      return Object.entries(yearlyAgg)
+        .map(([year, data]) => ({
+          year,
+          value: parseFloat(data.sum.toFixed(2)),
+          bill: data.billSum
+        }))
+        .sort((a, b) => parseInt(a.year) - parseInt(b.year))
+        .slice(-5); // Last 5 years
+    };
+
+    if (!consumptionData) {
+      return {
+        monthlyWater: [],
+        monthlyElectricity: [],
+        monthlyGas: [],
+        yearlyData: { water: [], electricity: [], gas: [] }
+      };
+    }
+
+    return {
+      monthlyWater: aggregateByMonth(consumptionData, 'water'),
+      monthlyElectricity: aggregateByMonth(consumptionData, 'electricity'),
+      monthlyGas: aggregateByMonth(consumptionData, 'gas'),
+      yearlyData: {
+        water: aggregateByYear(consumptionData, 'water'),
+        electricity: aggregateByYear(consumptionData, 'electricity'),
+        gas: aggregateByYear(consumptionData, 'gas')
+      }
+    };
+  }, [consumptionData, accountData]);
+
+  const monthlyWaterData = graphData.monthlyWater;
+  const monthlyElectricityData = graphData.monthlyElectricity;
+  const monthlyGasData = graphData.monthlyGas;
+  const yearlyData = graphData.yearlyData;
 
   const getDailyData = (type) => {
     const data = transformedConsumptionData[type as keyof typeof transformedConsumptionData] || [];
-    return data.length > 0 ? data : [];
+    // For daily view, show the last 30 days of data
+    if (data.length === 0 && consumptionData) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      return consumptionData
+        .filter(item => 
+          item.utility_type === type && 
+          new Date(item.date) >= thirtyDaysAgo
+        )
+        .map(item => ({
+          date: item.date,
+          value: parseFloat(item.value),
+          day: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' })
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }
+    return data;
   };
 
   const getMonthlyData = (type) => {
     switch(type) {
-      case 'water': return monthlyWaterData;
-      case 'electricity': return monthlyElectricityData;
-      case 'gas': return monthlyGasData;
-      default: return monthlyWaterData;
+      case 'water': return monthlyWaterData.length > 0 ? monthlyWaterData : [];
+      case 'electricity': return monthlyElectricityData.length > 0 ? monthlyElectricityData : [];
+      case 'gas': return monthlyGasData.length > 0 ? monthlyGasData : [];
+      default: return [];
     }
   };
 
   const getYearlyData = (type) => {
-    return yearlyData[type] || yearlyData.water;
+    return yearlyData[type] || [];
   };
 
   const getChartData = (type, period) => {
@@ -593,6 +666,8 @@ export default function Consumption() {
               monthlyWaterData={monthlyWaterData}
               monthlyElectricityData={monthlyElectricityData}
               monthlyGasData={monthlyGasData}
+              currentReadings={currentReadings}
+              accountData={accountData}
             />
           </TabsContent>
         </Tabs>

@@ -13,6 +13,12 @@ interface GraphicsTabProps {
   monthlyWaterData: any[];
   monthlyElectricityData: any[];
   monthlyGasData: any[];
+  currentReadings: {
+    water: { value: number; date: string; trend: number };
+    electricity: { value: number; date: string; trend: number };
+    gas: { value: number; date: string; trend: number };
+  };
+  accountData?: any[];
 }
 
 export function GraphicsTab({
@@ -24,8 +30,24 @@ export function GraphicsTab({
   getChartColor,
   monthlyWaterData,
   monthlyElectricityData,
-  monthlyGasData
+  monthlyGasData,
+  currentReadings,
+  accountData
 }: GraphicsTabProps) {
+  // Get latest bill data for summary statistics
+  const getLatestBillForType = (type: string) => {
+    if (!accountData || accountData.length === 0) return null;
+    
+    const bills = accountData
+      .filter(bill => bill.utility_type === type)
+      .sort((a, b) => new Date(b.month + '-01').getTime() - new Date(a.month + '-01').getTime());
+    
+    return bills.length > 0 ? bills[0] : null;
+  };
+
+  const latestWaterBill = getLatestBillForType('water');
+  const latestElectricityBill = getLatestBillForType('electricity');
+  const latestGasBill = getLatestBillForType('gas');
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -135,13 +157,15 @@ export function GraphicsTab({
             <div className="flex items-center justify-between space-x-2">
               <div className="flex items-center space-x-2">
                 <Droplets className="w-4 h-4 text-blue-500" />
-                <p className="text-sm font-medium">Water Total (Dec)</p>
+                <p className="text-sm font-medium">Water {latestWaterBill ? `(${new Date(latestWaterBill.month + '-01').toLocaleDateString('en-US', { month: 'short' })})` : ''}</p>
               </div>
-              <p className="text-sm text-muted-foreground">73.5 m³</p>
+              <p className="text-sm text-muted-foreground">{currentReadings.water.value.toFixed(1)} m³</p>
             </div>
             <div className="mt-2">
-              <p className="text-2xl font-bold">R$ 890.50</p>
-              <p className="text-xs text-green-600">↓ 1.2% vs Nov</p>
+              <p className="text-2xl font-bold">R$ {latestWaterBill ? parseFloat(latestWaterBill.amount).toFixed(2) : '0.00'}</p>
+              <p className={`text-xs ${currentReadings.water.trend >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {currentReadings.water.trend >= 0 ? '↑' : '↓'} {Math.abs(currentReadings.water.trend).toFixed(1)}% vs previous
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -151,13 +175,15 @@ export function GraphicsTab({
             <div className="flex items-center justify-between space-x-2">
               <div className="flex items-center space-x-2">
                 <Zap className="w-4 h-4 text-yellow-500" />
-                <p className="text-sm font-medium">Electricity Total (Dec)</p>
+                <p className="text-sm font-medium">Electricity {latestElectricityBill ? `(${new Date(latestElectricityBill.month + '-01').toLocaleDateString('en-US', { month: 'short' })})` : ''}</p>
               </div>
-              <p className="text-sm text-muted-foreground">276.5 kWh</p>
+              <p className="text-sm text-muted-foreground">{currentReadings.electricity.value.toFixed(1)} kWh</p>
             </div>
             <div className="mt-2">
-              <p className="text-2xl font-bold">R$ 1,245.80</p>
-              <p className="text-xs text-red-600">↑ 3.5% vs Nov</p>
+              <p className="text-2xl font-bold">R$ {latestElectricityBill ? parseFloat(latestElectricityBill.amount).toFixed(2) : '0.00'}</p>
+              <p className={`text-xs ${currentReadings.electricity.trend >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {currentReadings.electricity.trend >= 0 ? '↑' : '↓'} {Math.abs(currentReadings.electricity.trend).toFixed(1)}% vs previous
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -167,13 +193,15 @@ export function GraphicsTab({
             <div className="flex items-center justify-between space-x-2">
               <div className="flex items-center space-x-2">
                 <Flame className="w-4 h-4 text-orange-500" />
-                <p className="text-sm font-medium">Gas Total (Dec)</p>
+                <p className="text-sm font-medium">Gas {latestGasBill ? `(${new Date(latestGasBill.month + '-01').toLocaleDateString('en-US', { month: 'short' })})` : ''}</p>
               </div>
-              <p className="text-sm text-muted-foreground">38.7 m³</p>
+              <p className="text-sm text-muted-foreground">{currentReadings.gas.value.toFixed(1)} m³</p>
             </div>
             <div className="mt-2">
-              <p className="text-2xl font-bold">R$ 456.30</p>
-              <p className="text-xs text-green-600">↓ 0.8% vs Nov</p>
+              <p className="text-2xl font-bold">R$ {latestGasBill ? parseFloat(latestGasBill.amount).toFixed(2) : '0.00'}</p>
+              <p className={`text-xs ${currentReadings.gas.trend >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {currentReadings.gas.trend >= 0 ? '↑' : '↓'} {Math.abs(currentReadings.gas.trend).toFixed(1)}% vs previous
+              </p>
             </div>
           </CardContent>
         </Card>
