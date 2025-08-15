@@ -40,12 +40,15 @@ import { useTranslation } from "react-i18next";
 interface MaterialRequest {
   id: string | number;
   title: string;
-  building: string;
+  building?: string;
+  building_id?: number;
+  building_name?: string;
   caretaker: string;
   items: MaterialItem[];
   status: 'draft' | 'sent' | 'quoted' | 'approved';
   created_at?: string;
   createdAt?: string;
+  updated_at?: string;
   quotes?: Quote[];
 }
 
@@ -92,8 +95,7 @@ export default function FieldManagement() {
   const saveMaterialRequestMutation = useSaveMaterialRequest();
   
   // Fetch material requests when Materials & Services tab is active
-  const { data: materialRequestsData, isLoading: isLoadingRequests } = useMaterialRequests();
-  const materialRequests = materialRequestsData?.results || [];
+  const { data: materialRequests = [], isLoading: isLoadingRequests } = useMaterialRequests();
   const [technicalCalls, setTechnicalCalls] = useState<TechnicalCall[]>([]);
   const [currentMaterialRequest, setCurrentMaterialRequest] = useState<MaterialRequest>({
     id: '',
@@ -138,7 +140,7 @@ export default function FieldManagement() {
     }));
   };
 
-  const updateMaterialItem = (itemId: string, field: keyof MaterialItem, value: any) => {
+  const updateMaterialItem = (itemId: string, field: keyof MaterialItem, value: string | number) => {
     setCurrentMaterialRequest(prev => ({
       ...prev,
       items: prev.items.map(item => 
@@ -579,10 +581,10 @@ export default function FieldManagement() {
                             <div>
                               <h3 className="font-semibold">{request.title}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {request.building} - {request.caretaker}
+                                {request.building_name || request.building} - {request.caretaker}
                               </p>
                             </div>
-                            {getStatusBadge(request.status)}
+                            {getStatusBadge(request.status || 'sent')}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                             <span>{request.items.length} {t("items")}</span>
@@ -647,7 +649,7 @@ export default function FieldManagement() {
                       <Label htmlFor="call-priority">{t("priority")}</Label>
                       <Select 
                         value={currentTechnicalCall.priority} 
-                        onValueChange={(value: any) => setCurrentTechnicalCall(prev => ({ ...prev, priority: value }))}
+                        onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setCurrentTechnicalCall(prev => ({ ...prev, priority: value }))}
                       >
                         <SelectTrigger className="text-sm">
                           <SelectValue />

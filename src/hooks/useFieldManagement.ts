@@ -19,10 +19,11 @@ export interface MaterialRequestData {
 export interface MaterialRequestResponse {
   id: number;
   title: string;
-  building: string;
+  building_id: number;
+  building_name: string;
   caretaker: string;
   items: MaterialRequestItem[];
-  status: string;
+  status?: string;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +39,7 @@ export interface MaterialRequestListResponse {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
 
 // API function to fetch material requests
-const fetchMaterialRequests = async (): Promise<MaterialRequestListResponse> => {
+const fetchMaterialRequests = async (): Promise<MaterialRequestResponse[]> => {
   const accessToken = getStoredToken('access');
   
   if (!accessToken) {
