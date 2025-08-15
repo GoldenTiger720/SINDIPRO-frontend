@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useBuildings } from "@/hooks/useBuildings";
+import { useToast } from "@/hooks/use-toast";
+import { useSaveMaterialRequest, useMaterialRequests } from "@/hooks/useFieldManagement";
 import { 
   MessageSquare, 
   Camera, 
@@ -35,13 +38,14 @@ import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
 
 interface MaterialRequest {
-  id: string;
+  id: string | number;
   title: string;
   building: string;
   caretaker: string;
   items: MaterialItem[];
   status: 'draft' | 'sent' | 'quoted' | 'approved';
-  createdAt: string;
+  created_at?: string;
+  createdAt?: string;
   quotes?: Quote[];
 }
 
@@ -78,8 +82,18 @@ interface TechnicalCall {
 
 export default function FieldManagement() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('materials');
-  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  
+  // Fetch buildings data for the building selector
+  const { data: buildings = [], isLoading: isLoadingBuildings } = useBuildings();
+  
+  // Material request mutation
+  const saveMaterialRequestMutation = useSaveMaterialRequest();
+  
+  // Fetch material requests when Materials & Services tab is active
+  const { data: materialRequestsData, isLoading: isLoadingRequests } = useMaterialRequests();
+  const materialRequests = materialRequestsData?.results || [];
   const [technicalCalls, setTechnicalCalls] = useState<TechnicalCall[]>([]);
   const [currentMaterialRequest, setCurrentMaterialRequest] = useState<MaterialRequest>({
     id: '',
@@ -133,25 +147,88 @@ export default function FieldManagement() {
     }));
   };
 
-  const saveMaterialRequest = () => {
-    if (!currentMaterialRequest.title || currentMaterialRequest.items.length === 0) return;
+  const saveMaterialRequest = async () => {
+    // Validate required fields
+    if (!currentMaterialRequest.title) {
+      toast({
+        title: "Error",
+        description: "Material Request Title is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const request = {
-      ...currentMaterialRequest,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
+    if (!currentMaterialRequest.building) {
+      toast({
+        title: "Error", 
+        description: "Building Name is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setMaterialRequests(prev => [...prev, request]);
-    setCurrentMaterialRequest({
-      id: '',
-      title: '',
-      building: '',
-      caretaker: '',
-      items: [],
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-    });
+    if (!currentMaterialRequest.caretaker) {
+      toast({
+        title: "Error",
+        description: "Caretaker/Responsible Name is required", 
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (currentMaterialRequest.items.length === 0) {
+      toast({
+        title: "Error",
+        description: "At least one item must be added to the materials list",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate that all items have required fields
+    const incompleteItems = currentMaterialRequest.items.filter(item => 
+      !item.productType || !item.quantity || !item.observations
+    );
+    
+    if (incompleteItems.length > 0) {
+      toast({
+        title: "Error",
+        description: "All items must have Product Type, Quantity, and Observations filled",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare data for API
+      const requestData = {
+        title: currentMaterialRequest.title,
+        building_id: parseInt(currentMaterialRequest.building), // Convert string ID to number
+        caretaker: currentMaterialRequest.caretaker,
+        items: currentMaterialRequest.items.map(item => ({
+          productType: item.productType,
+          quantity: item.quantity,
+          observations: item.observations
+        }))
+      };
+
+      // Send to backend
+      await saveMaterialRequestMutation.mutateAsync(requestData);
+
+      // Reset form on success
+      setCurrentMaterialRequest({
+        id: '',
+        title: '',
+        building: '',
+        caretaker: '',
+        items: [],
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      // Error is already handled by the mutation hook
+      console.error('Failed to save material request:', error);
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,12 +396,21 @@ export default function FieldManagement() {
                     </div>
                     <div>
                       <Label htmlFor="building">{t("buildingName")}</Label>
-                      <Input 
-                        id="building" 
-                        placeholder={t("buildingNamePlaceholder")}
-                        value={currentMaterialRequest.building}
-                        onChange={(e) => setCurrentMaterialRequest(prev => ({ ...prev, building: e.target.value }))}
-                      />
+                      <Select 
+                        value={currentMaterialRequest.building} 
+                        onValueChange={(value) => setCurrentMaterialRequest(prev => ({ ...prev, building: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectBuilding")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildings.map((building) => (
+                            <SelectItem key={building.id} value={building.id.toString()}>
+                              {building.building_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -406,9 +492,13 @@ export default function FieldManagement() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={saveMaterialRequest} className="gap-2">
+                    <Button 
+                      onClick={saveMaterialRequest} 
+                      className="gap-2"
+                      disabled={saveMaterialRequestMutation.isPending}
+                    >
                       <Send className="w-4 h-4" />
-                      {t("saveRequest")}
+                      {saveMaterialRequestMutation.isPending ? t("saving") || "Saving..." : t("saveRequest")}
                     </Button>
                     <Button variant="outline" className="gap-2">
                       <FileDown className="w-4 h-4" />
@@ -476,7 +566,12 @@ export default function FieldManagement() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {materialRequests.length > 0 ? (
+                  {isLoadingRequests ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">{t("loadingRequests") || "Loading requests..."}</p>
+                    </div>
+                  ) : materialRequests.length > 0 ? (
                     <div className="space-y-4">
                       {materialRequests.map((request) => (
                         <div key={request.id} className="p-4 border rounded-lg">
@@ -491,7 +586,7 @@ export default function FieldManagement() {
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                             <span>{request.items.length} {t("items")}</span>
-                            <span>{t("createdOn")}: {new Date(request.createdAt).toLocaleDateString()}</span>
+                            <span>{t("createdOn")}: {new Date(request.created_at || request.createdAt || '').toLocaleDateString()}</span>
                           </div>
                           <div className="flex gap-2">
                             <Button variant="outline" size="sm" className="gap-2">

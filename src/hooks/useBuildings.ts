@@ -6,10 +6,11 @@ import { useToast } from '@/hooks/use-toast';
 export const BUILDINGS_QUERY_KEY = ['buildings'];
 
 // Hook to fetch all buildings
-export const useBuildings = () => {
+export const useBuildings = (enabled: boolean = true) => {
   return useQuery({
     queryKey: BUILDINGS_QUERY_KEY,
     queryFn: () => buildingApi.getBuildings(),
+    enabled: enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -133,10 +134,11 @@ export const useCreateUnit = () => {
 export const UNITS_QUERY_KEY = ['units'];
 
 // Hook to fetch all units
-export const useUnits = () => {
+export const useUnits = (enabled: boolean = true) => {
   return useQuery({
     queryKey: UNITS_QUERY_KEY,
     queryFn: () => buildingApi.getUnits(),
+    enabled: enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

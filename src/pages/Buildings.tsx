@@ -96,12 +96,15 @@ export default function Buildings() {
   const { t } = useTranslation();
   const { toast } = useToast();
   
-  // Fetch buildings data using ReactQuery
-  const { data: buildings = [], isLoading, error } = useBuildings();
+  // State to track the active tab
+  const [activeTab, setActiveTab] = useState("building-info");
+  
+  // Fetch buildings data using ReactQuery - only enabled when Unit Management tab is active
+  const { data: buildings = [], isLoading, error } = useBuildings(activeTab === "unit-management");
   const createUnitMutation = useCreateUnit();
   
-  // Fetch units data using ReactQuery
-  const { data: unitsData = [], isLoading: isLoadingUnits, error: unitsError } = useUnits();
+  // Fetch units data using ReactQuery - only enabled when Unit Management tab is active
+  const { data: unitsData = [], isLoading: isLoadingUnits, error: unitsError } = useUnits(activeTab === "unit-management");
   
   // Units state - use real data from backend or fallback to mock data
   const [units, setUnits] = useState(mockUnits);
@@ -487,7 +490,7 @@ export default function Buildings() {
     }
   };
 
-  if (isLoading || isLoadingUnits) {
+  if (activeTab === "unit-management" && (isLoading || isLoadingUnits)) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader userName={t("adminSindipro")} />
@@ -505,7 +508,7 @@ export default function Buildings() {
     );
   }
 
-  if (error || unitsError) {
+  if (activeTab === "unit-management" && (error || unitsError)) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader userName={t("adminSindipro")} />
@@ -537,7 +540,7 @@ export default function Buildings() {
           </div>
         </div>
 
-        <Tabs defaultValue="building-info" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="building-info" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3">
               <Building2 className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
