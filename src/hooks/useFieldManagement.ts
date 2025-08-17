@@ -35,6 +35,31 @@ export interface MaterialRequestListResponse {
   results: MaterialRequestResponse[];
 }
 
+// Types for technical call data
+export interface TechnicalCallData {
+  title: string;
+  description: string;
+  photos: string[];
+  location: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  companyEmail?: string;
+}
+
+export interface TechnicalCallResponse {
+  id: number;
+  title: string;
+  description: string;
+  photos: string[];
+  location: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  created_at: string;
+  created_by: string;
+  assigned_to?: string;
+  resolved_at?: string;
+  company_email?: string;
+}
+
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
 
@@ -151,6 +176,72 @@ export const useMaterialRequests = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to fetch material requests. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// API function to save technical call
+const saveTechnicalCall = async (callData: TechnicalCallData): Promise<TechnicalCallResponse> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/field/technical/`;
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      title: callData.title,
+      description: callData.description,
+      photos: callData.photos,
+      location: callData.location,
+      priority: callData.priority,
+      company_email: callData.companyEmail || null,
+    }),
+  };
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// React Query hook for saving technical call
+export const useSaveTechnicalCall = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: saveTechnicalCall,
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Technical call created successfully",
+      });
+      // Invalidate and refetch any related queries if needed
+      queryClient.invalidateQueries({ queryKey: ['technical-calls'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error saving technical call:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save technical call. Please try again.",
         variant: "destructive",
       });
     },

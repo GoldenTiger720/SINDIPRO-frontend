@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useToast } from "@/hooks/use-toast";
-import { useSaveMaterialRequest, useMaterialRequests, MaterialRequestResponse } from "@/hooks/useFieldManagement";
+import { useSaveMaterialRequest, useMaterialRequests, MaterialRequestResponse, useSaveTechnicalCall } from "@/hooks/useFieldManagement";
 import { 
   MessageSquare, 
   Camera, 
@@ -95,6 +95,9 @@ export default function FieldManagement() {
   
   // Material request mutation
   const saveMaterialRequestMutation = useSaveMaterialRequest();
+  
+  // Technical call mutation
+  const saveTechnicalCallMutation = useSaveTechnicalCall();
   
   // Fetch material requests when Materials & Services tab is active
   const { data: materialRequests = [], isLoading: isLoadingRequests } = useMaterialRequests();
@@ -315,27 +318,56 @@ export default function FieldManagement() {
     }
   };
 
-  const saveTechnicalCall = () => {
-    if (!currentTechnicalCall.title || !currentTechnicalCall.description) return;
+  const saveTechnicalCall = async () => {
+    // Validate required fields
+    if (!currentTechnicalCall.title) {
+      toast({
+        title: "Error",
+        description: "Call title is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const call = {
-      ...currentTechnicalCall,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    
-    setTechnicalCalls(prev => [...prev, call]);
-    setCurrentTechnicalCall({
-      id: '',
-      title: '',
-      description: '',
-      photos: [],
-      location: '',
-      priority: 'medium',
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      createdBy: 'Current User',
-    });
+    if (!currentTechnicalCall.description) {
+      toast({
+        title: "Error",
+        description: "Problem description is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Prepare data for API
+      const callData = {
+        title: currentTechnicalCall.title,
+        description: currentTechnicalCall.description,
+        photos: currentTechnicalCall.photos,
+        location: currentTechnicalCall.location,
+        priority: currentTechnicalCall.priority,
+        companyEmail: currentTechnicalCall.companyEmail,
+      };
+
+      // Send to backend
+      await saveTechnicalCallMutation.mutateAsync(callData);
+
+      // Reset form on success
+      setCurrentTechnicalCall({
+        id: '',
+        title: '',
+        description: '',
+        photos: [],
+        location: '',
+        priority: 'medium',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        createdBy: 'Current User',
+      });
+    } catch (error) {
+      // Error is already handled by the mutation hook
+      console.error('Failed to save technical call:', error);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -799,9 +831,13 @@ export default function FieldManagement() {
                   </div>
 
                   <div className="flex justify-center">
-                    <Button onClick={saveTechnicalCall} className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2">
+                    <Button 
+                      onClick={saveTechnicalCall} 
+                      className="gap-1 sm:gap-2 text-xs sm:text-sm px-3 py-2"
+                      disabled={saveTechnicalCallMutation.isPending}
+                    >
                       <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {t("send")}
+                      {saveTechnicalCallMutation.isPending ? t("sending") || "Sending..." : t("send")}
                     </Button>
                   </div>
                 </CardContent>
