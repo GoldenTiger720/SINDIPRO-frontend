@@ -45,11 +45,20 @@ export interface TechnicalCallData {
   companyEmail?: string;
 }
 
+export interface TechnicalCallImage {
+  id: number;
+  image_data_url: string;
+  mime_type: string;
+  filename: string;
+  uploaded_at: string;
+}
+
 export interface TechnicalCallResponse {
   id: number;
   title: string;
   description: string;
-  photos: string[];
+  photos?: string[]; // For backward compatibility
+  images?: TechnicalCallImage[]; // New structure from backend
   location: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'in_progress' | 'resolved' | 'closed';

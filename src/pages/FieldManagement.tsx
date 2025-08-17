@@ -920,13 +920,56 @@ export default function FieldManagement() {
                             </div>
                           </div>
                           <p className="text-sm mb-3">{call.description}</p>
+                          
+                          {/* Display images if available */}
+                          {((call.photos && call.photos.length > 0) || (call.images && call.images.length > 0)) && (
+                            <div className="mb-3">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                {/* Handle both local photos array and API images array */}
+                                {call.images ? (
+                                  // For API data with images array
+                                  call.images.slice(0, 4).map((image: any, index: number) => (
+                                    <div key={index} className="relative aspect-square">
+                                      <img 
+                                        src={image.image_data_url} 
+                                        alt={`Technical call photo ${index + 1}`}
+                                        className="w-full h-full object-cover rounded-lg border"
+                                      />
+                                      {call.images.length > 4 && index === 3 && (
+                                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                                          <span className="text-white font-semibold">+{call.images.length - 4}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                ) : (
+                                  // For local data with photos array
+                                  call.photos.slice(0, 4).map((photo: string, index: number) => (
+                                    <div key={index} className="relative aspect-square">
+                                      <img 
+                                        src={photo} 
+                                        alt={`Technical call photo ${index + 1}`}
+                                        className="w-full h-full object-cover rounded-lg border"
+                                      />
+                                      {call.photos.length > 4 && index === 3 && (
+                                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                                          <span className="text-white font-semibold">+{call.photos.length - 4}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                             <span><Clock className="w-3 h-3 inline mr-1" />
                               {new Date(call.createdAt || call.created_at).toLocaleDateString()}
                             </span>
-                            {call.photos && call.photos.length > 0 && (
+                            {((call.photos && call.photos.length > 0) || (call.images && call.images.length > 0)) && (
                               <span><Camera className="w-3 h-3 inline mr-1" />
-                                {call.photos.length} {t("photos")}
+                                {call.images ? call.images.length : call.photos.length} {t("photos")}
                               </span>
                             )}
                           </div>
