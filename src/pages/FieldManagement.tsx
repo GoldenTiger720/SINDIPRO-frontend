@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useToast } from "@/hooks/use-toast";
-import { useSaveMaterialRequest, useMaterialRequests } from "@/hooks/useFieldManagement";
+import { useSaveMaterialRequest, useMaterialRequests, MaterialRequestResponse } from "@/hooks/useFieldManagement";
 import { 
   MessageSquare, 
   Camera, 
@@ -88,6 +88,8 @@ export default function FieldManagement() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('materials');
+  const [selectedRequest, setSelectedRequest] = useState<MaterialRequestResponse | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
   // Fetch buildings data for the building selector
   const { data: buildings = [], isLoading: isLoadingBuildings } = useBuildings();
@@ -611,13 +613,17 @@ export default function FieldManagement() {
                             <span>{t("createdOn")}: {new Date(request.created_at || request.createdAt || '').toLocaleDateString()}</span>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="gap-2"
+                              onClick={() => {
+                                setSelectedRequest(request);
+                                setIsDetailsModalOpen(true);
+                              }}
+                            >
                               <Eye className="w-4 h-4" />
                               {t("viewDetails")}
-                            </Button>
-                            <Button variant="outline" size="sm" className="gap-2">
-                              <Edit className="w-4 h-4" />
-                              {t("useAsTemplate")}
                             </Button>
                           </div>
                         </div>
@@ -631,6 +637,71 @@ export default function FieldManagement() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Material Request Details Modal */}
+              <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{t("requestDetails")}</DialogTitle>
+                  </DialogHeader>
+                  {selectedRequest && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground">{t("requestId")}</Label>
+                          <p className="font-medium">{selectedRequest.id}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("status")}</Label>
+                          <div className="mt-1">
+                            {getStatusBadge(selectedRequest.status || 'sent')}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("title")}</Label>
+                          <p className="font-medium">{selectedRequest.title}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("building")}</Label>
+                          <p className="font-medium">{selectedRequest.building_name}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("caretaker")}</Label>
+                          <p className="font-medium">{selectedRequest.caretaker}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("createdDate")}</Label>
+                          <p className="font-medium">{new Date(selectedRequest.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-muted-foreground mb-2">{t("items")}</Label>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t("item")}</TableHead>
+                              <TableHead>{t("productType")}</TableHead>
+                              <TableHead>{t("quantity")}</TableHead>
+                              <TableHead>{t("observations")}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedRequest.items.map((item, index) => (
+                              <TableRow key={index}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>{item.productType}</TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>{item.observations}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="technical" className="space-y-6">
