@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useToast } from "@/hooks/use-toast";
-import { useSaveMaterialRequest, useMaterialRequests, MaterialRequestResponse, useSaveTechnicalCall } from "@/hooks/useFieldManagement";
+import { useSaveMaterialRequest, useMaterialRequests, MaterialRequestResponse, useSaveTechnicalCall, useTechnicalCalls } from "@/hooks/useFieldManagement";
 import { 
   MessageSquare, 
   Camera, 
@@ -101,7 +101,10 @@ export default function FieldManagement() {
   
   // Fetch material requests when Materials & Services tab is active
   const { data: materialRequests = [], isLoading: isLoadingRequests } = useMaterialRequests();
-  const [technicalCalls, setTechnicalCalls] = useState<TechnicalCall[]>([]);
+  
+  // Fetch technical calls when Technical tab is active
+  const { data: technicalCallsData = [], isLoading: isLoadingTechnicalCalls } = useTechnicalCalls();
+  const [localTechnicalCalls, setLocalTechnicalCalls] = useState<TechnicalCall[]>([]);
   const [currentMaterialRequest, setCurrentMaterialRequest] = useState<MaterialRequest>({
     id: '',
     title: '',
@@ -338,32 +341,43 @@ export default function FieldManagement() {
       return;
     }
 
+    // Create a new technical call object with current timestamp
+    const newCall: TechnicalCall = {
+      ...currentTechnicalCall,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      createdBy: 'Current User',
+    };
+
+    // Immediately add to local state (optimistic update)
+    setLocalTechnicalCalls(prev => [newCall, ...prev]);
+
+    // Reset form immediately
+    setCurrentTechnicalCall({
+      id: '',
+      title: '',
+      description: '',
+      photos: [],
+      location: '',
+      priority: 'medium',
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      createdBy: 'Current User',
+    });
+
     try {
       // Prepare data for API
       const callData = {
-        title: currentTechnicalCall.title,
-        description: currentTechnicalCall.description,
-        photos: currentTechnicalCall.photos,
-        location: currentTechnicalCall.location,
-        priority: currentTechnicalCall.priority,
-        companyEmail: currentTechnicalCall.companyEmail,
+        title: newCall.title,
+        description: newCall.description,
+        photos: newCall.photos,
+        location: newCall.location,
+        priority: newCall.priority,
+        companyEmail: newCall.companyEmail,
       };
 
-      // Send to backend
-      await saveTechnicalCallMutation.mutateAsync(callData);
-
-      // Reset form on success
-      setCurrentTechnicalCall({
-        id: '',
-        title: '',
-        description: '',
-        photos: [],
-        location: '',
-        priority: 'medium',
-        status: 'open',
-        createdAt: new Date().toISOString(),
-        createdBy: 'Current User',
-      });
+      // Send to backend (in background)
+      saveTechnicalCallMutation.mutate(callData);
     } catch (error) {
       // Error is already handled by the mutation hook
       console.error('Failed to save technical call:', error);
@@ -874,19 +888,25 @@ export default function FieldManagement() {
                     </div>
                   </div>
                   
-                  {technicalCalls.length > 0 ? (
+                  {isLoadingTechnicalCalls ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                      <p className="text-muted-foreground">{t("loadingCalls") || "Loading technical calls..."}</p>
+                    </div>
+                  ) : (technicalCallsData.length > 0 || localTechnicalCalls.length > 0) ? (
                     <div className="space-y-4">
-                      {technicalCalls.map((call) => (
+                      {/* Show local calls first, then API calls */}
+                      {[...localTechnicalCalls, ...technicalCallsData].map((call: any) => (
                         <div key={call.id} className="p-4 border rounded-lg">
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="font-semibold">{call.title}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {t("createdBy")}: {call.createdBy} - {call.location}
+                                {t("createdBy")}: {call.createdBy || call.created_by} - {call.location}
                               </p>
                             </div>
                             <div className="flex gap-2">
-                              {getStatusBadge(call.status)}
+                              {getStatusBadge(call.status || 'open')}
                               <Badge className={`${
                                 call.priority === 'urgent' ? 'bg-red-100 text-red-700' :
                                 call.priority === 'high' ? 'bg-orange-100 text-orange-700' :
@@ -902,9 +922,9 @@ export default function FieldManagement() {
                           <p className="text-sm mb-3">{call.description}</p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                             <span><Clock className="w-3 h-3 inline mr-1" />
-                              {new Date(call.createdAt).toLocaleDateString()}
+                              {new Date(call.createdAt || call.created_at).toLocaleDateString()}
                             </span>
-                            {call.photos.length > 0 && (
+                            {call.photos && call.photos.length > 0 && (
                               <span><Camera className="w-3 h-3 inline mr-1" />
                                 {call.photos.length} {t("photos")}
                               </span>

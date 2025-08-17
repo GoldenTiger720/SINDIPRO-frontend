@@ -247,3 +247,54 @@ export const useSaveTechnicalCall = () => {
     },
   });
 };
+
+// API function to fetch technical calls
+const fetchTechnicalCalls = async (): Promise<TechnicalCallResponse[]> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/field/technical/`;
+  const requestOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  };
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// React Query hook for fetching technical calls
+export const useTechnicalCalls = () => {
+  const { toast } = useToast();
+
+  return useQuery({
+    queryKey: ['technical-calls'],
+    queryFn: fetchTechnicalCalls,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    onError: (error: Error) => {
+      console.error('Error fetching technical calls:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch technical calls. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
