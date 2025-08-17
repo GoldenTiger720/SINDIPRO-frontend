@@ -26,7 +26,6 @@ import {
   Send,
   Edit,
   Trash2,
-  Phone,
   Eye,
   CheckCircle,
   AlertCircle,
@@ -532,48 +531,6 @@ export default function FieldManagement() {
                 </CardContent>
               </Card>
 
-              {/* Quote Management */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="w-5 h-5" />
-                    {t("quotingSystem")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 border rounded-lg">
-                      <h3 className="font-semibold mb-2">{t("company1")}</h3>
-                      <div className="space-y-2">
-                        <Input placeholder={t("companyName")} />
-                        <Input placeholder={t("telephone")} />
-                        <Input placeholder={t("email")} />
-                      </div>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <h3 className="font-semibold mb-2">{t("company2")}</h3>
-                      <div className="space-y-2">
-                        <Input placeholder={t("companyName")} />
-                        <Input placeholder={t("telephone")} />
-                        <Input placeholder={t("email")} />
-                      </div>
-                    </div>
-                    <div className="p-4 border rounded-lg">
-                      <h3 className="font-semibold mb-2">{t("company3")}</h3>
-                      <div className="space-y-2">
-                        <Input placeholder={t("companyName")} />
-                        <Input placeholder={t("telephone")} />
-                        <Input placeholder={t("email")} />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      📧 {t("requestsAutoSent")}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Material Requests History */}
               <Card>
