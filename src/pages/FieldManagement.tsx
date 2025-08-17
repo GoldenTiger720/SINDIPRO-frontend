@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { useTranslation } from "react-i18next";
+import { exportMaterialRequestsToExcel } from "@/utils/excelExport";
 
 interface MaterialRequest {
   id: string | number;
@@ -502,7 +503,26 @@ export default function FieldManagement() {
                       <Send className="w-4 h-4" />
                       {saveMaterialRequestMutation.isPending ? t("saving") || "Saving..." : t("saveRequest")}
                     </Button>
-                    <Button variant="outline" className="gap-2">
+                    <Button 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => {
+                        if (materialRequests && materialRequests.length > 0) {
+                          exportMaterialRequestsToExcel(materialRequests, 'material_requests');
+                          toast({
+                            title: "Success",
+                            description: "Excel file downloaded successfully",
+                          });
+                        } else {
+                          toast({
+                            title: "No data",
+                            description: "No material requests to export",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={isLoadingRequests || materialRequests.length === 0}
+                    >
                       <FileDown className="w-4 h-4" />
                       {t("exportExcel")}
                     </Button>
