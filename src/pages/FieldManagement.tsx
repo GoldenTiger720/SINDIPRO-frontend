@@ -89,6 +89,8 @@ export default function FieldManagement() {
   const [activeTab, setActiveTab] = useState('materials');
   const [selectedRequest, setSelectedRequest] = useState<MaterialRequestResponse | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTechnicalCall, setSelectedTechnicalCall] = useState<any>(null);
+  const [isTechnicalDetailsModalOpen, setIsTechnicalDetailsModalOpen] = useState(false);
   
   // Fetch buildings data for the building selector
   const { data: buildings = [], isLoading: isLoadingBuildings } = useBuildings();
@@ -974,7 +976,15 @@ export default function FieldManagement() {
                             )}
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
-                            <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                              onClick={() => {
+                                setSelectedTechnicalCall(call);
+                                setIsTechnicalDetailsModalOpen(true);
+                              }}
+                            >
                               <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                               {t("viewDetails")}
                             </Button>
@@ -1002,6 +1012,112 @@ export default function FieldManagement() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Technical Call Details Modal */}
+              <Dialog open={isTechnicalDetailsModalOpen} onOpenChange={setIsTechnicalDetailsModalOpen}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>{t("technicalCallDetails")}</DialogTitle>
+                  </DialogHeader>
+                  {selectedTechnicalCall && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-muted-foreground">{t("callId")}</Label>
+                          <p className="font-medium">{selectedTechnicalCall.id}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("status")}</Label>
+                          <div className="mt-1">
+                            {getStatusBadge(selectedTechnicalCall.status || 'open')}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("priority")}</Label>
+                          <div className="mt-1">
+                            <Badge className={`${
+                              selectedTechnicalCall.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                              selectedTechnicalCall.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                              selectedTechnicalCall.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {selectedTechnicalCall.priority === 'urgent' ? t('urgent') :
+                               selectedTechnicalCall.priority === 'high' ? t('high') :
+                               selectedTechnicalCall.priority === 'medium' ? t('medium') : t('low')}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">{t("createdDate")}</Label>
+                          <p className="font-medium">{new Date(selectedTechnicalCall.createdAt || selectedTechnicalCall.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-muted-foreground">{t("title")}</Label>
+                        <p className="font-medium">{selectedTechnicalCall.title}</p>
+                      </div>
+
+                      <div>
+                        <Label className="text-muted-foreground">{t("location")}</Label>
+                        <p className="font-medium">{selectedTechnicalCall.location || t("notSpecified")}</p>
+                      </div>
+
+                      <div>
+                        <Label className="text-muted-foreground">{t("createdBy")}</Label>
+                        <p className="font-medium">{selectedTechnicalCall.createdBy || selectedTechnicalCall.created_by}</p>
+                      </div>
+
+                      {selectedTechnicalCall.companyEmail && (
+                        <div>
+                          <Label className="text-muted-foreground">{t("companyEmail")}</Label>
+                          <p className="font-medium">{selectedTechnicalCall.companyEmail}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label className="text-muted-foreground">{t("description")}</Label>
+                        <p className="font-medium whitespace-pre-wrap">{selectedTechnicalCall.description}</p>
+                      </div>
+
+                      {/* Display images */}
+                      {((selectedTechnicalCall.photos && selectedTechnicalCall.photos.length > 0) || 
+                        (selectedTechnicalCall.images && selectedTechnicalCall.images.length > 0)) && (
+                        <div>
+                          <Label className="text-muted-foreground mb-2">{t("photos")}</Label>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                            {selectedTechnicalCall.images ? (
+                              // For API data with images array
+                              selectedTechnicalCall.images.map((image: any, index: number) => (
+                                <div key={index} className="relative aspect-square">
+                                  <img 
+                                    src={image.image_data_url} 
+                                    alt={`Technical call photo ${index + 1}`}
+                                    className="w-full h-full object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(image.image_data_url, '_blank')}
+                                  />
+                                </div>
+                              ))
+                            ) : (
+                              // For local data with photos array
+                              selectedTechnicalCall.photos.map((photo: string, index: number) => (
+                                <div key={index} className="relative aspect-square">
+                                  <img 
+                                    src={photo} 
+                                    alt={`Technical call photo ${index + 1}`}
+                                    className="w-full h-full object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(photo, '_blank')}
+                                  />
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
             </TabsContent>
           </Tabs>
 
