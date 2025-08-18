@@ -595,7 +595,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
 
           {/* Edit Event Dialog */}
           <Dialog open={isEditEventDialogOpen} onOpenChange={setIsEditEventDialogOpen}>
-            <DialogContent className="w-full max-w-md mx-auto">
+            <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t("editEvent") || "Edit Event"}</DialogTitle>
                 <DialogDescription>
@@ -690,7 +690,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
 
           {/* Delete Confirmation Dialog */}
           <Dialog open={isDeleteConfirmDialogOpen} onOpenChange={setIsDeleteConfirmDialogOpen}>
-            <DialogContent className="w-full max-w-md mx-auto">
+            <DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Trash2 className="h-5 w-5 text-destructive" />
