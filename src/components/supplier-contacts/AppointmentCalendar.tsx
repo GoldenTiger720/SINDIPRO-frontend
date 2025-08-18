@@ -75,12 +75,12 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
       const formattedEvents: AppointmentEvent[] = fetchedEvents.map(event => ({
         id: event.id?.toString() || '',
         title: event.title,
-        eventType: event.eventType,
-        dateTime: new Date(event.dateTime),
+        eventType: event.event_type,
+        dateTime: new Date(event.date_time),
         condominium: event.condominium,
-        peopleInvolved: event.peopleInvolved,
+        peopleInvolved: event.people_involved,
         comments: event.comments,
-        status: event.status
+        status: 'pending' as const // Default status since backend doesn't provide it
       }));
       setAppointmentEvents(formattedEvents);
     }
@@ -227,6 +227,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
     });
   };
 
+
   const renderMonthlyCalendar = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
@@ -265,9 +266,10 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
                 className={`text-[10px] sm:text-xs p-0.5 sm:p-1 rounded text-white truncate ${
                   event.status === 'confirmed' ? 'bg-green-500' :
                   event.status === 'pending' ? 'bg-yellow-500' :
-                  event.status === 'cancelled' ? 'bg-red-500' : 'bg-blue-500'
+                  event.status === 'cancelled' ? 'bg-red-500' : 
+                  event.status === 'completed' ? 'bg-gray-500' : 'bg-blue-500'
                 }`}
-                title={event.title}
+                title={`${event.title} - ${event.dateTime.toLocaleTimeString()} at ${event.condominium}`}
               >
                 {event.title}
               </div>

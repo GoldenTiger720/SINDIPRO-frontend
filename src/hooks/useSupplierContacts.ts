@@ -15,12 +15,11 @@ export interface EventData {
 export interface EventResponse {
   id: number;
   title: string;
-  eventType: string;
-  dateTime: string;
+  event_type: string;
+  date_time: string;
   condominium: string;
-  peopleInvolved: string[];
+  people_involved: string[];
   comments: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   created_at: string;
   updated_at: string;
 }
@@ -86,6 +85,10 @@ const fetchEvents = async (): Promise<EventResponse[]> => {
   }
 
   const url = `${API_BASE_URL}/api/contacts/event/`;
+  
+  // Debug logging
+  console.log('Fetching events from:', url);
+  
   const response = await fetch(url, {
     method: 'GET',
     headers: {
