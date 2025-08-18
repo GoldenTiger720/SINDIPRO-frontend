@@ -55,68 +55,8 @@ const SupplierContacts = () => {
     }
   ]);
 
-  const [appointmentEvents, setAppointmentEvents] = useState<AppointmentEvent[]>([
-    {
-      id: "1",
-      title: "Vistoria Anual de Elevadores",
-      eventType: "inspectionEvent",
-      dateTime: new Date(2024, 11, 15, 9, 0), // December 2024
-      condominium: "Edifício Central",
-      peopleInvolved: ["João Silva", "Administrador"],
-      comments: "Vistoria anual obrigatória",
-      status: "confirmed"
-    },
-    {
-      id: "2",
-      title: "Reunião de Segurança",
-      eventType: "meetingEvent", 
-      dateTime: new Date(2024, 11, 20, 14, 0), // December 2024
-      condominium: "Residencial Park",
-      peopleInvolved: ["Maria Santos", "Síndico"],
-      comments: "Revisão dos protocolos de segurança",
-      status: "pending"
-    },
-    {
-      id: "3",
-      title: "Manutenção Preventiva - Bomba d'água",
-      eventType: "maintenanceEvent",
-      dateTime: new Date(2024, 11, 10, 8, 30), // December 2024
-      condominium: "Edifício Central",
-      peopleInvolved: ["Carlos Técnico", "Administrador"],
-      comments: "Manutenção trimestral da bomba d'água",
-      status: "confirmed"
-    },
-    {
-      id: "4",
-      title: "Assembleia Geral Ordinária",
-      eventType: "generalAssemblyEvent",
-      dateTime: new Date(2024, 11, 25, 19, 0), // December 2024
-      condominium: "Residencial Park",
-      peopleInvolved: ["Todos os Condôminos", "Síndico"],
-      comments: "Aprovação do orçamento para 2025",
-      status: "confirmed"
-    },
-    {
-      id: "5", 
-      title: "Visita Técnica - Sistema de Incêndio",
-      eventType: "technicalVisitEvent",
-      dateTime: new Date(2024, 9, 15, 10, 0), // October 2024 (past)
-      condominium: "Edifício Central",
-      peopleInvolved: ["Engenheiro de Segurança"],
-      comments: "Inspeção do sistema de prevenção de incêndios",
-      status: "completed"
-    },
-    {
-      id: "6",
-      title: "Reparo no Portão Principal",
-      eventType: "repairEvent",
-      dateTime: new Date(2024, 10, 5, 13, 0), // November 2024 (past)
-      condominium: "Residencial Park",
-      peopleInvolved: ["Técnico em Automação"],
-      comments: "Correção de problema no motor do portão",
-      status: "completed"
-    }
-  ]);
+  // State for appointment events - will be managed by AppointmentCalendar component using ReactQuery
+  const [appointmentEvents, setAppointmentEvents] = useState<AppointmentEvent[]>([]);
 
   return (
     <div className="min-h-screen bg-background">

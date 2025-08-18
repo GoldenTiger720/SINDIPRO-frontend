@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Calendar, Clock, Users, MapPin, Grid3x3, List, ChevronLeft, ChevronRight, Bell } from "lucide-react";
-import { useCreateEvent } from "@/hooks/useSupplierContacts";
+import { Plus, Calendar, Clock, Users, MapPin, Grid3x3, List, ChevronLeft, ChevronRight, Bell, Edit2, Trash2, X } from "lucide-react";
+import { useCreateEvent, useEvents, useUpdateEvent, useDeleteEvent } from "@/hooks/useSupplierContacts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,10 +32,15 @@ interface AppointmentCalendarProps {
 export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }: AppointmentCalendarProps) => {
   const { t } = useTranslation();
   const createEventMutation = useCreateEvent();
+  const updateEventMutation = useUpdateEvent();
+  const deleteEventMutation = useDeleteEvent();
+  const { data: fetchedEvents, isLoading, error, refetch } = useEvents();
   
   const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false);
+  const [isEditEventDialogOpen, setIsEditEventDialogOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
   const [calendarView, setCalendarView] = useState<'monthly' | 'daily' | 'list'>('monthly');
+  const [editingEvent, setEditingEvent] = useState<AppointmentEvent | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -53,6 +58,33 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
     peopleInvolved: '',
     comments: ''
   });
+
+  // Form state for editing events
+  const [editEventForm, setEditEventForm] = useState({
+    title: '',
+    eventType: '',
+    dateTime: '',
+    condominium: '',
+    peopleInvolved: '',
+    comments: ''
+  });
+
+  // Sync fetched events with local state
+  useEffect(() => {
+    if (fetchedEvents) {
+      const formattedEvents: AppointmentEvent[] = fetchedEvents.map(event => ({
+        id: event.id?.toString() || '',
+        title: event.title,
+        eventType: event.eventType,
+        dateTime: new Date(event.dateTime),
+        condominium: event.condominium,
+        peopleInvolved: event.peopleInvolved,
+        comments: event.comments,
+        status: event.status
+      }));
+      setAppointmentEvents(formattedEvents);
+    }
+  }, [fetchedEvents, setAppointmentEvents]);
 
   const eventTypes = [
     { value: "meetingEvent", label: t("meetingEvent") },
@@ -116,22 +148,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
 
     // Use ReactQuery mutation with proper callbacks
     createEventMutation.mutate(eventData, {
-      onSuccess: (response) => {
-        // Create local event object with backend response
-        const newEvent: AppointmentEvent = {
-          id: response.id?.toString() || '',
-          title: response.title,
-          eventType: response.eventType,
-          dateTime: new Date(response.dateTime),
-          condominium: response.condominium,
-          peopleInvolved: response.peopleInvolved,
-          comments: response.comments,
-          status: response.status
-        };
-
-        // Update local state
-        setAppointmentEvents(prev => [...prev, newEvent]);
-
+      onSuccess: () => {
         // Reset form and close dialog
         setNewEventForm({
           title: '',
@@ -142,6 +159,70 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
           comments: ''
         });
         setIsAddEventDialogOpen(false);
+        // Refetch events to get updated data
+        refetch();
+      }
+    });
+  };
+
+  const handleEditEvent = (event: AppointmentEvent) => {
+    setEditingEvent(event);
+    setEditEventForm({
+      title: event.title,
+      eventType: event.eventType,
+      dateTime: event.dateTime.toISOString().slice(0, 16),
+      condominium: event.condominium,
+      peopleInvolved: event.peopleInvolved.join(', '),
+      comments: event.comments
+    });
+    setIsEditEventDialogOpen(true);
+  };
+
+  const handleUpdateEvent = () => {
+    if (!editingEvent || !editEventForm.title || !editEventForm.eventType || !editEventForm.dateTime) {
+      return;
+    }
+
+    const eventData = {
+      title: editEventForm.title,
+      eventType: editEventForm.eventType,
+      dateTime: editEventForm.dateTime,
+      condominium: editEventForm.condominium || "Edifício Central",
+      peopleInvolved: editEventForm.peopleInvolved.split(',').map(p => p.trim()).filter(p => p),
+      comments: editEventForm.comments
+    };
+
+    updateEventMutation.mutate({ 
+      eventId: editingEvent.id, 
+      eventData 
+    }, {
+      onSuccess: () => {
+        // Reset form and close dialog
+        setEditEventForm({
+          title: '',
+          eventType: '',
+          dateTime: '',
+          condominium: '',
+          peopleInvolved: '',
+          comments: ''
+        });
+        setEditingEvent(null);
+        setIsEditEventDialogOpen(false);
+        // Refetch events to get updated data
+        refetch();
+      }
+    });
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    if (!window.confirm(t("confirmDeleteEvent") || "Are you sure you want to delete this event?")) {
+      return;
+    }
+
+    deleteEventMutation.mutate(eventId, {
+      onSuccess: () => {
+        // Refetch events to get updated data
+        refetch();
       }
     });
   };
@@ -310,7 +391,24 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
                     </div>
                     
                     <div className="flex gap-2 flex-shrink-0">
-                      <Button variant="outline" size="sm" className="text-xs sm:text-sm">{t("editEvent")}</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs sm:text-sm"
+                        onClick={() => handleEditEvent(event)}
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        {t("editEvent") || "Edit"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs sm:text-sm text-red-600 hover:text-red-700"
+                        onClick={() => handleDeleteEvent(event.id)}
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        {t("deleteEvent") || "Delete"}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -595,8 +693,126 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Event Dialog */}
+          <Dialog open={isEditEventDialogOpen} onOpenChange={setIsEditEventDialogOpen}>
+            <DialogContent className="w-full max-w-md mx-auto">
+              <DialogHeader>
+                <DialogTitle>{t("editEvent") || "Edit Event"}</DialogTitle>
+                <DialogDescription>
+                  {t("editEventDescription") || "Update the event details below."}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventTitle" className="text-sm">{t("requestTitle")}</Label>
+                  <Input 
+                    id="editEventTitle" 
+                    placeholder={t("requestTitle")}
+                    value={editEventForm.title}
+                    onChange={(e) => setEditEventForm(prev => ({...prev, title: e.target.value}))}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventType" className="text-sm">{t("eventType")}</Label>
+                  <Select value={editEventForm.eventType} onValueChange={(value) => setEditEventForm(prev => ({...prev, eventType: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("selectEventType")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventDate" className="text-sm">{t("dateTime")}</Label>
+                  <Input 
+                    id="editEventDate"
+                    type="datetime-local"
+                    value={editEventForm.dateTime}
+                    onChange={(e) => setEditEventForm(prev => ({...prev, dateTime: e.target.value}))}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventCondominium" className="text-sm">{t("condominium")}</Label>
+                  <Input 
+                    id="editEventCondominium"
+                    placeholder={t("condominium")}
+                    value={editEventForm.condominium}
+                    onChange={(e) => setEditEventForm(prev => ({...prev, condominium: e.target.value}))}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventPeople" className="text-sm">{t("peopleInvolved")}</Label>
+                  <Input 
+                    id="editEventPeople"
+                    placeholder={t("peopleInvolvedPlaceholder")}
+                    value={editEventForm.peopleInvolved}
+                    onChange={(e) => setEditEventForm(prev => ({...prev, peopleInvolved: e.target.value}))}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="editEventComments" className="text-sm">{t("comments")}</Label>
+                  <Textarea 
+                    id="editEventComments"
+                    placeholder={t("eventComments")}
+                    value={editEventForm.comments}
+                    onChange={(e) => setEditEventForm(prev => ({...prev, comments: e.target.value}))}
+                  />
+                </div>
+              </div>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditEventDialogOpen(false)}
+                  className="flex-1 sm:flex-none"
+                >
+                  {t("cancel") || "Cancel"}
+                </Button>
+                <Button 
+                  onClick={handleUpdateEvent} 
+                  className="flex-1 sm:flex-none"
+                  disabled={updateEventMutation.isPending}
+                >
+                  {updateEventMutation.isPending ? t("updating") || "Updating..." : t("updateEvent") || "Update Event"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
+
+      {/* Loading and Error States */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-muted-foreground">{t("loadingEvents") || "Loading events..."}</div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-destructive/15 border border-destructive/50 rounded-md p-4">
+          <div className="text-destructive text-sm">
+            {t("errorLoadingEvents") || "Error loading events:"} {error.message}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="mt-2"
+          >
+            {t("retry") || "Retry"}
+          </Button>
+        </div>
+      )}
 
       {/* Calendar Views */}
       <div className="space-y-6">
@@ -642,8 +858,22 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">{t("editEvent")}</Button>
-                          <Button variant="destructive" size="sm">{t("deleteEvent")}</Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditEvent(event)}
+                          >
+                            <Edit2 className="h-4 w-4 mr-1" />
+                            {t("editEvent") || "Edit"}
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => handleDeleteEvent(event.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            {t("deleteEvent") || "Delete"}
+                          </Button>
                         </div>
                       </div>
                     </CardContent>

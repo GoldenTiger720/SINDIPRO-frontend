@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getStoredToken } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -77,6 +77,112 @@ const createEvent = async (eventData: EventData): Promise<EventResponse> => {
   return response.json();
 };
 
+// API function to fetch events
+const fetchEvents = async (): Promise<EventResponse[]> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/event/`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// API function to update event
+const updateEvent = async (eventId: string, eventData: Partial<EventData>): Promise<EventResponse> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/event/${eventId}/`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      ...(eventData.title && { title: eventData.title }),
+      ...(eventData.eventType && { event_type: eventData.eventType }),
+      ...(eventData.dateTime && { date_time: eventData.dateTime }),
+      ...(eventData.condominium && { condominium: eventData.condominium }),
+      ...(eventData.peopleInvolved && { people_involved: eventData.peopleInvolved }),
+      ...(eventData.comments && { comments: eventData.comments }),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// API function to delete event
+const deleteEvent = async (eventId: string): Promise<void> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/event/${eventId}/`;
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+};
+
+// React Query hook for fetching events
+export const useEvents = () => {
+  return useQuery<EventResponse[], Error>({
+    queryKey: ['supplier-events'],
+    queryFn: fetchEvents,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
+};
+
 // React Query hook for creating events
 export const useCreateEvent = () => {
   const { toast } = useToast();
@@ -97,6 +203,56 @@ export const useCreateEvent = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to create event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// React Query hook for updating events
+export const useUpdateEvent = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<EventResponse, Error, { eventId: string; eventData: Partial<EventData> }>({
+    mutationFn: ({ eventId, eventData }) => updateEvent(eventId, eventData),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Event updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['supplier-events'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error updating event:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// React Query hook for deleting events
+export const useDeleteEvent = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: deleteEvent,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['supplier-events'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete event. Please try again.",
         variant: "destructive",
       });
     },
