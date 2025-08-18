@@ -38,9 +38,11 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
   
   const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false);
   const [isEditEventDialogOpen, setIsEditEventDialogOpen] = useState(false);
+  const [isDeleteConfirmDialogOpen, setIsDeleteConfirmDialogOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
-  const [calendarView, setCalendarView] = useState<'monthly' | 'daily' | 'list'>('monthly');
+  const [calendarView, setCalendarView] = useState<'monthly' | 'list'>('monthly');
   const [editingEvent, setEditingEvent] = useState<AppointmentEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<AppointmentEvent | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -121,15 +123,6 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
     setCurrentDate(newDate);
   };
 
-  const navigateDay = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    setCurrentDate(newDate);
-  };
 
   const handleCreateEvent = () => {
     if (!newEventForm.title || !newEventForm.eventType || !newEventForm.dateTime) {
@@ -215,16 +208,34 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
   };
 
   const handleDeleteEvent = (eventId: string) => {
-    if (!window.confirm(t("confirmDeleteEvent") || "Are you sure you want to delete this event?")) {
-      return;
+    const event = appointmentEvents.find(e => e.id === eventId);
+    if (event) {
+      setEventToDelete(event);
+      setIsDeleteConfirmDialogOpen(true);
     }
+  };
 
-    deleteEventMutation.mutate(eventId, {
-      onSuccess: () => {
-        // Refetch events to get updated data
-        refetch();
-      }
-    });
+  const confirmDeleteEvent = () => {
+    if (eventToDelete) {
+      deleteEventMutation.mutate(eventToDelete.id, {
+        onSuccess: () => {
+          // Refetch events to get updated data
+          refetch();
+          // Close modal and reset state
+          setIsDeleteConfirmDialogOpen(false);
+          setEventToDelete(null);
+        },
+        onError: () => {
+          // Keep modal open on error so user can see the error and retry
+          // The error toast will be shown by the useDeleteEvent hook
+        }
+      });
+    }
+  };
+
+  const cancelDeleteEvent = () => {
+    setIsDeleteConfirmDialogOpen(false);
+    setEventToDelete(null);
   };
 
 
@@ -316,111 +327,6 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
     );
   };
 
-  const renderDailyCalendar = () => {
-    const events = getEventsForDate(currentDate).sort((a, b) => 
-      a.dateTime.getTime() - b.dateTime.getTime()
-    );
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm sm:text-lg font-semibold leading-tight">
-            <span className="hidden sm:inline">
-              {currentDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </span>
-            <span className="sm:hidden">
-              {currentDate.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
-              })}
-            </span>
-          </h3>
-          <div className="flex gap-1 sm:gap-2">
-            <Button variant="outline" size="sm" onClick={() => navigateDay('prev')} className="px-2 sm:px-3">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())} className="px-2 sm:px-3 text-xs sm:text-sm">
-              {t("today")}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => navigateDay('next')} className="px-2 sm:px-3">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="space-y-3 sm:space-y-4">
-          {events.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm sm:text-base">
-              No events scheduled for this day
-            </div>
-          ) : (
-            events.map((event) => (
-              <Card key={event.id}>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                    <div className="space-y-2 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-semibold text-sm sm:text-base truncate">{event.title}</h4>
-                        <Badge variant={event.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
-                          {event.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                          {event.dateTime.toLocaleTimeString()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="truncate">{event.condominium}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                          <span className="truncate">{event.peopleInvolved.join(", ")}</span>
-                        </div>
-                      </div>
-                      
-                      {event.comments && (
-                        <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2">{event.comments}</p>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-xs sm:text-sm"
-                        onClick={() => handleEditEvent(event)}
-                      >
-                        <Edit2 className="h-3 w-3 mr-1" />
-                        {t("editEvent") || "Edit"}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-xs sm:text-sm text-red-600 hover:text-red-700"
-                        onClick={() => handleDeleteEvent(event.id)}
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        {t("deleteEvent") || "Delete"}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -464,15 +370,6 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
             >
               <Grid3x3 className="h-4 w-4" />
               <span className="ml-1 hidden sm:inline">{t("monthlyView")}</span>
-            </Button>
-            <Button
-              variant={calendarView === 'daily' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setCalendarView('daily')}
-              className="rounded-none border-r px-2 sm:px-3"
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="ml-1 hidden sm:inline">{t("dailyView")}</span>
             </Button>
             <Button
               variant={calendarView === 'list' ? 'default' : 'ghost'}
@@ -790,6 +687,70 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={isDeleteConfirmDialogOpen} onOpenChange={setIsDeleteConfirmDialogOpen}>
+            <DialogContent className="w-full max-w-md mx-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                  {t("confirmDeleteEvent") || "Delete Event"}
+                </DialogTitle>
+                <DialogDescription>
+                  {t("confirmDeleteEventDescription") || "Are you sure you want to delete this data?"}
+                </DialogDescription>
+              </DialogHeader>
+              
+              {eventToDelete && (
+                <div className="py-4">
+                  <div className="rounded-md bg-muted p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm">{eventToDelete.title}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {eventToDelete.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {eventToDelete.dateTime.toLocaleDateString()} - {eventToDelete.dateTime.toLocaleTimeString()}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      {eventToDelete.condominium}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                <Button 
+                  variant="outline" 
+                  onClick={cancelDeleteEvent}
+                  className="flex-1 sm:flex-none"
+                >
+                  {t("cancel") || "Cancel"}
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={confirmDeleteEvent}
+                  disabled={deleteEventMutation.isPending}
+                  className="flex-1 sm:flex-none"
+                >
+                  {deleteEventMutation.isPending ? (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t("deleting") || "Deleting..."}
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {t("deleteEvent") || "Delete Event"}
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -819,7 +780,6 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
       {/* Calendar Views */}
       <div className="space-y-6">
         {calendarView === 'monthly' && renderMonthlyCalendar()}
-        {calendarView === 'daily' && renderDailyCalendar()}
         {calendarView === 'list' && (
           <div className="space-y-6">
             <div>
@@ -829,51 +789,53 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
                   .filter(event => event.dateTime > new Date())
                   .map((event) => (
                   <Card key={event.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold">{event.title}</h4>
-                            <Badge variant={event.status === 'confirmed' ? 'default' : 'secondary'}>
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-semibold text-sm sm:text-base truncate">{event.title}</h4>
+                            <Badge variant={event.status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
                               {event.status}
                             </Badge>
                           </div>
                           
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              {event.dateTime.toLocaleDateString()} - {event.dateTime.toLocaleTimeString()}
+                              <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="truncate">{event.dateTime.toLocaleDateString()} - {event.dateTime.toLocaleTimeString()}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {event.condominium}
+                              <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="truncate">{event.condominium}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {event.peopleInvolved.join(", ")}
+                              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="truncate">{event.peopleInvolved.join(", ")}</span>
                             </div>
                           </div>
                           
                           {event.comments && (
-                            <p className="text-sm text-muted-foreground mt-2">{event.comments}</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2">{event.comments}</p>
                           )}
                         </div>
                         
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => handleEditEvent(event)}
+                            className="flex-1 sm:flex-none text-xs sm:text-sm"
                           >
-                            <Edit2 className="h-4 w-4 mr-1" />
+                            <Edit2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                             {t("editEvent") || "Edit"}
                           </Button>
                           <Button 
                             variant="destructive" 
                             size="sm"
                             onClick={() => handleDeleteEvent(event.id)}
+                            className="flex-1 sm:flex-none text-xs sm:text-sm"
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                             {t("deleteEvent") || "Delete"}
                           </Button>
                         </div>

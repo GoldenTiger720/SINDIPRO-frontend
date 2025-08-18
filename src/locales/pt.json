@@ -926,5 +926,6 @@
   "budget": "Orçamento",
   "efficiency": "Eficiência",
   "addSub": "Add Sub",
-  "edit": "Editar"
+  "edit": "Editar",
+  "confirmDeleteEventDescription": "Esta ação não pode ser desfeita. Tem certeza que deseja excluir este evento?"
 }

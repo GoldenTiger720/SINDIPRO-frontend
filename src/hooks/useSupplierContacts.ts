@@ -117,9 +117,13 @@ const updateEvent = async (eventId: string, eventData: Partial<EventData>): Prom
     throw new Error('No access token found. Please log in again.');
   }
 
-  const url = `${API_BASE_URL}/api/contacts/event/${eventId}/`;
+  const url = `${API_BASE_URL}/api/contacts/${eventId}/event`;
+  
+  // Debug logging
+  console.log('Updating event at:', url);
+  
   const response = await fetch(url, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
@@ -155,7 +159,11 @@ const deleteEvent = async (eventId: string): Promise<void> => {
     throw new Error('No access token found. Please log in again.');
   }
 
-  const url = `${API_BASE_URL}/api/contacts/event/${eventId}/`;
+  const url = `${API_BASE_URL}/api/contacts/${eventId}/event`;
+  
+  // Debug logging
+  console.log('Deleting event at:', url);
+  
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {

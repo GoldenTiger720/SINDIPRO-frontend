@@ -927,5 +927,6 @@
   "budget": "Budget",
   "efficiency": "Efficiency",
   "addSub": "Add Sub",
-  "edit": "Edit"
+  "edit": "Edit",
+  "confirmDeleteEventDescription": "This action cannot be undone. Are you sure you want to delete this event?"
 }
