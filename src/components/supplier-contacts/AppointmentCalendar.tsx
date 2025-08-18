@@ -51,6 +51,10 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
     autoReminders: true
   });
   
+  // Filter states
+  const [selectedEventType, setSelectedEventType] = useState<string>('all');
+  const [selectedCondominium, setSelectedCondominium] = useState<string>('all');
+  
   // Form state for creating new events
   const [newEventForm, setNewEventForm] = useState({
     title: '',
@@ -107,9 +111,18 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
   };
 
   const getEventsForDate = (date: Date) => {
-    return appointmentEvents.filter(event => {
+    return getFilteredEvents().filter(event => {
       const eventDate = new Date(event.dateTime);
       return eventDate.toDateString() === date.toDateString();
+    });
+  };
+
+  // Filter events based on selected criteria
+  const getFilteredEvents = () => {
+    return appointmentEvents.filter(event => {
+      const eventTypeMatch = selectedEventType === 'all' || event.eventType === selectedEventType;
+      const condominiumMatch = selectedCondominium === 'all' || event.condominium === selectedCondominium;
+      return eventTypeMatch && condominiumMatch;
     });
   };
 
@@ -334,7 +347,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1">
-            <Select>
+            <Select value={selectedEventType} onValueChange={setSelectedEventType}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={t("filterByEventType")} />
               </SelectTrigger>
@@ -348,7 +361,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
               </SelectContent>
             </Select>
 
-            <Select>
+            <Select value={selectedCondominium} onValueChange={setSelectedCondominium}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder={t("filterByCondominium")} />
               </SelectTrigger>
@@ -785,7 +798,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("upcomingEvents")}</h3>
               <div className="space-y-4">
-                {appointmentEvents
+                {getFilteredEvents()
                   .filter(event => event.dateTime > new Date())
                   .map((event) => (
                   <Card key={event.id}>
@@ -849,7 +862,7 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
             <div>
               <h3 className="text-lg font-semibold mb-4">{t("pastEvents")}</h3>
               <div className="space-y-4">
-                {appointmentEvents
+                {getFilteredEvents()
                   .filter(event => event.dateTime <= new Date())
                   .map((event) => (
                   <Card key={event.id} className="opacity-75">
