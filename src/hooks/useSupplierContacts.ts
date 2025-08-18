@@ -2,6 +2,30 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getStoredToken } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
+// Types for supplier contact data
+export interface SupplierContactData {
+  companyName: string;
+  contactPerson: string;
+  phoneNumbers: string[];
+  emailAddress: string;
+  serviceCategory: string;
+  notes: string;
+  condominium: string;
+}
+
+export interface SupplierContactResponse {
+  id: number;
+  company_name: string;
+  contact_person: string;
+  phone_numbers: string[];
+  email_address: string;
+  service_category: string;
+  notes: string;
+  condominium: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Types for event data
 export interface EventData {
   title: string;
@@ -182,6 +206,89 @@ const deleteEvent = async (eventId: string): Promise<void> => {
   }
 };
 
+// API function to create supplier contact
+const createSupplierContact = async (contactData: SupplierContactData): Promise<SupplierContactResponse> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/supplier`;
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      company_name: contactData.companyName,
+      contact_person: contactData.contactPerson,
+      phone_numbers: contactData.phoneNumbers,
+      email_address: contactData.emailAddress,
+      service_category: contactData.serviceCategory,
+      notes: contactData.notes,
+      condominium: contactData.condominium,
+    }),
+  };
+
+  // Debug logging
+  console.log('Supplier Contact Creation API Request:', {
+    url,
+    method: requestOptions.method,
+    headers: requestOptions.headers,
+    bodyData: contactData,
+    hasBody: !!requestOptions.body
+  });
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// API function to fetch supplier contacts
+const fetchSupplierContacts = async (): Promise<SupplierContactResponse[]> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/supplier`;
+  
+  // Debug logging
+  console.log('Fetching supplier contacts from:', url);
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 // React Query hook for fetching events
 export const useEvents = () => {
   return useQuery<EventResponse[], Error>({
@@ -264,6 +371,44 @@ export const useDeleteEvent = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to delete event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// React Query hook for fetching supplier contacts
+export const useSupplierContacts = () => {
+  return useQuery<SupplierContactResponse[], Error>({
+    queryKey: ['supplier-contacts'],
+    queryFn: fetchSupplierContacts,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 3,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+  });
+};
+
+// React Query hook for creating supplier contacts
+export const useCreateSupplierContact = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<SupplierContactResponse, Error, SupplierContactData>({
+    mutationFn: createSupplierContact,
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Supplier contact created successfully",
+      });
+      // Invalidate and refetch any related queries
+      queryClient.invalidateQueries({ queryKey: ['supplier-contacts'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error creating supplier contact:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create supplier contact. Please try again.",
         variant: "destructive",
       });
     },

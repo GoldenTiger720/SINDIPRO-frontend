@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Search, Download, Share, Phone, Mail } from "lucide-react";
+import { useSupplierContacts, useCreateSupplierContact, SupplierContactData } from "@/hooks/useSupplierContacts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,8 @@ interface PhoneDirectoryProps {
 
 export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneDirectoryProps) => {
   const { t } = useTranslation();
+  const createSupplierContactMutation = useCreateSupplierContact();
+  const { data: fetchedContacts, isLoading, error, refetch } = useSupplierContacts();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -44,6 +47,23 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
     notes: '',
     condominium: ''
   });
+
+  // Sync fetched contacts with local state
+  useEffect(() => {
+    if (fetchedContacts) {
+      const formattedContacts: SupplierContact[] = fetchedContacts.map(contact => ({
+        id: contact.id?.toString() || '',
+        companyName: contact.company_name,
+        contactPerson: contact.contact_person,
+        phoneNumbers: contact.phone_numbers,
+        emailAddress: contact.email_address,
+        serviceCategory: contact.service_category,
+        notes: contact.notes,
+        condominium: contact.condominium
+      }));
+      setSupplierContacts(formattedContacts);
+    }
+  }, [fetchedContacts, setSupplierContacts]);
 
   const serviceCategories = [
     { value: "elevatorMaintenance", label: t("elevatorMaintenance") },
@@ -77,28 +97,35 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
       return;
     }
 
-    const newContact: SupplierContact = {
-      id: Date.now().toString(),
+    // Prepare data for API
+    const contactData: SupplierContactData = {
       companyName: newContactForm.companyName,
       contactPerson: newContactForm.contactPerson,
-      phoneNumbers: newContactForm.phoneNumbers.split(',').map(p => p.trim()),
+      phoneNumbers: newContactForm.phoneNumbers.split(',').map(p => p.trim()).filter(p => p),
       emailAddress: newContactForm.emailAddress,
       serviceCategory: newContactForm.serviceCategory,
       notes: newContactForm.notes,
       condominium: newContactForm.condominium || "Edifício Central"
     };
 
-    setSupplierContacts(prev => [...prev, newContact]);
-    setNewContactForm({
-      companyName: '',
-      contactPerson: '',
-      phoneNumbers: '',
-      emailAddress: '',
-      serviceCategory: '',
-      notes: '',
-      condominium: ''
+    // Use ReactQuery mutation with proper callbacks
+    createSupplierContactMutation.mutate(contactData, {
+      onSuccess: () => {
+        // Reset form and close dialog
+        setNewContactForm({
+          companyName: '',
+          contactPerson: '',
+          phoneNumbers: '',
+          emailAddress: '',
+          serviceCategory: '',
+          notes: '',
+          condominium: ''
+        });
+        setIsAddContactDialogOpen(false);
+        // Refetch contacts to get updated data
+        refetch();
+      }
     });
-    setIsAddContactDialogOpen(false);
   };
 
   return (
@@ -251,14 +278,41 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
                 <Button variant="outline" onClick={() => setIsAddContactDialogOpen(false)} className="flex-1 sm:flex-none">
                   {t("cancel")}
                 </Button>
-                <Button onClick={handleCreateContact} className="flex-1 sm:flex-none">
-                  {t("save")}
+                <Button 
+                  onClick={handleCreateContact} 
+                  className="flex-1 sm:flex-none"
+                  disabled={createSupplierContactMutation.isPending}
+                >
+                  {createSupplierContactMutation.isPending ? t("saving") || "Saving..." : t("save")}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
       </div>
+
+      {/* Loading and Error States */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="text-muted-foreground">{t("loadingContacts") || "Loading contacts..."}</div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-destructive/15 border border-destructive/50 rounded-md p-4">
+          <div className="text-destructive text-sm">
+            {t("errorLoadingContacts") || "Error loading contacts:"} {error.message}
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            className="mt-2"
+          >
+            {t("retry") || "Retry"}
+          </Button>
+        </div>
+      )}
 
       {/* Contacts Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
