@@ -106,7 +106,6 @@ export default function FieldManagement() {
   
   // Fetch technical calls when Technical tab is active
   const { data: technicalCallsData = [], isLoading: isLoadingTechnicalCalls } = useTechnicalCalls();
-  const [localTechnicalCalls, setLocalTechnicalCalls] = useState<TechnicalCall[]>([]);
   const [currentMaterialRequest, setCurrentMaterialRequest] = useState<MaterialRequest>({
     id: '',
     title: '',
@@ -343,43 +342,32 @@ export default function FieldManagement() {
       return;
     }
 
-    // Create a new technical call object with current timestamp
-    const newCall: TechnicalCall = {
-      ...currentTechnicalCall,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      createdBy: 'Current User',
-    };
-
-    // Immediately add to local state (optimistic update)
-    setLocalTechnicalCalls(prev => [newCall, ...prev]);
-
-    // Reset form immediately
-    setCurrentTechnicalCall({
-      id: '',
-      title: '',
-      description: '',
-      photos: [],
-      location: '',
-      priority: 'medium',
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      createdBy: 'Current User',
-    });
-
     try {
       // Prepare data for API
       const callData = {
-        title: newCall.title,
-        description: newCall.description,
-        photos: newCall.photos,
-        location: newCall.location,
-        priority: newCall.priority,
-        companyEmail: newCall.companyEmail,
+        title: currentTechnicalCall.title,
+        description: currentTechnicalCall.description,
+        photos: currentTechnicalCall.photos,
+        location: currentTechnicalCall.location,
+        priority: currentTechnicalCall.priority,
+        companyEmail: currentTechnicalCall.companyEmail,
       };
 
-      // Send to backend (in background)
-      saveTechnicalCallMutation.mutate(callData);
+      // Send to backend
+      await saveTechnicalCallMutation.mutateAsync(callData);
+
+      // Reset form only after successful save
+      setCurrentTechnicalCall({
+        id: '',
+        title: '',
+        description: '',
+        photos: [],
+        location: '',
+        priority: 'medium',
+        status: 'open',
+        createdAt: new Date().toISOString(),
+        createdBy: 'Current User',
+      });
     } catch (error) {
       // Error is already handled by the mutation hook
       console.error('Failed to save technical call:', error);
@@ -895,10 +883,9 @@ export default function FieldManagement() {
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
                       <p className="text-muted-foreground">{t("loadingCalls") || "Loading technical calls..."}</p>
                     </div>
-                  ) : (technicalCallsData.length > 0 || localTechnicalCalls.length > 0) ? (
+                  ) : technicalCallsData.length > 0 ? (
                     <div className="space-y-4">
-                      {/* Show local calls first, then API calls */}
-                      {[...localTechnicalCalls, ...technicalCallsData].map((call: any) => (
+                      {technicalCallsData.map((call: any) => (
                         <div key={call.id} className="p-4 border rounded-lg">
                           <div className="flex items-start justify-between mb-2">
                             <div>
