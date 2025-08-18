@@ -1,0 +1,104 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { getStoredToken } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
+
+// Types for event data
+export interface EventData {
+  title: string;
+  eventType: string;
+  dateTime: string;
+  condominium: string;
+  peopleInvolved: string[];
+  comments: string;
+}
+
+export interface EventResponse {
+  id: number;
+  title: string;
+  eventType: string;
+  dateTime: string;
+  condominium: string;
+  peopleInvolved: string[];
+  comments: string;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
+
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
+
+// API function to create event
+const createEvent = async (eventData: EventData): Promise<EventResponse> => {
+  const accessToken = getStoredToken('access');
+  
+  if (!accessToken) {
+    throw new Error('No access token found. Please log in again.');
+  }
+
+  const url = `${API_BASE_URL}/api/contacts/event/`;
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      title: eventData.title,
+      event_type: eventData.eventType,
+      date_time: eventData.dateTime,
+      condominium: eventData.condominium,
+      people_involved: eventData.peopleInvolved,
+      comments: eventData.comments,
+    }),
+  };
+
+  // Debug logging
+  console.log('Event Creation API Request:', {
+    url,
+    method: requestOptions.method,
+    headers: requestOptions.headers,
+    bodyData: eventData,
+    hasBody: !!requestOptions.body
+  });
+
+  const response = await fetch(url, requestOptions);
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (response.status === 401) {
+      throw new Error('Authentication failed. Please log in again.');
+    }
+    
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// React Query hook for creating events
+export const useCreateEvent = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<EventResponse, Error, EventData>({
+    mutationFn: createEvent,
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Event created successfully",
+      });
+      // Invalidate and refetch any related queries if needed
+      queryClient.invalidateQueries({ queryKey: ['supplier-events'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error creating event:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create event. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};

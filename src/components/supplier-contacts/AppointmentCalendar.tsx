@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Calendar, Clock, Users, MapPin, Grid3x3, List, ChevronLeft, ChevronRight, Bell } from "lucide-react";
+import { useCreateEvent } from "@/hooks/useSupplierContacts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ interface AppointmentCalendarProps {
 
 export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }: AppointmentCalendarProps) => {
   const { t } = useTranslation();
+  const createEventMutation = useCreateEvent();
   
   const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false);
   const [isNotificationSettingsOpen, setIsNotificationSettingsOpen] = useState(false);
@@ -102,27 +104,46 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
       return;
     }
 
-    const newEvent: AppointmentEvent = {
-      id: Date.now().toString(),
+    // Prepare data for API
+    const eventData = {
       title: newEventForm.title,
       eventType: newEventForm.eventType,
-      dateTime: new Date(newEventForm.dateTime),
+      dateTime: newEventForm.dateTime,
       condominium: newEventForm.condominium || "Edifício Central",
       peopleInvolved: newEventForm.peopleInvolved.split(',').map(p => p.trim()).filter(p => p),
-      comments: newEventForm.comments,
-      status: 'pending'
+      comments: newEventForm.comments
     };
 
-    setAppointmentEvents(prev => [...prev, newEvent]);
-    setNewEventForm({
-      title: '',
-      eventType: '',
-      dateTime: '',
-      condominium: '',
-      peopleInvolved: '',
-      comments: ''
+    // Use ReactQuery mutation with proper callbacks
+    createEventMutation.mutate(eventData, {
+      onSuccess: (response) => {
+        // Create local event object with backend response
+        const newEvent: AppointmentEvent = {
+          id: response.id?.toString() || '',
+          title: response.title,
+          eventType: response.eventType,
+          dateTime: new Date(response.dateTime),
+          condominium: response.condominium,
+          peopleInvolved: response.peopleInvolved,
+          comments: response.comments,
+          status: response.status
+        };
+
+        // Update local state
+        setAppointmentEvents(prev => [...prev, newEvent]);
+
+        // Reset form and close dialog
+        setNewEventForm({
+          title: '',
+          eventType: '',
+          dateTime: '',
+          condominium: '',
+          peopleInvolved: '',
+          comments: ''
+        });
+        setIsAddEventDialogOpen(false);
+      }
     });
-    setIsAddEventDialogOpen(false);
   };
 
   const renderMonthlyCalendar = () => {
@@ -564,8 +585,12 @@ export const AppointmentCalendar = ({ appointmentEvents, setAppointmentEvents }:
                 <Button variant="outline" onClick={() => setIsAddEventDialogOpen(false)} className="flex-1 sm:flex-none">
                   {t("cancel")}
                 </Button>
-                <Button onClick={handleCreateEvent} className="flex-1 sm:flex-none">
-                  {t("createEvent")}
+                <Button 
+                  onClick={handleCreateEvent} 
+                  className="flex-1 sm:flex-none"
+                  disabled={createEventMutation.isPending}
+                >
+                  {createEventMutation.isPending ? t("creating") || "Creating..." : t("createEvent")}
                 </Button>
               </DialogFooter>
             </DialogContent>
