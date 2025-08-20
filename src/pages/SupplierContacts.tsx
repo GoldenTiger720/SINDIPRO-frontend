@@ -31,29 +31,8 @@ interface AppointmentEvent {
 const SupplierContacts = () => {
   const { t } = useTranslation();
 
-  // Mock data - in real implementation, this would come from an API
-  const [supplierContacts, setSupplierContacts] = useState<SupplierContact[]>([
-    {
-      id: "1",
-      companyName: "Elevadores ABC Ltda",
-      contactPerson: "João Silva",
-      phoneNumbers: ["(11) 3333-4444", "(11) 99999-1111"],
-      emailAddress: "joao@elevadoresabc.com",
-      serviceCategory: "elevatorMaintenance",
-      notes: "Manutenção preventiva mensal",
-      condominium: "Edifício Central"
-    },
-    {
-      id: "2", 
-      companyName: "Segurança Total",
-      contactPerson: "Maria Santos",
-      phoneNumbers: ["(11) 2222-3333"],
-      emailAddress: "maria@segurancatotal.com",
-      serviceCategory: "securityServices",
-      notes: "Portaria 24h e monitoramento",
-      condominium: "Residencial Park"
-    }
-  ]);
+  // Supplier contacts state - populated from API
+  const [supplierContacts, setSupplierContacts] = useState<SupplierContact[]>([]);
 
   // State for appointment events - will be managed by AppointmentCalendar component using ReactQuery
   const [appointmentEvents, setAppointmentEvents] = useState<AppointmentEvent[]>([]);

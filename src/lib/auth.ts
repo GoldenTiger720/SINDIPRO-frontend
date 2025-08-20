@@ -10,6 +10,7 @@ export interface LoginResponse {
     id: number;
     email: string;
     username?: string;
+    role?: string;
   };
 }
 
@@ -20,6 +21,7 @@ export interface RegisterResponse {
     id: number;
     email: string;
     username?: string;
+    role?: string;
   };
 }
 
@@ -74,6 +76,17 @@ export const isAuthenticated = (): boolean => {
   const accessToken = getStoredToken('access');
   const refreshToken = getStoredToken('refresh');
   return !!(accessToken && refreshToken);
+};
+
+// Check if user has a specific role
+export const hasRole = (requiredRole: string): boolean => {
+  const user = getStoredUser();
+  return user?.role === requiredRole;
+};
+
+// Check if user is master role
+export const isMasterUser = (): boolean => {
+  return hasRole('master');
 };
 
 // API request helper with auth headers

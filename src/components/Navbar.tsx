@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { logoutUser, getStoredUser } from "@/lib/auth";
+import { logoutUser, getStoredUser, isMasterUser } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,7 @@ export const Navbar = () => {
     { name: t("consumption"), href: "/consumption" },
     { name: t("fieldManagement"), href: "/field-management" },
     { name: t("reports"), href: "/reports" },
-    { name: t("users"), href: "/users" },
+    ...(isMasterUser() ? [{ name: t("users"), href: "/users" }] : []),
     { name: t("supplierContacts"), href: "/supplier-contacts" },
   ];
 

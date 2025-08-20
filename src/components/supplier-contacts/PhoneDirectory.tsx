@@ -61,7 +61,25 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
         notes: contact.notes,
         condominium: contact.condominium
       }));
-      setSupplierContacts(formattedContacts);
+      
+      // Only update if this is the initial load (empty state) or if we don't have optimistic updates
+      setSupplierContacts(prevContacts => {
+        // If we have no contacts or all contacts have real IDs (no temp IDs), replace all
+        const hasOptimisticUpdates = prevContacts.some(contact => contact.id.startsWith('temp-'));
+        if (prevContacts.length === 0 || !hasOptimisticUpdates) {
+          return formattedContacts;
+        }
+        
+        // Otherwise, merge real contacts with optimistic updates
+        const realContactIds = new Set(formattedContacts.map(c => c.id));
+        const optimisticContacts = prevContacts.filter(contact => contact.id.startsWith('temp-'));
+        const existingRealContacts = prevContacts.filter(contact => 
+          !contact.id.startsWith('temp-') && realContactIds.has(contact.id)
+        );
+        
+        // Replace existing real contacts with fresh data, keep optimistic contacts
+        return [...formattedContacts, ...optimisticContacts];
+      });
     }
   }, [fetchedContacts, setSupplierContacts]);
 
@@ -97,8 +115,9 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
       return;
     }
 
-    // Prepare data for API
-    const contactData: SupplierContactData = {
+    // Create optimistic contact object
+    const optimisticContact: SupplierContact = {
+      id: `temp-${Date.now()}`, // Temporary ID for optimistic update
       companyName: newContactForm.companyName,
       contactPerson: newContactForm.contactPerson,
       phoneNumbers: newContactForm.phoneNumbers.split(',').map(p => p.trim()).filter(p => p),
@@ -108,22 +127,69 @@ export const PhoneDirectory = ({ supplierContacts, setSupplierContacts }: PhoneD
       condominium: newContactForm.condominium || "Edifício Central"
     };
 
+    // Immediately add to local state (optimistic update)
+    setSupplierContacts(prev => [...prev, optimisticContact]);
+
+    // Reset form and close dialog immediately
+    setNewContactForm({
+      companyName: '',
+      contactPerson: '',
+      phoneNumbers: '',
+      emailAddress: '',
+      serviceCategory: '',
+      notes: '',
+      condominium: ''
+    });
+    setIsAddContactDialogOpen(false);
+
+    // Prepare data for API
+    const contactData: SupplierContactData = {
+      companyName: optimisticContact.companyName,
+      contactPerson: optimisticContact.contactPerson,
+      phoneNumbers: optimisticContact.phoneNumbers,
+      emailAddress: optimisticContact.emailAddress,
+      serviceCategory: optimisticContact.serviceCategory,
+      notes: optimisticContact.notes,
+      condominium: optimisticContact.condominium
+    };
+
     // Use ReactQuery mutation with proper callbacks
     createSupplierContactMutation.mutate(contactData, {
-      onSuccess: () => {
-        // Reset form and close dialog
+      onSuccess: (response) => {
+        // Replace optimistic contact with real contact from server
+        setSupplierContacts(prev => 
+          prev.map(contact => 
+            contact.id === optimisticContact.id 
+              ? {
+                  id: response.id.toString(),
+                  companyName: response.company_name,
+                  contactPerson: response.contact_person,
+                  phoneNumbers: response.phone_numbers,
+                  emailAddress: response.email_address,
+                  serviceCategory: response.service_category,
+                  notes: response.notes,
+                  condominium: response.condominium
+                }
+              : contact
+          )
+        );
+      },
+      onError: (error) => {
+        // Remove optimistic contact if API call fails
+        setSupplierContacts(prev => 
+          prev.filter(contact => contact.id !== optimisticContact.id)
+        );
+        // Reopen dialog and restore form data for user to retry
         setNewContactForm({
-          companyName: '',
-          contactPerson: '',
-          phoneNumbers: '',
-          emailAddress: '',
-          serviceCategory: '',
-          notes: '',
-          condominium: ''
+          companyName: optimisticContact.companyName,
+          contactPerson: optimisticContact.contactPerson,
+          phoneNumbers: optimisticContact.phoneNumbers.join(', '),
+          emailAddress: optimisticContact.emailAddress,
+          serviceCategory: optimisticContact.serviceCategory,
+          notes: optimisticContact.notes,
+          condominium: optimisticContact.condominium
         });
-        setIsAddContactDialogOpen(false);
-        // Refetch contacts to get updated data
-        refetch();
+        setIsAddContactDialogOpen(true);
       }
     });
   };

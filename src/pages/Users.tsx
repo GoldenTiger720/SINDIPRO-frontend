@@ -194,45 +194,333 @@ export default function Users() {
                 <tbody>
                   <tr className="border-b">
                     <td className="p-2 font-medium">{t("buildingRegistry")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">❌ {t("denied")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-2 font-medium">{t("financialManagement")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">❌ {t("denied")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-2 font-medium">{t("equipment")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✏️ {t("editAccess")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="edit">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-2 font-medium">{t("fieldRequests")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                   <tr className="border-b">
                     <td className="p-2 font-medium">{t("reports")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
-                    <td className="text-center p-2">👁️ {t("view")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium">{t("systemSettings")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium">{t("legalObligations")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium">{t("supplierContacts")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="edit">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="edit">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2 font-medium">{t("consumption")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="edit">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="view">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="edit">✏️ {t("editAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                   <tr>
-                    <td className="p-2 font-medium">{t("systemSettings")}</td>
-                    <td className="text-center p-2">✅ {t("fullAccess")}</td>
-                    <td className="text-center p-2">❌ {t("denied")}</td>
-                    <td className="text-center p-2">❌ {t("denied")}</td>
-                    <td className="text-center p-2">❌ {t("denied")}</td>
+                    <td className="p-2 font-medium">{t("userAndPermissionManagement")}</td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="full">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
+                    <td className="text-center p-2">
+                      <select className="w-20 px-1 py-1 border rounded text-xs" defaultValue="denied">
+                        <option value="full">✅ {t("fullAccess")}</option>
+                        <option value="view">👁️ {t("view")}</option>
+                        <option value="denied">❌ {t("denied")}</option>
+                      </select>
+                    </td>
                   </tr>
                 </tbody>
               </table>
