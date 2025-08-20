@@ -116,7 +116,7 @@ const SignUp = () => {
                 <SelectContent>
                   {buildings.map((building) => (
                     <SelectItem key={building.id} value={building.id.toString()}>
-                      {building.name}
+                      {building.building_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
