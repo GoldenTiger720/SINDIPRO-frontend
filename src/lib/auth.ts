@@ -161,6 +161,30 @@ export const logoutUser = () => {
   // Redirect to login page will be handled by the calling component
 };
 
+// Types for users API response
+interface UsersApiResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: string;
+    phone: string;
+    is_active_user: boolean;
+    date_joined: string;
+  }[];
+}
+
+// Fetch users from backend
+export const fetchUsers = async () => {
+  const response: UsersApiResponse = await makeAuthRequest('/api/auth/users/');
+  return response.results;
+};
+
 // Auto-refresh token when it's about to expire
 export const setupTokenRefresh = () => {
   const accessToken = getStoredToken('access');
