@@ -32,6 +32,7 @@ export interface RefreshResponse {
 export interface LoginCredentials {
   email: string;
   password: string;
+  building_id?: number;
 }
 
 export interface RegisterCredentials {
@@ -39,6 +40,7 @@ export interface RegisterCredentials {
   email: string;
   password: string;
   confirmPassword: string;
+  building_id?: number;
 }
 
 // Token management
@@ -179,10 +181,35 @@ interface UsersApiResponse {
   }[];
 }
 
+// Building/Condominium interface
+export interface Building {
+  id: number;
+  name: string;
+  address?: string;
+  description?: string;
+}
+
 // Fetch users from backend
 export const fetchUsers = async () => {
   const response: UsersApiResponse = await makeAuthRequest('/api/auth/users/');
   return response.results;
+};
+
+// Fetch buildings/condominiums from backend
+export const fetchBuildings = async (): Promise<Building[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/buildings/all`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
 };
 
 // Auto-refresh token when it's about to expire

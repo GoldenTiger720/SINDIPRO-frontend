@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { registerUser, type RegisterCredentials } from "@/lib/auth";
+import { registerUser, type RegisterCredentials, fetchBuildings, type Building } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const SignUp = () => {
@@ -11,6 +12,9 @@ const SignUp = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedBuilding, setSelectedBuilding] = useState<string>("");
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [isLoadingBuildings, setIsLoadingBuildings] = useState(true);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -21,6 +25,25 @@ const SignUp = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    const loadBuildings = async () => {
+      try {
+        const buildingsData = await fetchBuildings();
+        setBuildings(buildingsData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load condominiums",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingBuildings(false);
+      }
+    };
+
+    loadBuildings();
+  }, [toast]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +60,11 @@ const SignUp = () => {
     setIsLoading(true);
     
     try {
-      await registerUser(formData as RegisterCredentials);
+      const credentials: RegisterCredentials = {
+        ...formData,
+        ...(selectedBuilding && { building_id: parseInt(selectedBuilding) })
+      };
+      await registerUser(credentials);
       
       toast({
         title: "Success",
@@ -82,6 +109,19 @@ const SignUp = () => {
             
             {/* Sign Up Form */}
             <form onSubmit={handleSignUp} className="space-y-3">
+              <Select value={selectedBuilding} onValueChange={setSelectedBuilding} disabled={isLoadingBuildings}>
+                <SelectTrigger className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30">
+                  <SelectValue placeholder={isLoadingBuildings ? "Loading condominiums..." : "Select condominium"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildings.map((building) => (
+                    <SelectItem key={building.id} value={building.id.toString()}>
+                      {building.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Input
                 type="text"
                 placeholder="Username"
@@ -166,6 +206,21 @@ const SignUp = () => {
             </div>
             {/* Sign Up Form */}
             <form onSubmit={handleSignUp} className="space-y-4">
+              <div>
+                <Select value={selectedBuilding} onValueChange={setSelectedBuilding} disabled={isLoadingBuildings}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={isLoadingBuildings ? "Loading condominiums..." : "Select condominium"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {buildings.map((building) => (
+                      <SelectItem key={building.id} value={building.id.toString()}>
+                        {building.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div>
                 <Input
                   type="text"

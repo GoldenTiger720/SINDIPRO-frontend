@@ -55,7 +55,9 @@ const App = () => (
           } />
           <Route path="/buildings" element={
             <AuthGuard>
-              <Buildings />
+              <RoleGuard requiredRole="master">
+                <Buildings />
+              </RoleGuard>
             </AuthGuard>
           } />
           <Route path="/legal-obligations" element={
