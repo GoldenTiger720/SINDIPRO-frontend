@@ -184,9 +184,7 @@ interface UsersApiResponse {
 // Building/Condominium interface
 export interface Building {
   id: number;
-  name: string;
-  address?: string;
-  description?: string;
+  building_name: string;
 }
 
 // Fetch users from backend

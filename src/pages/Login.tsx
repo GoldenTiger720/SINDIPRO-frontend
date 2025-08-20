@@ -103,7 +103,7 @@ const Login = () => {
                   <SelectContent>
                     {buildings.map((building) => (
                       <SelectItem key={building.id} value={building.id.toString()}>
-                        {building.name}
+                        {building.building_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -194,7 +194,7 @@ const Login = () => {
                   <SelectContent>
                     {buildings.map((building) => (
                       <SelectItem key={building.id} value={building.id.toString()}>
-                        {building.name}
+                        {building.building_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
