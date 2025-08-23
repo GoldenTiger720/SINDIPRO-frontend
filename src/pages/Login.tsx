@@ -1,9 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginUser, type LoginCredentials, fetchBuildings, type Building } from "@/lib/auth";
+import {
+  loginUser,
+  type LoginCredentials,
+  fetchBuildings,
+  type Building,
+} from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -37,22 +48,22 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     setIsLoading(true);
-    
+
     try {
       const credentials: LoginCredentials = {
         email,
         password,
-        ...(selectedBuilding && { building_id: parseInt(selectedBuilding) })
+        ...(selectedBuilding && { building_id: parseInt(selectedBuilding) }),
       };
       await loginUser(credentials);
-      
+
       toast({
         title: "Success",
         description: "Login successful! Redirecting...",
       });
-      
+
       // Navigate to main page after successful login
       setTimeout(() => navigate("/"), 1000);
     } catch (error) {
@@ -80,11 +91,11 @@ const Login = () => {
       {/* Mobile View */}
       <div className="lg:hidden min-h-screen relative flex items-center justify-center">
         {/* Full screen background image with reduced opacity */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center opacity-70"
           style={{ backgroundImage: `url("/mobile.png")` }}
         />
-        
+
         {/* Card/Modal Form */}
         <div className="relative z-10 w-full max-w-sm mx-4">
           <div className="bg-white/30 backdrop-blur rounded-2xl shadow-2xl p-8 border border-white/20">
@@ -92,17 +103,30 @@ const Login = () => {
             <div className="text-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">SINDIPRO</h1>
             </div>
-            
+
             {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-3">
-                <Select value={selectedBuilding} onValueChange={setSelectedBuilding} disabled={isLoadingBuildings}>
+                <Select
+                  value={selectedBuilding}
+                  onValueChange={setSelectedBuilding}
+                  disabled={isLoadingBuildings}
+                >
                   <SelectTrigger className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30">
-                    <SelectValue placeholder={isLoadingBuildings ? "Loading condominiums..." : "Select condominium"} />
+                    <SelectValue
+                      placeholder={
+                        isLoadingBuildings
+                          ? "Loading condominiums..."
+                          : "Select condominium"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {buildings.map((building) => (
-                      <SelectItem key={building.id} value={building.id.toString()}>
+                      <SelectItem
+                        key={building.id}
+                        value={building.id.toString()}
+                      >
                         {building.building_name}
                       </SelectItem>
                     ))}
@@ -117,7 +141,7 @@ const Login = () => {
                   required
                   className="w-full h-12 bg-white/70 backdrop-blur-sm border-white/30 placeholder:text-gray-600"
                 />
-                
+
                 <Input
                   type="password"
                   placeholder="Password"
@@ -177,23 +201,32 @@ const Login = () => {
           <div className="w-full max-w-sm space-y-6">
             {/* Logo */}
             <div className="flex justify-center mb-8">
-              <img
-                src="/logo.png"
-                alt="Logo"
-                className="h-16 w-auto"
-              />
+              <img src="/logo.png" alt="Logo" className="h-16 w-auto" />
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Select value={selectedBuilding} onValueChange={setSelectedBuilding} disabled={isLoadingBuildings}>
+                <Select
+                  value={selectedBuilding}
+                  onValueChange={setSelectedBuilding}
+                  disabled={isLoadingBuildings}
+                >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={isLoadingBuildings ? "Loading condominiums..." : "Select condominium"} />
+                    <SelectValue
+                      placeholder={
+                        isLoadingBuildings
+                          ? "Loading condominiums..."
+                          : "Select condominium"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {buildings.map((building) => (
-                      <SelectItem key={building.id} value={building.id.toString()}>
+                      <SelectItem
+                        key={building.id}
+                        value={building.id.toString()}
+                      >
                         {building.building_name}
                       </SelectItem>
                     ))}
@@ -211,7 +244,7 @@ const Login = () => {
                   className="w-full"
                 />
               </div>
-              
+
               <div>
                 <Input
                   type="password"

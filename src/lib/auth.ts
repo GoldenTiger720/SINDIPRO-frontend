@@ -108,6 +108,13 @@ const makeAuthRequest = async (url: string, options: RequestInit = {}) => {
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Handle backend error format: { errors: { field: "message" } }
+    if (errorData.errors && typeof errorData.errors === 'object') {
+      const errorMessages = Object.values(errorData.errors).join(', ');
+      throw new Error(errorMessages);
+    }
+    
     throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
   }
   
