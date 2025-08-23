@@ -18,77 +18,91 @@ import { DashboardHeader } from "./DashboardHeader";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { isMasterUser } from "@/lib/auth";
 
 export const Dashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const isAdmin = isMasterUser();
 
-  const dashboardItems = [
+  const allDashboardItems = [
     {
       id: "buildings",
       title: t("basicCondominiumRegistry"),
       icon: Building2,
       color: "bg-dashboard-gray",
-      route: "/buildings"
+      route: "/buildings",
+      requiresAdmin: true
     },
     {
       id: "obligations",
       title: t("legalObligationsDocuments"),
       icon: AlertTriangle,
       color: "bg-dashboard-red",
-      route: "/legal-obligations"
+      route: "/legal-obligations",
+      requiresAdmin: false
     },
     {
       id: "equipment",
       title: t("equipmentMaintenance"),
       icon: Wrench,
       color: "bg-dashboard-green",
-      route: "/equipment"
+      route: "/equipment",
+      requiresAdmin: false
     },
     {
       id: "financial",
       title: t("financialBudgetManagement"),
       icon: BarChart3,
       color: "bg-dashboard-orange",
-      route: "/financial"
+      route: "/financial",
+      requiresAdmin: false
     },
     {
       id: "consumption",
       title: t("consumptionManagement"),
       icon: Calculator,
       color: "bg-dashboard-blue",
-      route: "/consumption"
+      route: "/consumption",
+      requiresAdmin: false
     },
     {
       id: "field-management",
       title: t("fieldManagementSurveys"),
       icon: MessageSquare,
       color: "bg-dashboard-purple",
-      route: "/field-management"
+      route: "/field-management",
+      requiresAdmin: false
     },
     {
       id: "reports",
       title: t("reports"),
       icon: FileText,
       color: "bg-dashboard-teal",
-      route: "/reports"
+      route: "/reports",
+      requiresAdmin: false
     },
     {
       id: "users",
       title: t("userManagement"),
       icon: Settings,
       color: "bg-dashboard-pink",
-      route: "/users"
+      route: "/users",
+      requiresAdmin: true
     },
     {
       id: "supplier-contacts",
       title: t("supplierContacts"),
       icon: Calendar,
       color: "bg-dashboard-indigo",
-      route: "/supplier-contacts"
+      route: "/supplier-contacts",
+      requiresAdmin: false
     }
   ];
+
+  // Filter items based on user role
+  const dashboardItems = allDashboardItems.filter(item => !item.requiresAdmin || isAdmin);
 
   const handleCardClick = (route: string) => {
     navigate(route);

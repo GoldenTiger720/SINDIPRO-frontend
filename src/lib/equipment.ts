@@ -1,7 +1,7 @@
 // Equipment API Service
 // Professional service for handling equipment and maintenance backend operations
 
-import { getStoredToken } from './auth';
+import { makeAuthenticatedRequest } from './api-utils';
 
 // TypeScript interfaces for type safety
 export interface EquipmentData {
@@ -169,16 +169,13 @@ export const equipmentApi = {
       // Validate required fields before sending
       const validationError = validateEquipmentData(equipmentData);
       if (validationError) {
-        throw new ApiError({
-          message: `Validation Error: ${validationError}`,
-          code: 'VALIDATION_ERROR',
-        } as ApiErrorData);
+        throw new Error(`Validation Error: ${validationError}`);
       }
 
-      const response = await apiClient.post<EquipmentResponse>(
-        `${EQUIPMENT_ENDPOINT}/`,
-        equipmentData
-      );
+      const response = await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/`, {
+        method: 'POST',
+        body: JSON.stringify(equipmentData),
+      });
 
       return response;
     } catch (error) {
@@ -188,12 +185,12 @@ export const equipmentApi = {
   },
 
   /**
-   * Get all equipment
+   * Get all equipment (filtered by user's building)
    * @returns Promise<EquipmentResponse[]>
    */
   async getEquipment(): Promise<EquipmentResponse[]> {
     try {
-      const response = await apiClient.get<EquipmentResponse[]>(`${EQUIPMENT_ENDPOINT}/`);
+      const response = await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/`);
       return response || []; // Return empty array if response is falsy
     } catch (error) {
       console.error('Error fetching equipment:', error);
@@ -208,7 +205,7 @@ export const equipmentApi = {
    */
   async getEquipmentById(id: string): Promise<EquipmentResponse> {
     try {
-      return await apiClient.get<EquipmentResponse>(`${EQUIPMENT_ENDPOINT}/${id}`);
+      return await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/${id}`);
     } catch (error) {
       console.error(`Error fetching equipment ${id}:`, error);
       throw error;
@@ -223,10 +220,10 @@ export const equipmentApi = {
    */
   async updateEquipment(id: string, equipmentData: Partial<EquipmentData>): Promise<EquipmentResponse> {
     try {
-      return await apiClient.put<EquipmentResponse>(
-        `${EQUIPMENT_ENDPOINT}/${id}`,
-        equipmentData
-      );
+      return await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(equipmentData),
+      });
     } catch (error) {
       console.error(`Error updating equipment ${id}:`, error);
       throw error;
@@ -240,7 +237,9 @@ export const equipmentApi = {
    */
   async deleteEquipment(id: string): Promise<{ message: string }> {
     try {
-      return await apiClient.delete<{ message: string }>(`${EQUIPMENT_ENDPOINT}/${id}`);
+      return await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/${id}`, {
+        method: 'DELETE',
+      });
     } catch (error) {
       console.error(`Error deleting equipment ${id}:`, error);
       throw error;
@@ -258,16 +257,13 @@ export const equipmentApi = {
       // Validate required fields before sending
       const validationError = validateMaintenanceData(maintenanceData);
       if (validationError) {
-        throw new ApiError({
-          message: `Validation Error: ${validationError}`,
-          code: 'VALIDATION_ERROR',
-        } as ApiErrorData);
+        throw new Error(`Validation Error: ${validationError}`);
       }
 
-      const response = await apiClient.post<MaintenanceRecordResponse>(
-        `${EQUIPMENT_ENDPOINT}/${equipmentId}/maintenance/`,
-        maintenanceData
-      );
+      const response = await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/${equipmentId}/maintenance/`, {
+        method: 'POST',
+        body: JSON.stringify(maintenanceData),
+      });
 
       return response;
     } catch (error) {
@@ -283,7 +279,7 @@ export const equipmentApi = {
    */
   async getMaintenanceRecords(equipmentId: string): Promise<MaintenanceRecordResponse[]> {
     try {
-      return await apiClient.get<MaintenanceRecordResponse[]>(`${EQUIPMENT_ENDPOINT}/${equipmentId}/maintenance/`);
+      return await makeAuthenticatedRequest(`${EQUIPMENT_ENDPOINT}/${equipmentId}/maintenance/`);
     } catch (error) {
       console.error(`Error fetching maintenance records for equipment ${equipmentId}:`, error);
       throw error;

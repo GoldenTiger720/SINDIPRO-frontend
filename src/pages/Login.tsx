@@ -16,10 +16,12 @@ import {
   type Building,
 } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useBuildingContext } from "@/contexts/BuildingContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { refreshBuildingData } = useBuildingContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedBuilding, setSelectedBuilding] = useState<string>("");
@@ -58,6 +60,9 @@ const Login = () => {
         ...(selectedBuilding && { building_id: parseInt(selectedBuilding) }),
       };
       await loginUser(credentials);
+      
+      // Refresh building data to update the context
+      refreshBuildingData();
 
       toast({
         title: "Success",

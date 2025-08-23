@@ -11,6 +11,8 @@ export interface LoginResponse {
     email: string;
     username?: string;
     role?: string;
+    building_id?: number;
+    building_name?: string;
   };
 }
 
@@ -22,6 +24,8 @@ export interface RegisterResponse {
     email: string;
     username?: string;
     role?: string;
+    building_id?: number;
+    building_name?: string;
   };
 }
 
@@ -129,6 +133,20 @@ export const loginUser = async (credentials: LoginCredentials): Promise<LoginRes
   });
   
   if (response.access && response.refresh) {
+    // If user selected a building, fetch building name and add it to user data
+    if (credentials.building_id && response.user) {
+      try {
+        const buildings = await fetchBuildings();
+        const selectedBuilding = buildings.find(b => b.id === credentials.building_id);
+        if (selectedBuilding) {
+          response.user.building_id = selectedBuilding.id;
+          response.user.building_name = selectedBuilding.building_name;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch building name:', error);
+      }
+    }
+    
     setTokens(response);
   }
   
@@ -142,6 +160,20 @@ export const registerUser = async (credentials: RegisterCredentials): Promise<Re
   });
   
   if (response.access && response.refresh) {
+    // If user selected a building, fetch building name and add it to user data
+    if (credentials.building_id && response.user) {
+      try {
+        const buildings = await fetchBuildings();
+        const selectedBuilding = buildings.find(b => b.id === credentials.building_id);
+        if (selectedBuilding) {
+          response.user.building_id = selectedBuilding.id;
+          response.user.building_name = selectedBuilding.building_name;
+        }
+      } catch (error) {
+        console.warn('Failed to fetch building name:', error);
+      }
+    }
+    
     setTokens(response);
   }
   return response;

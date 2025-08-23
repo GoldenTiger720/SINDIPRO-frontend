@@ -6,11 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { registerUser, type RegisterCredentials, fetchBuildings, type Building } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { useBuildingContext } from "@/contexts/BuildingContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { refreshBuildingData } = useBuildingContext();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState<string>("");
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -65,6 +67,9 @@ const SignUp = () => {
         ...(selectedBuilding && { building_id: parseInt(selectedBuilding) })
       };
       await registerUser(credentials);
+      
+      // Refresh building data to update the context
+      refreshBuildingData();
       
       toast({
         title: "Success",

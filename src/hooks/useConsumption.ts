@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStoredToken } from '@/lib/auth';
+import { makeAuthenticatedRequest } from '@/lib/api-utils';
 import { useToast } from '@/hooks/use-toast';
 
 // Types for consumption data
@@ -41,187 +41,54 @@ export interface BillResponse {
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
 
-// API function to register daily consumption
+// API function to register daily consumption (building-specific)
 const registerDailyConsumption = async (consumptionData: DailyConsumptionData): Promise<ConsumptionResponse> => {
-  const accessToken = getStoredToken('access');
-  
-  if (!accessToken) {
-    throw new Error('No access token found. Please log in again.');
-  }
-
-  const url = `${API_BASE_URL}/api/consumption/register/`;
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(consumptionData),
-  };
-
   // Debug logging
   console.log('Daily Consumption API Request:', {
-    url,
-    method: requestOptions.method,
-    headers: requestOptions.headers,
+    endpoint: '/api/consumption/register/',
+    method: 'POST',
     bodyData: consumptionData,
-    hasBody: !!requestOptions.body
   });
 
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
-    if (response.status === 401) {
-      throw new Error('Authentication failed. Please log in again.');
-    }
-    
-    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  return await makeAuthenticatedRequest('/api/consumption/register/', {
+    method: 'POST',
+    body: JSON.stringify(consumptionData),
+  });
 };
 
-// API function to register monthly bill
+// API function to register monthly bill (building-specific)
 const registerMonthlyBill = async (billData: MonthlyBillData): Promise<BillResponse> => {
-  const accessToken = getStoredToken('access');
-  
-  if (!accessToken) {
-    throw new Error('No access token found. Please log in again.');
-  }
-
-  const url = `${API_BASE_URL}/api/consumption/account/`;
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(billData),
-    redirect: 'manual' // Prevent automatic redirect following
-  };
-
   // Debug logging
   console.log('Monthly Bill API Request:', {
-    url,
-    method: requestOptions.method,
-    headers: requestOptions.headers,
+    endpoint: '/api/consumption/account/',
+    method: 'POST',
     bodyData: billData,
-    hasBody: !!requestOptions.body,
-    redirectHandling: 'manual'
   });
 
-  const response = await fetch(url, requestOptions);
-
-  // Debug response details
-  console.log('Monthly Bill API Response:', {
-    status: response.status,
-    statusText: response.statusText,
-    headers: Object.fromEntries(response.headers.entries()),
-    redirected: response.redirected,
-    url: response.url,
-    type: response.type
+  return await makeAuthenticatedRequest('/api/consumption/account/', {
+    method: 'POST',
+    body: JSON.stringify(billData),
   });
-
-  // Handle redirect responses manually
-  if (response.status >= 300 && response.status < 400) {
-    const location = response.headers.get('Location');
-    console.log('Redirect detected:', {
-      status: response.status,
-      location: location,
-      originalUrl: url
-    });
-    throw new Error(`Server redirect detected (${response.status}). This suggests a URL mismatch. Expected URL: ${url}`);
-  }
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
-    if (response.status === 401) {
-      throw new Error('Authentication failed. Please log in again.');
-    }
-    
-    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
 };
 
-// API function to fetch consumption data
+// API function to fetch consumption data (building-specific)
 const fetchConsumptionData = async (): Promise<ConsumptionResponse[]> => {
-  const accessToken = getStoredToken('access');
-  
-  if (!accessToken) {
-    throw new Error('No access token found. Please log in again.');
-  }
-
-  const url = `${API_BASE_URL}/api/consumption/register`;
-  const requestOptions = {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  };
-
   console.log('Fetch Consumption Data API Request:', {
-    url,
-    method: requestOptions.method,
-    headers: requestOptions.headers
+    endpoint: '/api/consumption/register',
+    method: 'GET',
   });
 
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
-    if (response.status === 401) {
-      throw new Error('Authentication failed. Please log in again.');
-    }
-    
-    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  return await makeAuthenticatedRequest('/api/consumption/register');
 };
 
-// API function to fetch account/bills data
+// API function to fetch account/bills data (building-specific)
 const fetchAccountData = async (): Promise<BillResponse[]> => {
-  const accessToken = getStoredToken('access');
-  
-  if (!accessToken) {
-    throw new Error('No access token found. Please log in again.');
-  }
-
-  const url = `${API_BASE_URL}/api/consumption/account`;
-  const requestOptions = {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  };
-
   console.log('Fetch Account Data API Request:', {
-    url,
-    method: requestOptions.method,
-    headers: requestOptions.headers
+    endpoint: '/api/consumption/account',
+    method: 'GET',
   });
 
-  const response = await fetch(url, requestOptions);
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    
-    if (response.status === 401) {
-      throw new Error('Authentication failed. Please log in again.');
-    }
-    
-    throw new Error(errorData.message || errorData.detail || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  return await makeAuthenticatedRequest('/api/consumption/account');
 };
 
 // React Query hook for registering daily consumption

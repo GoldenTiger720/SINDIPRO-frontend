@@ -14,7 +14,8 @@ import {
 //hello
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { getStoredUser, logoutUser } from "@/lib/auth";
+import { useBuildingContext } from "@/contexts/BuildingContext";
+import { getStoredUser, logoutUser, isMasterUser } from "@/lib/auth";
 
 interface DashboardHeaderProps {
   userName?: string;
@@ -30,6 +31,7 @@ export const DashboardHeader = ({
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, changeLanguage } = useLanguage();
+  const { selectedBuilding } = useBuildingContext();
   const user = getStoredUser();
   
   // Use stored user data or fallback to prop or default
@@ -58,17 +60,22 @@ export const DashboardHeader = ({
     };
   }, [isSubmenuOpen]);
 
-  const submenuItems = [
-    { name: t("buildings"), href: "/buildings", icon: Building2 },
-    { name: t("legalObligations"), href: "/legal-obligations", icon: AlertTriangle },
-    { name: t("equipment"), href: "/equipment", icon: Wrench },
-    { name: t("financial"), href: "/financial", icon: BarChart3 },
-    { name: t("consumption"), href: "/consumption", icon: Calculator },
-    { name: t("fieldManagement"), href: "/field-management", icon: MessageSquare },
-    { name: t("reportsNavbar"), href: "/reports", icon: FileText },
-    { name: t("users"), href: "/users", icon: Users },
-    { name: t("supplierContacts"), href: "/supplier-contacts", icon: Phone },
+  const isAdmin = isMasterUser();
+  
+  const allSubmenuItems = [
+    { name: t("buildings"), href: "/buildings", icon: Building2, requiresAdmin: true },
+    { name: t("legalObligations"), href: "/legal-obligations", icon: AlertTriangle, requiresAdmin: false },
+    { name: t("equipment"), href: "/equipment", icon: Wrench, requiresAdmin: false },
+    { name: t("financial"), href: "/financial", icon: BarChart3, requiresAdmin: false },
+    { name: t("consumption"), href: "/consumption", icon: Calculator, requiresAdmin: false },
+    { name: t("fieldManagement"), href: "/field-management", icon: MessageSquare, requiresAdmin: false },
+    { name: t("reportsNavbar"), href: "/reports", icon: FileText, requiresAdmin: false },
+    { name: t("users"), href: "/users", icon: Users, requiresAdmin: true },
+    { name: t("supplierContacts"), href: "/supplier-contacts", icon: Phone, requiresAdmin: false },
   ];
+  
+  // Filter submenu items based on user role
+  const submenuItems = allSubmenuItems.filter(item => !item.requiresAdmin || isAdmin);
   return (
     <header className="bg-white shadow-sm border-b border-border px-4 py-3 relative">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -93,6 +100,16 @@ export const DashboardHeader = ({
               onClick={() => navigate("/")}
             />
           </div>
+
+          {/* Building Name Display */}
+          {selectedBuilding && (
+            <div className="hidden md:flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-md border border-blue-200">
+              <Building2 className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">
+                {selectedBuilding.building_name}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -151,6 +168,16 @@ export const DashboardHeader = ({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Mobile Building Name Display */}
+      {selectedBuilding && (
+        <div className="md:hidden bg-blue-50 border-t border-blue-200 px-4 py-2 flex items-center justify-center gap-2">
+          <Building2 className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            {selectedBuilding.building_name}
+          </span>
+        </div>
+      )}
       
       {/* Submenu Grid */}
       {isSubmenuOpen && (
