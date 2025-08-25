@@ -261,6 +261,19 @@ export const buildingApi = {
   },
 
   /**
+   * Get all buildings for master users
+   * @returns Promise<BuildingResponse[]>
+   */
+  async getAllBuildings(): Promise<BuildingResponse[]> {
+    try {
+      return await apiClient.get<BuildingResponse[]>(`${BUILDINGS_ENDPOINT}all/`);
+    } catch (error) {
+      console.error('Error fetching all buildings:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get a specific building by ID
    * @param id - Building ID
    * @returns Promise<BuildingResponse>

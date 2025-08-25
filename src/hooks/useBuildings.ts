@@ -1,15 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import buildingApi, { BuildingData, BuildingResponse, UnitData, UnitResponse } from '@/lib/building';
 import { useToast } from '@/hooks/use-toast';
+import { isMasterUser } from '@/lib/auth';
 
 // Query key for buildings
 export const BUILDINGS_QUERY_KEY = ['buildings'];
 
 // Hook to fetch all buildings
 export const useBuildings = (enabled: boolean = true) => {
+  const isMaster = isMasterUser();
+  
   return useQuery({
     queryKey: BUILDINGS_QUERY_KEY,
-    queryFn: () => buildingApi.getBuildings(),
+    queryFn: () => isMaster ? buildingApi.getAllBuildings() : buildingApi.getBuildings(),
     enabled: enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes

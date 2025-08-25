@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
+import { isMasterUser, getStoredUser } from "@/lib/auth";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -109,6 +110,10 @@ export default function Financial() {
   const { t } = useTranslation();
   const { data: buildings = [], isLoading: buildingsLoading } = useBuildings();
   
+  // Get user data and check if master
+  const user = getStoredUser();
+  const isMaster = isMasterUser();
+  
   // State for building selection
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
   const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
@@ -157,13 +162,23 @@ export default function Financial() {
     }), {} as Record<number, string>)
   });
 
-  // Effect to set first building as default
+  // Effect to set first building as default or user's building
   useEffect(() => {
-    if (buildings.length > 0 && !selectedBuildingId) {
+    if (!isMaster && user?.building_id) {
+      // For non-master users, use their assigned building
+      setSelectedBuildingId(user.building_id.toString());
+      const building = buildings.find(b => b.id === user.building_id);
+      setSelectedBuilding(building || null);
+    } else if (isMaster && buildings.length > 0 && !selectedBuildingId) {
+      // For master users, set first building as default
+      setSelectedBuildingId(buildings[0].id.toString());
+      setSelectedBuilding(buildings[0]);
+    } else if (!isMaster && !user?.building_id && buildings.length > 0) {
+      // For non-master users without assigned building, use first available
       setSelectedBuildingId(buildings[0].id.toString());
       setSelectedBuilding(buildings[0]);
     }
-  }, [buildings, selectedBuildingId]);
+  }, [buildings, selectedBuildingId, isMaster, user]);
   
   // Initialize accounts with mock data
   useEffect(() => {
@@ -399,29 +414,31 @@ export default function Financial() {
           </TabsList>
 
           <TabsContent value="budget-management" className="space-y-6">
-            {/* Building Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5" />
-                  {t("selectBuilding")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("selectBuildingPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {buildings.map((building) => (
-                      <SelectItem key={building.id} value={building.id.toString()}>
-                        {building.building_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+            {/* Building Selection - Only show for master users */}
+            {isMaster && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5" />
+                    {t("selectBuilding")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("selectBuildingPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildings.map((building) => (
+                        <SelectItem key={building.id} value={building.id.toString()}>
+                          {building.building_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Chart of Accounts */}
             <Card>
@@ -1039,8 +1056,12 @@ export default function Financial() {
                 {selectedBuilding ? (
                   <div className="space-y-2">
                     <p><strong>{t("building")}:</strong> {selectedBuilding.building_name}</p>
-                    <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
-                    <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
+                    {selectedBuilding.address && (
+                      <>
+                        <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
+                        <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">{t("selectBuildingFirst")}</p>
