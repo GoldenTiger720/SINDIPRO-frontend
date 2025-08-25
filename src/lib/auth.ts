@@ -95,6 +95,11 @@ export const isMasterUser = (): boolean => {
   return hasRole('master');
 };
 
+// Check if user is manager role
+export const isManagerUser = (): boolean => {
+  return hasRole('manager');
+};
+
 // API request helper with auth headers
 const makeAuthRequest = async (url: string, options: RequestInit = {}) => {
   const accessToken = getStoredToken('access');

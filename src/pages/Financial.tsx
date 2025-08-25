@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
-import { isMasterUser, getStoredUser } from "@/lib/auth";
+import { isMasterUser, isManagerUser, getStoredUser } from "@/lib/auth";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -110,9 +110,33 @@ export default function Financial() {
   const { t } = useTranslation();
   const { data: buildings = [], isLoading: buildingsLoading } = useBuildings();
   
-  // Get user data and check if master
+  // Get user data and check roles
   const user = getStoredUser();
   const isMaster = isMasterUser();
+  const isManager = isManagerUser();
+  
+  // Block access for managers
+  if (isManager) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader userName={t("adminSindipro")} />
+        <div className="p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-center text-red-600">{t("accessDenied")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center text-muted-foreground">
+                  {t("managerNoFinancialAccess") || "Managers do not have access to the financial page."}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   // State for building selection
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
@@ -448,25 +472,27 @@ export default function Financial() {
                     <BarChart3 className="w-5 h-5" />
                     {t("chartOfAccounts")}
                   </span>
-                  <Button 
-                    onClick={() => {
-                      setEditingAccount(null);
-                      setNewAccount({
-                        code: '',
-                        name: '',
-                        type: 'main',
-                        expectedAmount: 0,
-                        actualAmount: 0,
-                        parentId: null
-                      });
-                      setShowAccountDialog(true);
-                    }}
-                    size="sm"
-                    className="w-full sm:w-auto"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    {t("addAccount")}
-                  </Button>
+                  {isMaster && (
+                    <Button 
+                      onClick={() => {
+                        setEditingAccount(null);
+                        setNewAccount({
+                          code: '',
+                          name: '',
+                          type: 'main',
+                          expectedAmount: 0,
+                          actualAmount: 0,
+                          parentId: null
+                        });
+                        setShowAccountDialog(true);
+                      }}
+                      size="sm"
+                      className="w-full sm:w-auto"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {t("addAccount")}
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -478,41 +504,43 @@ export default function Financial() {
                           <Badge className="flex-shrink-0">{account.code}</Badge>
                           <h4 className="font-semibold text-sm sm:text-base truncate">{account.name}</h4>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-                            onClick={() => {
-                              setEditingAccount(null);
-                              setNewAccount({
-                                code: '',
-                                name: '',
-                                type: 'sub',
-                                expectedAmount: 0,
-                                actualAmount: 0,
-                                parentId: account.id
-                              });
-                              setShowAccountDialog(true);
-                            }}
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span className="hidden sm:inline ml-1">{t("addSub")}</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-                            onClick={() => {
-                              setEditingAccount(account);
-                              setNewAccount(account);
-                              setShowAccountDialog(true);
-                            }}
-                          >
-                            <Edit className="w-3 h-3" />
-                            <span className="hidden sm:inline ml-1">{t("edit")}</span>
-                          </Button>
-                        </div>
+                        {isMaster && (
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                              onClick={() => {
+                                setEditingAccount(null);
+                                setNewAccount({
+                                  code: '',
+                                  name: '',
+                                  type: 'sub',
+                                  expectedAmount: 0,
+                                  actualAmount: 0,
+                                  parentId: account.id
+                                });
+                                setShowAccountDialog(true);
+                              }}
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span className="hidden sm:inline ml-1">{t("addSub")}</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
+                              onClick={() => {
+                                setEditingAccount(account);
+                                setNewAccount(account);
+                                setShowAccountDialog(true);
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                              <span className="hidden sm:inline ml-1">{t("edit")}</span>
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
                         <div className="flex justify-between sm:block">
@@ -549,18 +577,20 @@ export default function Financial() {
                                       {t("actual")}: <span className="font-semibold">R$ {sub.actualAmount?.toLocaleString('pt-BR')}</span>
                                     </span>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 w-7 p-0 flex-shrink-0"
-                                    onClick={() => {
-                                      setEditingAccount(sub);
-                                      setNewAccount(sub);
-                                      setShowAccountDialog(true);
-                                    }}
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
+                                  {isMaster && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 w-7 p-0 flex-shrink-0"
+                                      onClick={() => {
+                                        setEditingAccount(sub);
+                                        setNewAccount(sub);
+                                        setShowAccountDialog(true);
+                                      }}
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -676,36 +706,37 @@ export default function Financial() {
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                    <BarChart3 className="w-5 h-5" />
-                    {t("annualBudgetRegistry")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="account-category" className="text-xs sm:text-sm">{t("accountCategory")}</Label>
-                    <select className="w-full p-2 border rounded">
-                      <option>{t("maintenance")}</option>
-                      <option>{t("cleaning")}</option>
-                      <option>{t("security")}</option>
-                      <option>{t("administration")}</option>
-                      <option>{t("electricity")}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="subcategory" className="text-xs sm:text-sm">{t("subItem")}</Label>
-                    <Input id="subcategory" placeholder={t("subItemPlaceholder")} className="text-xs sm:text-sm" />
-                  </div>
-                  <div>
-                    <Label htmlFor="budget-amount" className="text-xs sm:text-sm">{t("budgetedAmount")}</Label>
-                    <Input id="budget-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
-                  </div>
-                  <Button className="w-full text-xs sm:text-sm">{t("addToBudget")}</Button>
-                </CardContent>
-              </Card>
+            {isMaster && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
+                      <BarChart3 className="w-5 h-5" />
+                      {t("annualBudgetRegistry")}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="account-category" className="text-xs sm:text-sm">{t("accountCategory")}</Label>
+                      <select className="w-full p-2 border rounded">
+                        <option>{t("maintenance")}</option>
+                        <option>{t("cleaning")}</option>
+                        <option>{t("security")}</option>
+                        <option>{t("administration")}</option>
+                        <option>{t("electricity")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label htmlFor="subcategory" className="text-xs sm:text-sm">{t("subItem")}</Label>
+                      <Input id="subcategory" placeholder={t("subItemPlaceholder")} className="text-xs sm:text-sm" />
+                    </div>
+                    <div>
+                      <Label htmlFor="budget-amount" className="text-xs sm:text-sm">{t("budgetedAmount")}</Label>
+                      <Input id="budget-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
+                    </div>
+                    <Button className="w-full text-xs sm:text-sm">{t("addToBudget")}</Button>
+                  </CardContent>
+                </Card>
 
               <Card>
                 <CardHeader>
@@ -741,7 +772,8 @@ export default function Financial() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+              </div>
+            )}
 
             <Card className="mt-6">
               <CardHeader>
@@ -793,23 +825,25 @@ export default function Financial() {
                     <DollarSign className="w-5 h-5" />
                     {t("collectionAccounts")}
                   </span>
-                  <Button
-                    onClick={() => {
-                      setEditingCollection({
-                        id: 0,
-                        name: '',
-                        purpose: '',
-                        monthlyAmount: 0,
-                        startDate: new Date().toISOString().split('T')[0],
-                        active: true
-                      });
-                      setShowCollectionDialog(true);
-                    }}
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    {t("addCollection")}
-                  </Button>
+                  {isMaster && (
+                    <Button
+                      onClick={() => {
+                        setEditingCollection({
+                          id: 0,
+                          name: '',
+                          purpose: '',
+                          monthlyAmount: 0,
+                          startDate: new Date().toISOString().split('T')[0],
+                          active: true
+                        });
+                        setShowCollectionDialog(true);
+                      }}
+                      size="sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      {t("addCollection")}
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -825,16 +859,18 @@ export default function Financial() {
                           <Badge variant={collection.active ? "default" : "secondary"}>
                             {collection.active ? t("active") : t("inactive")}
                           </Badge>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingCollection(collection);
-                              setShowCollectionDialog(true);
-                            }}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
+                          {isMaster && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCollection(collection);
+                                setShowCollectionDialog(true);
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
@@ -929,13 +965,19 @@ export default function Financial() {
                       type="number"
                       placeholder="5000.00"
                       value={calculationData.totalExpense}
-                      onChange={(e) => setCalculationData({...calculationData, totalExpense: e.target.value})}
+                      onChange={isMaster ? (e) => setCalculationData({...calculationData, totalExpense: e.target.value}) : undefined}
+                      readOnly={!isMaster}
+                      disabled={!isMaster}
                     />
                   </div>
                   <div>
                     <Label htmlFor="calculation-type" className="text-xs sm:text-sm">{t("calculationMethod")}</Label>
-                    <Select value={calculationData.calculationType} onValueChange={(value) => setCalculationData({...calculationData, calculationType: value})}>
-                      <SelectTrigger>
+                    <Select 
+                      value={calculationData.calculationType} 
+                      onValueChange={isMaster ? (value) => setCalculationData({...calculationData, calculationType: value}) : undefined}
+                      disabled={!isMaster}
+                    >
+                      <SelectTrigger disabled={!isMaster}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -992,8 +1034,10 @@ export default function Financial() {
                                 type="number"
                                 placeholder={t("percentagePlaceholder")}
                                 value={calculationData.customPercentages[unit.id]}
-                                onChange={(e) => handleCustomPercentageChange(unit.id, e.target.value)}
+                                onChange={isMaster ? (e) => handleCustomPercentageChange(unit.id, e.target.value) : undefined}
                                 className="w-20 text-center text-xs"
+                                readOnly={!isMaster}
+                                disabled={!isMaster}
                               />
                               <span className="text-xs sm:text-sm">%</span>
                             </div>
@@ -1022,25 +1066,27 @@ export default function Financial() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base">{t("quickActions")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                    {t("exportExcel")}
-                  </Button>
-                  <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                    {t("generateInvoices")}
-                  </Button>
-                  <Button className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                    {t("sendToUnits")}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Quick Actions - Only for master users */}
+            {isMaster && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm sm:text-base">{t("quickActions")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
+                      {t("exportExcel")}
+                    </Button>
+                    <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
+                      {t("generateInvoices")}
+                    </Button>
+                    <Button className="flex-1 text-xs sm:text-sm px-2 py-1.5">
+                      {t("sendToUnits")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="marketing-values" className="space-y-6">
@@ -1087,7 +1133,9 @@ export default function Financial() {
                         <Input
                           placeholder="R$ 10.000,00"
                           value={marketValues.saleMin}
-                          onChange={(e) => setMarketValues({...marketValues, saleMin: e.target.value})}
+                          onChange={isMaster ? (e) => setMarketValues({...marketValues, saleMin: e.target.value}) : undefined}
+                          readOnly={!isMaster}
+                          disabled={!isMaster}
                         />
                       </div>
                       <div>
@@ -1095,7 +1143,9 @@ export default function Financial() {
                         <Input
                           placeholder="R$ 14.000,00"
                           value={marketValues.saleMax}
-                          onChange={(e) => setMarketValues({...marketValues, saleMax: e.target.value})}
+                          onChange={isMaster ? (e) => setMarketValues({...marketValues, saleMax: e.target.value}) : undefined}
+                          readOnly={!isMaster}
+                          disabled={!isMaster}
                         />
                       </div>
                     </div>
@@ -1108,7 +1158,9 @@ export default function Financial() {
                         <Input
                           placeholder="R$ 45,00"
                           value={marketValues.rentalMin}
-                          onChange={(e) => setMarketValues({...marketValues, rentalMin: e.target.value})}
+                          onChange={isMaster ? (e) => setMarketValues({...marketValues, rentalMin: e.target.value}) : undefined}
+                          readOnly={!isMaster}
+                          disabled={!isMaster}
                         />
                       </div>
                       <div>
@@ -1116,7 +1168,9 @@ export default function Financial() {
                         <Input
                           placeholder="R$ 65,00"
                           value={marketValues.rentalMax}
-                          onChange={(e) => setMarketValues({...marketValues, rentalMax: e.target.value})}
+                          onChange={isMaster ? (e) => setMarketValues({...marketValues, rentalMax: e.target.value}) : undefined}
+                          readOnly={!isMaster}
+                          disabled={!isMaster}
                         />
                       </div>
                     </div>
@@ -1342,15 +1396,6 @@ export default function Financial() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
-                <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm leading-tight">
-                  <FileText className="w-4 h-4 flex-shrink-0" />
-                  <span className="break-words">{t("brazilianSystem")}</span>
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                  {t("completeBrazilianCondominium")}
-                </p>
-              </div>
               <div className="p-3 sm:p-4 border rounded-lg min-h-[120px] flex flex-col">
                 <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm leading-tight">
                   <Calculator className="w-4 h-4 flex-shrink-0" />
