@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
-import { isMasterUser, isManagerUser, getStoredUser } from "@/lib/auth";
+import { isMasterUser, isManagerUser, getStoredUser, createFinancialAccount, getFinancialAccounts } from "@/lib/auth";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -155,6 +155,12 @@ export default function Financial() {
     parentId: null
   });
   
+  // Loading and error states for API calls
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [accountsFetchError, setAccountsFetchError] = useState<string | null>(null);
+  
   // Collection accounts state
   const [collectionAccounts, setCollectionAccounts] = useState<CollectionAccount[]>([
     {
@@ -204,41 +210,72 @@ export default function Financial() {
     }
   }, [buildings, selectedBuildingId, isMaster, user]);
   
-  // Initialize accounts with mock data
-  useEffect(() => {
-    if (accounts.length === 0) {
-      setAccounts([
-        {
-          id: 1,
-          code: "1000",
-          name: t("administration"),
-          type: "main",
-          expectedAmount: 48000,
-          actualAmount: 45000,
-          parentId: null,
-          subAccounts: [
-            { id: 11, code: "1001", name: t("salaries"), type: "sub", expectedAmount: 30000, actualAmount: 28000, parentId: 1 },
-            { id: 12, code: "1002", name: t("socialCharges"), type: "sub", expectedAmount: 12000, actualAmount: 11000, parentId: 1 },
-            { id: 13, code: "1003", name: t("officeSupplies"), type: "sub", expectedAmount: 6000, actualAmount: 6000, parentId: 1 },
-          ]
-        },
-        {
-          id: 2,
-          code: "2000",
-          name: t("maintenance"),
-          type: "main",
-          expectedAmount: 36000,
-          actualAmount: 38000,
-          parentId: null,
-          subAccounts: [
-            { id: 21, code: "2001", name: t("elevatorMaintenance"), type: "sub", expectedAmount: 18000, actualAmount: 20000, parentId: 2 },
-            { id: 22, code: "2002", name: t("electricalMaintenance"), type: "sub", expectedAmount: 12000, actualAmount: 12000, parentId: 2 },
-            { id: 23, code: "2003", name: t("plumbingMaintenance"), type: "sub", expectedAmount: 6000, actualAmount: 6000, parentId: 2 },
-          ]
-        }
-      ]);
+  // Function to fetch accounts from backend
+  const fetchAccounts = async (buildingId?: number) => {
+    setIsLoadingAccounts(true);
+    setAccountsFetchError(null);
+    
+    try {
+      const response = await getFinancialAccounts(buildingId);
+      
+      // Transform the response data to match our Account interface
+      // Assuming backend returns flat list, we need to organize into main/sub structure
+      const transformedAccounts = transformBackendAccountsToHierarchy(response);
+      setAccounts(transformedAccounts);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      setAccountsFetchError(error instanceof Error ? error.message : 'Failed to fetch accounts');
+      // Keep existing accounts on error
+    } finally {
+      setIsLoadingAccounts(false);
     }
-  }, [accounts, t]);
+  };
+  
+  // Transform flat backend response to hierarchical structure
+  const transformBackendAccountsToHierarchy = (backendAccounts: any[]): Account[] => {
+    const mainAccounts: Account[] = [];
+    const subAccounts: any[] = [];
+    
+    // Separate main and sub accounts
+    backendAccounts.forEach(account => {
+      if (account.type === 'main') {
+        mainAccounts.push({
+          id: account.id,
+          code: account.code,
+          name: account.name,
+          type: account.type,
+          expectedAmount: account.expectedAmount || account.expected_amount || 0,
+          actualAmount: account.actualAmount || account.actual_amount || 0,
+          parentId: null,
+          subAccounts: []
+        });
+      } else {
+        subAccounts.push({
+          id: account.id,
+          code: account.code,
+          name: account.name,
+          type: account.type,
+          expectedAmount: account.expectedAmount || account.expected_amount || 0,
+          actualAmount: account.actualAmount || account.actual_amount || 0,
+          parentId: account.parentId || account.parent_id
+        });
+      }
+    });
+    
+    // Assign sub accounts to their parent main accounts
+    mainAccounts.forEach(mainAccount => {
+      mainAccount.subAccounts = subAccounts.filter(sub => sub.parentId === mainAccount.id);
+    });
+    
+    return mainAccounts;
+  };
+  
+  // Fetch accounts when building selection changes
+  useEffect(() => {
+    if (selectedBuildingId) {
+      fetchAccounts(parseInt(selectedBuildingId));
+    }
+  }, [selectedBuildingId]);
   
   // Handle building selection
   const handleBuildingChange = (buildingId: string) => {
@@ -248,60 +285,63 @@ export default function Financial() {
   };
   
   // Handle account creation/editing
-  const handleSaveAccount = () => {
-    if (editingAccount) {
-      // Update existing account
-      setAccounts(accounts.map(acc => {
-        if (acc.id === editingAccount.id) {
-          return { ...acc, ...newAccount };
-        }
-        if (acc.subAccounts) {
-          acc.subAccounts = acc.subAccounts.map(sub => 
-            sub.id === editingAccount.id ? { ...sub, ...newAccount } : sub
-          );
-        }
-        return acc;
-      }));
-    } else {
-      // Create new account
-      const newId = Math.max(...accounts.map(a => a.id), ...accounts.flatMap(a => a.subAccounts?.map(s => s.id) || [])) + 1;
-      const accountToAdd: Account = {
-        id: newId,
-        code: newAccount.code!,
-        name: newAccount.name!,
-        type: newAccount.type as 'main' | 'sub',
-        expectedAmount: newAccount.expectedAmount || 0,
-        actualAmount: newAccount.actualAmount || 0,
-        parentId: newAccount.parentId || null,
-        subAccounts: newAccount.type === 'main' ? [] : undefined
-      };
-      
-      if (newAccount.type === 'main') {
-        setAccounts([...accounts, accountToAdd]);
-      } else {
-        // Add as sub-account
+  const handleSaveAccount = async () => {
+    if (!selectedBuildingId && !editingAccount) {
+      setApiError("Please select a building first");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      if (editingAccount) {
+        // Update existing account (keep existing local state logic for now)
         setAccounts(accounts.map(acc => {
-          if (acc.id === newAccount.parentId) {
-            return {
-              ...acc,
-              subAccounts: [...(acc.subAccounts || []), accountToAdd]
-            };
+          if (acc.id === editingAccount.id) {
+            return { ...acc, ...newAccount };
+          }
+          if (acc.subAccounts) {
+            acc.subAccounts = acc.subAccounts.map(sub => 
+              sub.id === editingAccount.id ? { ...sub, ...newAccount } : sub
+            );
           }
           return acc;
         }));
+      } else {
+        // Create new account - send to backend API
+        const accountData = {
+          code: newAccount.code!,
+          name: newAccount.name!,
+          type: newAccount.type as 'main' | 'sub',
+          expectedAmount: newAccount.expectedAmount || 0,
+          actualAmount: newAccount.actualAmount || 0,
+          parentId: newAccount.parentId || null,
+          building_id: parseInt(selectedBuildingId)
+        };
+
+        await createFinancialAccount(accountData);
+        
+        // Refresh accounts list from backend after successful creation
+        await fetchAccounts(parseInt(selectedBuildingId));
       }
+      
+      setShowAccountDialog(false);
+      setEditingAccount(null);
+      setNewAccount({
+        code: '',
+        name: '',
+        type: 'main',
+        expectedAmount: 0,
+        actualAmount: 0,
+        parentId: null
+      });
+    } catch (error) {
+      console.error('Error saving account:', error);
+      setApiError(error instanceof Error ? error.message : 'Failed to save account');
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setShowAccountDialog(false);
-    setEditingAccount(null);
-    setNewAccount({
-      code: '',
-      name: '',
-      type: 'main',
-      expectedAmount: 0,
-      actualAmount: 0,
-      parentId: null
-    });
   };
   
   // Handle collection account save
@@ -484,6 +524,7 @@ export default function Financial() {
                           actualAmount: 0,
                           parentId: null
                         });
+                        setApiError(null);
                         setShowAccountDialog(true);
                       }}
                       size="sm"
@@ -496,8 +537,36 @@ export default function Financial() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {accounts.map((account) => (
+                {isLoadingAccounts ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      {t("loadingAccounts") || "Loading accounts..."}
+                    </div>
+                  </div>
+                ) : accountsFetchError ? (
+                  <div className="py-8 text-center">
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-600 mb-2">{accountsFetchError}</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => selectedBuildingId && fetchAccounts(parseInt(selectedBuildingId))}
+                      >
+                        {t("retry") || "Retry"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : accounts.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <p className="mb-2">{t("noAccountsFound") || "No accounts found for this building."}</p>
+                    {isMaster && (
+                      <p className="text-sm">{t("addFirstAccount") || "Click 'Add Account' to create your first account."}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {accounts.map((account) => (
                     <div key={account.id} className="border rounded-lg p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -520,6 +589,7 @@ export default function Financial() {
                                   actualAmount: 0,
                                   parentId: account.id
                                 });
+                                setApiError(null);
                                 setShowAccountDialog(true);
                               }}
                             >
@@ -533,6 +603,7 @@ export default function Financial() {
                               onClick={() => {
                                 setEditingAccount(account);
                                 setNewAccount(account);
+                                setApiError(null);
                                 setShowAccountDialog(true);
                               }}
                             >
@@ -585,6 +656,7 @@ export default function Financial() {
                                       onClick={() => {
                                         setEditingAccount(sub);
                                         setNewAccount(sub);
+                                        setApiError(null);
                                         setShowAccountDialog(true);
                                       }}
                                     >
@@ -598,8 +670,9 @@ export default function Financial() {
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
             
@@ -1517,12 +1590,34 @@ export default function Financial() {
               />
             </div>
           </div>
+          {apiError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{apiError}</p>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAccountDialog(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAccountDialog(false);
+                setApiError(null);
+              }}
+              disabled={isSubmitting}
+            >
               {t("cancel")}
             </Button>
-            <Button onClick={handleSaveAccount}>
-              {editingAccount ? t("save") : t("add")}
+            <Button 
+              onClick={handleSaveAccount}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  {t("saving") || "Saving..."}
+                </div>
+              ) : (
+                editingAccount ? t("save") : t("add")
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

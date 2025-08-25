@@ -254,6 +254,32 @@ export const fetchBuildings = async (): Promise<Building[]> => {
   return response.json();
 };
 
+// Financial API functions
+export const createFinancialAccount = async (accountData: {
+  code: string;
+  name: string;
+  type: 'main' | 'sub';
+  expectedAmount: number;
+  actualAmount: number;
+  parentId: number | null;
+  building_id: number;
+}) => {
+  return await makeAuthRequest('/api/financial/account/', {
+    method: 'POST',
+    body: JSON.stringify(accountData),
+  });
+};
+
+export const getFinancialAccounts = async (buildingId?: number) => {
+  const endpoint = buildingId 
+    ? `/api/financial/account/?building_id=${buildingId}`
+    : '/api/financial/account/';
+  
+  return await makeAuthRequest(endpoint, {
+    method: 'GET',
+  });
+};
+
 // Auto-refresh token when it's about to expire
 export const setupTokenRefresh = () => {
   const accessToken = getStoredToken('access');
