@@ -202,6 +202,8 @@ export default function Financial() {
   });
   const [marketCalculationType, setMarketCalculationType] = useState<'sale' | 'rental' | 'condominium'>('sale');
   
+  const [unitCustomValues, setUnitCustomValues] = useState<Record<number, { salePerM2?: number; rentalPerM2?: number; condominiumPerM2?: number }>>({});
+  
   const [calculationData, setCalculationData] = useState({
     totalExpense: "5000",
     calculationType: "area",
@@ -423,6 +425,17 @@ export default function Financial() {
       customPercentages: {
         ...prev.customPercentages,
         [unitId]: value
+      }
+    }));
+  };
+
+  const handleUnitValueChange = (unitId: number, valueType: 'salePerM2' | 'rentalPerM2' | 'condominiumPerM2', value: string) => {
+    const numValue = parseFloat(value.replace(/[^0-9,.-]/g, '').replace(',', '.'));
+    setUnitCustomValues(prev => ({
+      ...prev,
+      [unitId]: {
+        ...prev[unitId],
+        [valueType]: isNaN(numValue) ? undefined : numValue
       }
     }));
   };
@@ -1425,34 +1438,62 @@ export default function Financial() {
                       <TableBody>
                         {brazilianData.units.map((unit) => {
                           const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
-                          const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                          const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
                             (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                              parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                          const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                          const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
                             (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                              parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
+                          
+                          const customValues = unitCustomValues[unit.id] || {};
+                          const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
+                          const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
+                          const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
+                          
+                          const getCurrentPerM2 = () => {
+                            switch (marketCalculationType) {
+                              case 'sale': return salePerM2;
+                              case 'rental': return rentalPerM2;
+                              case 'condominium': return condoPerM2;
+                              default: return 0;
+                            }
+                          };
+                          
+                          const currentPerM2 = getCurrentPerM2();
                           
                           return (
                             <TableRow key={unit.id}>
                               <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
                               <TableCell className="text-xs sm:text-sm">{unit.area.toFixed(1)}</TableCell>
-                              <TableCell className="text-xs sm:text-sm">
-                                R$ {
-                                  marketCalculationType === 'sale' ? avgSalePerM2.toLocaleString('pt-BR') : 
-                                  marketCalculationType === 'rental' ? avgRentalPerM2.toFixed(2) : 
-                                  condominiumPerM2.toFixed(2)
-                                }
+                              <TableCell className="text-xs sm:text-sm p-1">
+                                <div className="flex items-center gap-1">
+                                  <span>R$</span>
+                                  <Input
+                                    type="text"
+                                    value={
+                                      marketCalculationType === 'sale' 
+                                        ? (customValues.salePerM2?.toLocaleString('pt-BR') || salePerM2.toLocaleString('pt-BR'))
+                                        : marketCalculationType === 'rental'
+                                        ? (customValues.rentalPerM2?.toFixed(2) || rentalPerM2.toFixed(2))
+                                        : (customValues.condominiumPerM2?.toFixed(2) || condoPerM2.toFixed(2))
+                                    }
+                                    onChange={(e) => handleUnitValueChange(
+                                      unit.id,
+                                      marketCalculationType === 'sale' ? 'salePerM2' : 
+                                      marketCalculationType === 'rental' ? 'rentalPerM2' : 'condominiumPerM2',
+                                      e.target.value
+                                    )}
+                                    className="w-24 h-8 text-xs"
+                                    disabled={!isMaster}
+                                  />
+                                </div>
                               </TableCell>
                               <TableCell className={`font-semibold text-xs sm:text-sm ${
                                 marketCalculationType === 'sale' ? 'text-green-600' : 
                                 marketCalculationType === 'rental' ? 'text-blue-600' : 
                                 'text-orange-600'
                               }`}>
-                                R$ {
-                                  marketCalculationType === 'sale' ? (unit.area * avgSalePerM2).toLocaleString('pt-BR') : 
-                                  marketCalculationType === 'rental' ? (unit.area * avgRentalPerM2).toFixed(2) : 
-                                  calculateUnitMonthlyFee(unit).toFixed(2)
-                                }
+                                R$ {(unit.area * currentPerM2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </TableCell>
                             </TableRow>
                           );
@@ -1486,18 +1527,24 @@ export default function Financial() {
                           'text-orange-600'
                         }`}>
                           R$ {brazilianData.units.reduce((sum, unit) => {
+                            const customValues = unitCustomValues[unit.id] || {};
+                            
                             if (marketCalculationType === 'sale') {
-                              const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                              const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
                                 (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                                  parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
-                              return sum + (unit.area * avgSalePerM2);
+                              const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
+                              return sum + (unit.area * salePerM2);
                             } else if (marketCalculationType === 'rental') {
-                              const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                              const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
                                 (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                                  parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                              return sum + (unit.area * avgRentalPerM2);
+                              const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
+                              return sum + (unit.area * rentalPerM2);
                             } else {
-                              return sum + calculateUnitMonthlyFee(unit);
+                              const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
+                              const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
+                              return sum + (unit.area * condoPerM2);
                             }
                           }, 0).toLocaleString('pt-BR')}
                         </strong>
@@ -1526,18 +1573,25 @@ export default function Financial() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={brazilianData.units.slice(0, 8).map(unit => {
-                    const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                    const customValues = unitCustomValues[unit.id] || {};
+                    
+                    const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
                       (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                        parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                    const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                    const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
                       (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
                        parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
                     
+                    const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
+                    const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
+                    const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
+                    const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
+                    
                     return {
                       unit: unit.number,
-                      rental: unit.area * avgRentalPerM2,
-                      saleValue: unit.area * avgSalePerM2 / 1000, // Divide by 1000 to show in thousands
-                      condoFee: calculateUnitMonthlyFee(unit)
+                      rental: unit.area * rentalPerM2,
+                      saleValue: unit.area * salePerM2 / 1000, // Divide by 1000 to show in thousands
+                      condoFee: unit.area * condoPerM2
                     };
                   })}>
                     <CartesianGrid strokeDasharray="3 3" />
