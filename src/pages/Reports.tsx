@@ -86,8 +86,10 @@ export default function Reports() {
     content += `<p><strong>${t("buildingName")}:</strong> ${selectedBuilding.building_name}</p>`;
     content += `<p><strong>${t("cnpj")}:</strong> ${selectedBuilding.cnpj}</p>`;
     content += `<p><strong>${t("manager")}:</strong> ${selectedBuilding.manager_name}</p>`;
-    content += `<p><strong>${t("address")}:</strong> ${selectedBuilding.address.street}, ${selectedBuilding.address.number} - ${selectedBuilding.address.neighborhood}</p>`;
-    content += `<p><strong>${t("city")}:</strong> ${selectedBuilding.address.city} - ${selectedBuilding.address.state}</p>`;
+    if (selectedBuilding.address) {
+      content += `<p><strong>${t("address")}:</strong> ${selectedBuilding.address.street}, ${selectedBuilding.address.number} - ${selectedBuilding.address.neighborhood}</p>`;
+      content += `<p><strong>${t("city")}:</strong> ${selectedBuilding.address.city} - ${selectedBuilding.address.state}</p>`;
+    }
     content += `<p><strong>${t("totalUnits")}:</strong> ${selectedBuilding.residential_units || 0} unidades</p>`;
     content += `</div>`;
     content += `</section>`;
@@ -211,7 +213,7 @@ export default function Reports() {
                   </Select>
                 )}
               </div>
-              {selectedBuilding && (
+              {selectedBuilding && selectedBuilding.address && (
                 <div className="flex items-end">
                   <div className="text-sm text-muted-foreground">
                     <p>{selectedBuilding.address.street}, {selectedBuilding.address.number}</p>

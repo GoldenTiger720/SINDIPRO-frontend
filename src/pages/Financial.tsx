@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart3, Upload, TrendingUp, DollarSign, FileSpreadsheet, Calculator, Home, PieChart, FileText, Download, Edit, Plus, Trash2, Building2, X, Check } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
@@ -94,6 +94,17 @@ type Account = {
   actualAmount?: number;
   parentId: number | null;
   subAccounts?: Account[];
+  assemblyDate?: string;
+  referenceMonth?: string;
+  isMonthly?: boolean;
+};
+
+type MonthlyExpense = {
+  accountId: number;
+  month: string;
+  year: number;
+  amount: number;
+  isLocked?: boolean;
 };
 
 type CollectionAccount = {
@@ -152,8 +163,15 @@ export default function Financial() {
     type: 'main',
     expectedAmount: 0,
     actualAmount: 0,
-    parentId: null
+    parentId: null,
+    assemblyDate: new Date().toISOString().split('T')[0],
+    referenceMonth: new Date().toISOString().slice(0, 7),
+    isMonthly: false
   });
+  
+  // Monthly expenses tracking
+  const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpense[]>([]);
+  const [selectedExpenseMonth, setSelectedExpenseMonth] = useState(new Date().toISOString().slice(0, 7));
   
   // Loading and error states for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,6 +200,7 @@ export default function Financial() {
     rentalMin: '',
     rentalMax: ''
   });
+  const [marketCalculationType, setMarketCalculationType] = useState<'sale' | 'rental' | 'condominium'>('sale');
   
   const [calculationData, setCalculationData] = useState({
     totalExpense: "5000",
@@ -448,6 +467,38 @@ export default function Financial() {
     // This would allow importing Excel files to update budget data
     alert(t("excelImportMessage"));
   };
+  
+  // Generate 12-month prediction data
+  const generateMonthlyPrediction = () => {
+    const months = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i);
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      
+      // Calculate total expected (remains constant)
+      const totalExpected = accounts.reduce((sum, acc) => {
+        const amount = acc.isMonthly ? (acc.expectedAmount || 0) : ((acc.expectedAmount || 0) / 12);
+        return sum + amount;
+      }, 0);
+      
+      // Get actual expenses for the month
+      const monthKey = date.toISOString().slice(0, 7);
+      const actualExpenses = monthlyExpenses
+        .filter(exp => `${exp.year}-${String(exp.month).padStart(2, '0')}` === monthKey)
+        .reduce((sum, exp) => sum + exp.amount, 0);
+      
+      months.push({
+        month: monthName,
+        expected: totalExpected,
+        actual: i === 0 ? actualExpenses : 0, // Only show actual for current month, zero for future
+        isCurrentMonth: i === 0
+      });
+    }
+    
+    return months;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -704,6 +755,47 @@ export default function Financial() {
               </CardContent>
             </Card>
             
+            {/* 12-Month Budget Prediction Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <TrendingUp className="w-5 h-5" />
+                  {t("12MonthBudgetPrediction")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-6">
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={generateMonthlyPrediction()}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="expected" 
+                      stroke="#8884d8" 
+                      strokeWidth={2}
+                      name={t("predictedBudget")}
+                      strokeDasharray="0"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="actual" 
+                      stroke="#82ca9d" 
+                      strokeWidth={2}
+                      name={t("actualExpenses")}
+                      dot={(props) => {
+                        const { cx, cy, payload } = props;
+                        if (payload.actual === 0 && !payload.isCurrentMonth) return null;
+                        return <circle cx={cx} cy={cy} r={4} fill="#82ca9d" />;
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            
             {/* Expense Distribution Pie Chart */}
             <Card>
               <CardHeader>
@@ -820,6 +912,16 @@ export default function Financial() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
+                    <Label htmlFor="expense-month" className="text-xs sm:text-sm">{t("referenceMonth")}</Label>
+                    <Input 
+                      id="expense-month" 
+                      type="month" 
+                      value={selectedExpenseMonth}
+                      onChange={(e) => setSelectedExpenseMonth(e.target.value)}
+                      className="text-xs sm:text-sm"
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="expense-category" className="text-xs sm:text-sm">{t("category")}</Label>
                     <select className="w-full p-2 border rounded">
                       <option>{t("maintenance")}</option>
@@ -831,10 +933,6 @@ export default function Financial() {
                   <div>
                     <Label htmlFor="expense-amount" className="text-xs sm:text-sm">{t("expenseAmount")}</Label>
                     <Input id="expense-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
-                  </div>
-                  <div>
-                    <Label htmlFor="expense-date" className="text-xs sm:text-sm">{t("date")}</Label>
-                    <Input id="expense-date" type="date" />
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
@@ -1173,14 +1271,32 @@ export default function Financial() {
               </CardHeader>
               <CardContent>
                 {selectedBuilding ? (
-                  <div className="space-y-2">
-                    <p><strong>{t("building")}:</strong> {selectedBuilding.building_name}</p>
-                    {selectedBuilding.address && (
-                      <>
-                        <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
-                        <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
-                      </>
-                    )}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p><strong>{t("building")}:</strong> {selectedBuilding.building_name}</p>
+                      {selectedBuilding.address && (
+                        <>
+                          <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
+                          <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      <Label>{t("calculationMethod")}</Label>
+                      <Select 
+                        value={marketCalculationType} 
+                        onValueChange={(value) => setMarketCalculationType(value as 'sale' | 'rental' | 'condominium')}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sale">{t("saleValue")}</SelectItem>
+                          <SelectItem value="rental">{t("rentalValue")}</SelectItem>
+                          <SelectItem value="condominium">{t("condominiumValue")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-muted-foreground">{t("selectBuildingFirst")}</p>
@@ -1262,10 +1378,14 @@ export default function Financial() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
                   <Home className="w-5 h-5" />
-                  {t("unitsMarketValues")}
+                  {marketCalculationType === 'sale' ? t("saleValuesSpreadsheet") : 
+                   marketCalculationType === 'rental' ? t("rentalValuesSpreadsheet") : 
+                   t("condominiumValuesSpreadsheet")}
                 </CardTitle>
                 <div className="text-sm text-muted-foreground">
-                  {t("unitValueAnalysis")}
+                  {marketCalculationType === 'sale' ? t("totalMarketValueSale") : 
+                   marketCalculationType === 'rental' ? t("totalMarketValueRental") : 
+                   t("totalMarketValueCondominium")}
                 </div>
               </CardHeader>
               <CardContent>
@@ -1290,10 +1410,16 @@ export default function Financial() {
                         <TableRow>
                           <TableHead className="min-w-[60px]">{t("unit")}</TableHead>
                           <TableHead className="min-w-[60px]">{t("area")} (m²)</TableHead>
-                          <TableHead className="min-w-[100px]">{t("condominiumPerM2")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("rentalPerM2")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("salePerM2")}</TableHead>
-                          <TableHead className="min-w-[100px]">{t("totalSaleValue")}</TableHead>
+                          <TableHead className="min-w-[100px]">
+                            {marketCalculationType === 'sale' ? t("salePerM2") : 
+                             marketCalculationType === 'rental' ? t("rentalPerM2") : 
+                             t("condominiumPerM2")}
+                          </TableHead>
+                          <TableHead className="min-w-[100px]">
+                            {marketCalculationType === 'sale' ? t("totalSaleValue") : 
+                             marketCalculationType === 'rental' ? t("totalRentalValue") : 
+                             t("monthlyCondominiumValue")}
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1311,16 +1437,22 @@ export default function Financial() {
                               <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
                               <TableCell className="text-xs sm:text-sm">{unit.area.toFixed(1)}</TableCell>
                               <TableCell className="text-xs sm:text-sm">
-                                R$ {condominiumPerM2.toFixed(2)}
+                                R$ {
+                                  marketCalculationType === 'sale' ? avgSalePerM2.toLocaleString('pt-BR') : 
+                                  marketCalculationType === 'rental' ? avgRentalPerM2.toFixed(2) : 
+                                  condominiumPerM2.toFixed(2)
+                                }
                               </TableCell>
-                              <TableCell className="text-xs sm:text-sm">
-                                R$ {avgRentalPerM2.toFixed(2)}
-                              </TableCell>
-                              <TableCell className="text-xs sm:text-sm">
-                                R$ {avgSalePerM2.toLocaleString('pt-BR')}
-                              </TableCell>
-                              <TableCell className="font-semibold text-green-600 text-xs sm:text-sm">
-                                R$ {(unit.area * avgSalePerM2).toLocaleString('pt-BR')}
+                              <TableCell className={`font-semibold text-xs sm:text-sm ${
+                                marketCalculationType === 'sale' ? 'text-green-600' : 
+                                marketCalculationType === 'rental' ? 'text-blue-600' : 
+                                'text-orange-600'
+                              }`}>
+                                R$ {
+                                  marketCalculationType === 'sale' ? (unit.area * avgSalePerM2).toLocaleString('pt-BR') : 
+                                  marketCalculationType === 'rental' ? (unit.area * avgRentalPerM2).toFixed(2) : 
+                                  calculateUnitMonthlyFee(unit).toFixed(2)
+                                }
                               </TableCell>
                             </TableRow>
                           );
@@ -1330,15 +1462,45 @@ export default function Financial() {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div className="p-4 bg-green-50 rounded-lg">
-                      <h4 className="font-semibold text-green-900 mb-2">{t("marketAnalysis")}</h4>
-                      <p className="text-sm text-green-800">
-                        {t("totalBuildingValue")}: <strong>R$ {brazilianData.units.reduce((sum, unit) => {
-                          const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
-                            (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                             parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
-                          return sum + (unit.area * avgSalePerM2);
-                        }, 0).toLocaleString('pt-BR')}</strong>
+                    <div className={`p-4 rounded-lg ${
+                      marketCalculationType === 'sale' ? 'bg-green-50' : 
+                      marketCalculationType === 'rental' ? 'bg-blue-50' : 
+                      'bg-orange-50'
+                    }`}>
+                      <h4 className={`font-semibold mb-2 ${
+                        marketCalculationType === 'sale' ? 'text-green-900' : 
+                        marketCalculationType === 'rental' ? 'text-blue-900' : 
+                        'text-orange-900'
+                      }`}>{t("marketAnalysis")}</h4>
+                      <p className={`text-sm ${
+                        marketCalculationType === 'sale' ? 'text-green-800' : 
+                        marketCalculationType === 'rental' ? 'text-blue-800' : 
+                        'text-orange-800'
+                      }`}>
+                        {marketCalculationType === 'sale' ? t("totalBuildingValue") : 
+                         marketCalculationType === 'rental' ? t("totalMonthlyRentalValue") : 
+                         t("totalMonthlyCondominiumValue")}: 
+                        <strong className={`${
+                          marketCalculationType === 'sale' ? 'text-green-600' : 
+                          marketCalculationType === 'rental' ? 'text-blue-600' : 
+                          'text-orange-600'
+                        }`}>
+                          R$ {brazilianData.units.reduce((sum, unit) => {
+                            if (marketCalculationType === 'sale') {
+                              const avgSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
+                                (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                                 parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
+                              return sum + (unit.area * avgSalePerM2);
+                            } else if (marketCalculationType === 'rental') {
+                              const avgRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
+                                (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
+                                 parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
+                              return sum + (unit.area * avgRentalPerM2);
+                            } else {
+                              return sum + calculateUnitMonthlyFee(unit);
+                            }
+                          }, 0).toLocaleString('pt-BR')}
+                        </strong>
                       </p>
                     </div>
                     <div className="p-4 bg-blue-50 rounded-lg">
@@ -1518,6 +1680,9 @@ export default function Financial() {
             <DialogTitle>
               {editingAccount ? t("editAccount") : t("addAccount")}
             </DialogTitle>
+            <DialogDescription>
+              {editingAccount ? t("editAccountDescription") : t("addAccountDescription")}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1572,12 +1737,42 @@ export default function Financial() {
               </div>
             )}
             <div>
-              <Label>{t("expectedAmount")}</Label>
+              <Label>{t("assemblyDate")}</Label>
+              <Input
+                type="date"
+                value={newAccount.assemblyDate}
+                onChange={(e) => setNewAccount({...newAccount, assemblyDate: e.target.value})}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isMonthly"
+                checked={newAccount.isMonthly}
+                onChange={(e) => setNewAccount({...newAccount, isMonthly: e.target.checked})}
+              />
+              <Label htmlFor="isMonthly">{t("setMonthlyAmount")}</Label>
+            </div>
+            <div>
+              <Label>{newAccount.isMonthly ? t("monthlyAmount") : t("annualAmount")}</Label>
               <Input
                 type="number"
                 value={newAccount.expectedAmount}
                 onChange={(e) => setNewAccount({...newAccount, expectedAmount: parseFloat(e.target.value) || 0})}
                 placeholder="0.00"
+              />
+              {newAccount.isMonthly && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t("annualTotal")}: R$ {((newAccount.expectedAmount || 0) * 12).toFixed(2)}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>{t("referenceMonth")}</Label>
+              <Input
+                type="month"
+                value={newAccount.referenceMonth}
+                onChange={(e) => setNewAccount({...newAccount, referenceMonth: e.target.value})}
               />
             </div>
             <div>
@@ -1587,7 +1782,11 @@ export default function Financial() {
                 value={newAccount.actualAmount}
                 onChange={(e) => setNewAccount({...newAccount, actualAmount: parseFloat(e.target.value) || 0})}
                 placeholder="0.00"
+                disabled={!isMaster && editingAccount && monthlyExpenses.some(exp => exp.accountId === editingAccount.id && exp.isLocked)}
               />
+              {!isMaster && editingAccount && monthlyExpenses.some(exp => exp.accountId === editingAccount.id && exp.isLocked) && (
+                <p className="text-xs text-red-500 mt-1">{t("onlyMasterCanEditLocked")}</p>
+              )}
             </div>
           </div>
           {apiError && (
@@ -1630,6 +1829,9 @@ export default function Financial() {
             <DialogTitle>
               {editingCollection?.id ? t("editCollection") : t("addCollection")}
             </DialogTitle>
+            <DialogDescription>
+              {editingCollection?.id ? t("editCollectionDescription") : t("addCollectionDescription")}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
