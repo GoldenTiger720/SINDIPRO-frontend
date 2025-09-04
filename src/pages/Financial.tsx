@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
-import { isMasterUser, isManagerUser, getStoredUser, createFinancialAccount, getFinancialAccounts } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { isMasterUser, isManagerUser, getStoredUser, createFinancialAccount, getFinancialAccounts, createAnnualBudget, API_BASE_URL, getStoredToken } from "@/lib/auth";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -172,12 +173,25 @@ export default function Financial() {
   // Monthly expenses tracking
   const [monthlyExpenses, setMonthlyExpenses] = useState<MonthlyExpense[]>([]);
   const [selectedExpenseMonth, setSelectedExpenseMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [expenseCategory, setExpenseCategory] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
   
   // Loading and error states for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [accountsFetchError, setAccountsFetchError] = useState<string | null>(null);
+  
+  // Toast hook
+  const { toast } = useToast();
+  
+  // Annual budget form state
+  const [annualBudgetForm, setAnnualBudgetForm] = useState({
+    accountCategory: '',
+    subItem: '',
+    budgetedAmount: ''
+  });
+  const [isSubmittingBudget, setIsSubmittingBudget] = useState(false);
   
   // Collection accounts state
   const [collectionAccounts, setCollectionAccounts] = useState<CollectionAccount[]>([
@@ -438,6 +452,136 @@ export default function Financial() {
         [valueType]: isNaN(numValue) ? undefined : numValue
       }
     }));
+  };
+
+  // Annual budget form handlers
+  const handleAnnualBudgetChange = (field: string, value: string) => {
+    setAnnualBudgetForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAddToBudget = async () => {
+    if (!annualBudgetForm.accountCategory || !annualBudgetForm.subItem || !annualBudgetForm.budgetedAmount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const budgetedAmount = parseFloat(annualBudgetForm.budgetedAmount);
+    if (isNaN(budgetedAmount) || budgetedAmount <= 0) {
+      toast({
+        title: "Error", 
+        description: "Please enter a valid budget amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingBudget(true);
+
+    try {
+      const budgetData = {
+        account_category: annualBudgetForm.accountCategory,
+        sub_item: annualBudgetForm.subItem,
+        budgeted_amount: budgetedAmount,
+        building_id: selectedBuildingId ? parseInt(selectedBuildingId) : user?.building_id
+      };
+
+      await createAnnualBudget(budgetData);
+
+      toast({
+        title: "Success",
+        description: "Annual budget item added successfully",
+      });
+
+      // Reset form
+      setAnnualBudgetForm({
+        accountCategory: '',
+        subItem: '',
+        budgetedAmount: ''
+      });
+
+    } catch (error) {
+      console.error('Error adding budget item:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to add budget item",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingBudget(false);
+    }
+  };
+
+  // Handle expense registration
+  const handleRegisterExpense = async () => {
+    if (!expenseCategory || !expenseAmount || !selectedExpenseMonth) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedBuildingId) {
+      toast({
+        title: "Error",
+        description: "Please select a building first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError(null);
+
+    try {
+      const accessToken = getStoredToken('access');
+      const response = await fetch(`${API_BASE_URL}/api/financial/expense/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+        body: JSON.stringify({
+          buildingId: selectedBuildingId,
+          month: selectedExpenseMonth,
+          category: expenseCategory,
+          amount: parseFloat(expenseAmount),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to register expense');
+      }
+
+      const data = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "Expense registered successfully",
+      });
+
+      // Clear form fields
+      setExpenseCategory('');
+      setExpenseAmount('');
+      
+    } catch (error) {
+      console.error('Error registering expense:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to register expense",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Brazilian system functions
@@ -761,8 +905,8 @@ export default function Financial() {
                     <YAxis />
                     <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
                     <Legend />
-                    <Bar dataKey="expected" fill="#8884d8" name={t("expected")} />
-                    <Bar dataKey="actual" fill="#82ca9d" name={t("actual")} />
+                    <Bar key="expected" dataKey="expected" fill="#8884d8" name={t("expected")} />
+                    <Bar key="actual" dataKey="actual" fill="#82ca9d" name={t("actual")} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -785,6 +929,7 @@ export default function Financial() {
                     <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
                     <Legend />
                     <Line 
+                      key="expected"
                       type="monotone" 
                       dataKey="expected" 
                       stroke="#8884d8" 
@@ -793,15 +938,16 @@ export default function Financial() {
                       strokeDasharray="0"
                     />
                     <Line 
+                      key="actual"
                       type="monotone" 
                       dataKey="actual" 
                       stroke="#82ca9d" 
                       strokeWidth={2}
                       name={t("actualExpenses")}
                       dot={(props) => {
-                        const { cx, cy, payload } = props;
+                        const { cx, cy, payload, index } = props;
                         if (payload.actual === 0 && !payload.isCurrentMonth) return null;
-                        return <circle cx={cx} cy={cy} r={4} fill="#82ca9d" />;
+                        return <circle key={`dot-${index}`} cx={cx} cy={cy} r={4} fill="#82ca9d" />;
                       }}
                     />
                   </LineChart>
@@ -821,6 +967,7 @@ export default function Financial() {
                 <ResponsiveContainer width="100%" height={250}>
                   <RePieChart>
                     <Pie
+                      key="expenseDistribution"
                       data={accounts.filter(account => (account.actualAmount || 0) > 0).map(account => ({
                         name: account.name,
                         value: account.actualAmount || 0
@@ -896,23 +1043,47 @@ export default function Financial() {
                   <CardContent className="space-y-4">
                     <div>
                       <Label htmlFor="account-category" className="text-xs sm:text-sm">{t("accountCategory")}</Label>
-                      <select className="w-full p-2 border rounded">
-                        <option>{t("maintenance")}</option>
-                        <option>{t("cleaning")}</option>
-                        <option>{t("security")}</option>
-                        <option>{t("administration")}</option>
-                        <option>{t("electricity")}</option>
+                      <select 
+                        className="w-full p-2 border rounded"
+                        value={annualBudgetForm.accountCategory}
+                        onChange={(e) => handleAnnualBudgetChange('accountCategory', e.target.value)}
+                      >
+                        <option value="">Select category</option>
+                        <option value="maintenance">{t("maintenance")}</option>
+                        <option value="cleaning">{t("cleaning")}</option>
+                        <option value="security">{t("security")}</option>
+                        <option value="administration">{t("administration")}</option>
+                        <option value="electricity">{t("electricity")}</option>
                       </select>
                     </div>
                     <div>
                       <Label htmlFor="subcategory" className="text-xs sm:text-sm">{t("subItem")}</Label>
-                      <Input id="subcategory" placeholder={t("subItemPlaceholder")} className="text-xs sm:text-sm" />
+                      <Input 
+                        id="subcategory" 
+                        placeholder={t("subItemPlaceholder")} 
+                        className="text-xs sm:text-sm"
+                        value={annualBudgetForm.subItem}
+                        onChange={(e) => handleAnnualBudgetChange('subItem', e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="budget-amount" className="text-xs sm:text-sm">{t("budgetedAmount")}</Label>
-                      <Input id="budget-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
+                      <Input 
+                        id="budget-amount" 
+                        type="number" 
+                        placeholder="0,00" 
+                        className="text-xs sm:text-sm"
+                        value={annualBudgetForm.budgetedAmount}
+                        onChange={(e) => handleAnnualBudgetChange('budgetedAmount', e.target.value)}
+                      />
                     </div>
-                    <Button className="w-full text-xs sm:text-sm">{t("addToBudget")}</Button>
+                    <Button 
+                      className="w-full text-xs sm:text-sm" 
+                      onClick={handleAddToBudget}
+                      disabled={isSubmittingBudget}
+                    >
+                      {isSubmittingBudget ? "Adding..." : t("addToBudget")}
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -936,23 +1107,37 @@ export default function Financial() {
                   </div>
                   <div>
                     <Label htmlFor="expense-category" className="text-xs sm:text-sm">{t("category")}</Label>
-                    <select className="w-full p-2 border rounded">
-                      <option>{t("maintenance")}</option>
-                      <option>{t("cleaning")}</option>
-                      <option>{t("security")}</option>
-                      <option>{t("administration")}</option>
+                    <select 
+                      className="w-full p-2 border rounded"
+                      value={expenseCategory}
+                      onChange={(e) => setExpenseCategory(e.target.value)}
+                    >
+                      <option value="">Select category</option>
+                      <option value="maintenance">{t("maintenance")}</option>
+                      <option value="cleaning">{t("cleaning")}</option>
+                      <option value="security">{t("security")}</option>
+                      <option value="administration">{t("administration")}</option>
                     </select>
                   </div>
                   <div>
                     <Label htmlFor="expense-amount" className="text-xs sm:text-sm">{t("expenseAmount")}</Label>
-                    <Input id="expense-amount" type="number" placeholder="0,00" className="text-xs sm:text-sm" />
+                    <Input 
+                      id="expense-amount" 
+                      type="number" 
+                      placeholder="0,00" 
+                      className="text-xs sm:text-sm"
+                      value={expenseAmount}
+                      onChange={(e) => setExpenseAmount(e.target.value)}
+                    />
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" className="flex-1 gap-2 text-xs sm:text-sm">
-                      <Upload className="w-4 h-4" />
-                      {t("uploadExcel")}
+                    <Button 
+                      className="w-full text-xs sm:text-sm"
+                      onClick={handleRegisterExpense}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? t("registering") : t("registerExpense")}
                     </Button>
-                    <Button className="flex-1 text-xs sm:text-sm">{t("registerExpense")}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -1095,7 +1280,7 @@ export default function Financial() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
-                    <Bar dataKey="amount" fill="#10b981" />
+                    <Bar key="amount" dataKey="amount" fill="#10b981" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -1124,9 +1309,9 @@ export default function Financial() {
                     <YAxis />
                     <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
                     <Legend />
-                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" name={t("expenses")} strokeWidth={2} />
-                    <Line type="monotone" dataKey="collections" stroke="#10b981" name={t("collections")} strokeWidth={2} />
-                    <Line type="monotone" dataKey="balance" stroke="#3b82f6" name={t("balance")} strokeWidth={2} strokeDasharray="5 5" />
+                    <Line key="expenses" type="monotone" dataKey="expenses" stroke="#ef4444" name={t("expenses")} strokeWidth={2} />
+                    <Line key="collections" type="monotone" dataKey="collections" stroke="#10b981" name={t("collections")} strokeWidth={2} />
+                    <Line key="balance" type="monotone" dataKey="balance" stroke="#3b82f6" name={t("balance")} strokeWidth={2} strokeDasharray="5 5" />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -1603,9 +1788,9 @@ export default function Financial() {
                       return `R$ ${(value * 1000).toLocaleString('pt-BR')}`;
                     }} />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="rental" fill="#8884d8" name={t("monthlyRental")} />
-                    <Bar yAxisId="left" dataKey="condoFee" fill="#ff7300" name={t("condoFee")} />
-                    <Bar yAxisId="right" dataKey="saleValue" fill="#82ca9d" name={t("saleValueThousands")} />
+                    <Bar key="rental" yAxisId="left" dataKey="rental" fill="#8884d8" name={t("monthlyRental")} />
+                    <Bar key="condoFee" yAxisId="left" dataKey="condoFee" fill="#ff7300" name={t("condoFee")} />
+                    <Bar key="saleValue" yAxisId="right" dataKey="saleValue" fill="#82ca9d" name={t("saleValueThousands")} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -1632,9 +1817,9 @@ export default function Financial() {
                     <PolarGrid />
                     <PolarAngleAxis dataKey="subject" />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar name="Unit 101" dataKey="unit101" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                    <Radar name="Unit 102" dataKey="unit102" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
-                    <Radar name="Unit 201" dataKey="unit201" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
+                    <Radar key="unit101" name="Unit 101" dataKey="unit101" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
+                    <Radar key="unit102" name="Unit 102" dataKey="unit102" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
+                    <Radar key="unit201" name="Unit 201" dataKey="unit201" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
                     <Legend />
                   </RadarChart>
                 </ResponsiveContainer>
@@ -1668,9 +1853,9 @@ export default function Financial() {
                       return `R$ ${value}/m²`;
                     }} />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="salePrice" stroke="#8884d8" name={t("salePrice")} strokeWidth={2} />
-                    <Line yAxisId="right" type="monotone" dataKey="rentalPrice" stroke="#82ca9d" name={t("rentalPrice")} strokeWidth={2} />
-                    <Line yAxisId="right" type="monotone" dataKey="condoFee" stroke="#ff7300" name={t("condoFeePerM2")} strokeWidth={2} strokeDasharray="5 5" />
+                    <Line key="salePrice" yAxisId="left" type="monotone" dataKey="salePrice" stroke="#8884d8" name={t("salePrice")} strokeWidth={2} />
+                    <Line key="rentalPrice" yAxisId="right" type="monotone" dataKey="rentalPrice" stroke="#82ca9d" name={t("rentalPrice")} strokeWidth={2} />
+                    <Line key="condoFee" yAxisId="right" type="monotone" dataKey="condoFee" stroke="#ff7300" name={t("condoFeePerM2")} strokeWidth={2} strokeDasharray="5 5" />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>

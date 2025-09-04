@@ -1,5 +1,5 @@
 // Auth API configuration and utilities
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sindipro-backend.onrender.com';
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'localhost:8000';
 
 // Types for auth responses
@@ -101,7 +101,7 @@ export const isManagerUser = (): boolean => {
 };
 
 // API request helper with auth headers
-const makeAuthRequest = async (url: string, options: RequestInit = {}) => {
+export const makeAuthRequest = async (url: string, options: RequestInit = {}) => {
   const accessToken = getStoredToken('access');
   
   const config: RequestInit = {
@@ -277,6 +277,18 @@ export const getFinancialAccounts = async (buildingId?: number) => {
   
   return await makeAuthRequest(endpoint, {
     method: 'GET',
+  });
+};
+
+export const createAnnualBudget = async (budgetData: {
+  account_category: string;
+  sub_item: string;
+  budgeted_amount: number;
+  building_id?: number;
+}) => {
+  return await makeAuthRequest('/api/financial/annual/', {
+    method: 'POST',
+    body: JSON.stringify(budgetData),
   });
 };
 
