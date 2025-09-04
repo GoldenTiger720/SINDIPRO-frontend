@@ -955,41 +955,6 @@ export default function Financial() {
               </CardContent>
             </Card>
             
-            {/* Expense Distribution Pie Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                  <PieChart className="w-5 h-5" />
-                  {t("expenseDistribution")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2 sm:p-6">
-                <ResponsiveContainer width="100%" height={250}>
-                  <RePieChart>
-                    <Pie
-                      key="expenseDistribution"
-                      data={accounts.filter(account => (account.actualAmount || 0) > 0).map(account => ({
-                        name: account.name,
-                        value: account.actualAmount || 0
-                      }))}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {accounts.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#4ECDC4'][index % 7]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
-                  </RePieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
