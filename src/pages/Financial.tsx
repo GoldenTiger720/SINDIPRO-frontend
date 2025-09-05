@@ -784,6 +784,42 @@ export default function Financial() {
     });
   };
 
+  // Generate comparative analysis data
+  const generateComparativeAnalysisData = () => {
+    const budgetByCategory = getBudgetByCategory();
+    const expensesByCategory = getExpensesByCategory();
+    const allCategories = new Set([...budgetByCategory.keys(), ...expensesByCategory.keys()]);
+
+    return Array.from(allCategories).map(category => {
+      const budgeted = budgetByCategory.get(category) || 0;
+      const spent = expensesByCategory.get(category) || 0;
+      const variance = spent - budgeted;
+      const variancePercent = budgeted > 0 ? ((variance / budgeted) * 100) : 0;
+      
+      let status = 'withinBudget';
+      let statusColor = 'text-green-600';
+      
+      if (variancePercent > 5) {
+        status = 'aboveBudget';
+        statusColor = 'text-red-600';
+      } else if (variancePercent < -5) {
+        status = 'economy';
+        statusColor = 'text-green-600';
+      }
+
+      return {
+        category,
+        budgeted,
+        spent,
+        variance,
+        variancePercent: Math.abs(variancePercent),
+        varianceSign: variancePercent >= 0 ? '+' : '-',
+        status,
+        statusColor
+      };
+    });
+  };
+
   // Brazilian system functions (keeping for compatibility)
   const getTotalAnnualBudgetLegacy = () => {
     return brazilianData.budgetAccounts.reduce((sum, account) => sum + account.annualBudget, 0);
@@ -1313,36 +1349,28 @@ export default function Financial() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-xs sm:text-sm">{t("maintenance")}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 50.000,00 | {t("spent")}: R$ 35.420,00</p>
+                  {generateComparativeAnalysisData().map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-semibold text-xs sm:text-sm capitalize">{item.category}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {t("budgeted")}: R$ {item.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | {' '}
+                          {t("spent")}: R$ {item.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className={`font-semibold text-xs sm:text-sm ${item.statusColor}`}>
+                          {item.varianceSign}{item.variancePercent.toFixed(1)}%
+                        </div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{t(item.status)}</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-green-600 font-semibold text-xs sm:text-sm">-29%</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">{t("economy")}</div>
+                  ))}
+                  {generateComparativeAnalysisData().length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm">{t("noDataAvailable")}</p>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-xs sm:text-sm">{t("electricity")}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 30.000,00 | {t("spent")}: R$ 32.150,00</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-red-600 font-semibold text-xs sm:text-sm">+7%</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">{t("aboveBudget")}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-semibold text-xs sm:text-sm">{t("cleaning")}</h3>
-                      <p className="text-xs sm:text-sm text-muted-foreground">{t("budgeted")}: R$ 25.000,00 | {t("spent")}: R$ 24.860,00</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-green-600 font-semibold text-xs sm:text-sm">-1%</div>
-                      <div className="text-xs sm:text-sm text-muted-foreground">{t("withinBudget")}</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
