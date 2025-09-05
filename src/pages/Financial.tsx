@@ -85,6 +85,41 @@ const mockMonthlyExpenses = [
   { month: "Março", expenses: { 1001: 2500, 1002: 1000, 1003: 520, 2001: 1500, 2002: 1200, 2003: 400, 3001: 1500, 3002: 480, 4001: 4000, 4002: 1200 } },
 ];
 
+// Types for API data
+interface Building {
+  id: number;
+  building_name: string;
+  building_type: string;
+  cnpj: string;
+}
+
+interface ExpenseData {
+  id: number;
+  building: Building;
+  category: string;
+  expense_type: string;
+  description: string;
+  amount: string;
+  expense_date: string;
+  supplier: string;
+  invoice_number: string;
+  payment_method: string;
+  notes: string;
+  created_on: string;
+  updated_on: string;
+}
+
+interface AnnualBudgetData {
+  id: number;
+  building: Building;
+  year: number;
+  category: string;
+  sub_item: string;
+  budgeted_amount: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Types for chart of accounts
 type Account = {
   id: number;
@@ -181,6 +216,14 @@ export default function Financial() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
   const [accountsFetchError, setAccountsFetchError] = useState<string | null>(null);
+  
+  // State for API data
+  const [expensesData, setExpensesData] = useState<ExpenseData[]>([]);
+  const [annualBudgetData, setAnnualBudgetData] = useState<AnnualBudgetData[]>([]);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+  const [isLoadingAnnualBudget, setIsLoadingAnnualBudget] = useState(false);
+  const [expensesError, setExpensesError] = useState<string | null>(null);
+  const [annualBudgetError, setAnnualBudgetError] = useState<string | null>(null);
   
   // Toast hook
   const { toast } = useToast();
@@ -311,6 +354,39 @@ export default function Financial() {
       fetchAccounts(parseInt(selectedBuildingId));
     }
   }, [selectedBuildingId]);
+
+  // Fetch financial data when component mounts
+  useEffect(() => {
+    const loadFinancialData = async () => {
+      // Fetch expenses
+      setIsLoadingExpenses(true);
+      setExpensesError(null);
+      try {
+        const expenses = await fetchExpenses();
+        setExpensesData(expenses);
+      } catch (error) {
+        setExpensesError(error instanceof Error ? error.message : 'Failed to fetch expenses');
+        console.error('Error loading expenses:', error);
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+
+      // Fetch annual budget
+      setIsLoadingAnnualBudget(true);
+      setAnnualBudgetError(null);
+      try {
+        const annualBudget = await fetchAnnualBudget();
+        setAnnualBudgetData(annualBudget);
+      } catch (error) {
+        setAnnualBudgetError(error instanceof Error ? error.message : 'Failed to fetch annual budget');
+        console.error('Error loading annual budget:', error);
+      } finally {
+        setIsLoadingAnnualBudget(false);
+      }
+    };
+
+    loadFinancialData();
+  }, []); // Empty dependency array means this runs once on component mount
   
   // Handle building selection
   const handleBuildingChange = (buildingId: string) => {
@@ -572,6 +648,14 @@ export default function Financial() {
       setExpenseCategory('');
       setExpenseAmount('');
       
+      // Refresh expenses data
+      try {
+        const expenses = await fetchExpenses();
+        setExpensesData(expenses);
+      } catch (refreshError) {
+        console.error('Error refreshing expenses:', refreshError);
+      }
+      
     } catch (error) {
       console.error('Error registering expense:', error);
       toast({
@@ -584,8 +668,124 @@ export default function Financial() {
     }
   };
 
-  // Brazilian system functions
+  // Fetch expenses from backend
+  const fetchExpenses = async () => {
+    try {
+      const accessToken = getStoredToken('access');
+      const response = await fetch(`${API_BASE_URL}/api/financial/expense/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch expenses');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      throw error;
+    }
+  };
+
+  // Fetch annual budget data from backend
+  const fetchAnnualBudget = async () => {
+    try {
+      const accessToken = getStoredToken('access');
+      const response = await fetch(`${API_BASE_URL}/api/financial/annual/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch annual budget');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching annual budget:', error);
+      throw error;
+    }
+  };
+
+  // Data processing functions
   const getTotalAnnualBudget = () => {
+    return annualBudgetData.reduce((sum, item) => sum + parseFloat(item.budgeted_amount), 0);
+  };
+
+  const getTotalCurrentExpenses = () => {
+    return expensesData.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+  };
+
+  const getRemainingBalance = () => {
+    return getTotalAnnualBudget() - getTotalCurrentExpenses();
+  };
+
+  // Group budget data by category
+  const getBudgetByCategory = () => {
+    const categoryBudgets = new Map<string, number>();
+    annualBudgetData.forEach(item => {
+      const current = categoryBudgets.get(item.category) || 0;
+      categoryBudgets.set(item.category, current + parseFloat(item.budgeted_amount));
+    });
+    return categoryBudgets;
+  };
+
+  // Group expense data by category
+  const getExpensesByCategory = () => {
+    const categoryExpenses = new Map<string, number>();
+    expensesData.forEach(expense => {
+      const current = categoryExpenses.get(expense.category) || 0;
+      categoryExpenses.set(expense.category, current + parseFloat(expense.amount));
+    });
+    return categoryExpenses;
+  };
+
+  // Generate data for Budget vs Actual chart
+  const generateBudgetVsActualData = () => {
+    const budgetByCategory = getBudgetByCategory();
+    const expensesByCategory = getExpensesByCategory();
+    const allCategories = new Set([...budgetByCategory.keys(), ...expensesByCategory.keys()]);
+
+    return Array.from(allCategories).map(category => ({
+      name: category,
+      expected: budgetByCategory.get(category) || 0,
+      actual: expensesByCategory.get(category) || 0
+    }));
+  };
+
+  // Generate data for 12-month forecast
+  const generateMonthlyPrediction = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const totalAnnualBudget = getTotalAnnualBudget();
+    const monthlyBudget = totalAnnualBudget / 12;
+    
+    // Calculate current month expenses
+    const currentMonth = new Date().getMonth();
+    
+    return months.map((month, index) => {
+      const isPastMonth = index < currentMonth;
+      const isCurrentMonth = index === currentMonth;
+      
+      return {
+        month,
+        expected: monthlyBudget,
+        actual: isPastMonth ? monthlyBudget * 0.85 : (isCurrentMonth ? getTotalCurrentExpenses() : 0),
+        isCurrentMonth
+      };
+    });
+  };
+
+  // Brazilian system functions (keeping for compatibility)
+  const getTotalAnnualBudgetLegacy = () => {
     return brazilianData.budgetAccounts.reduce((sum, account) => sum + account.annualBudget, 0);
   };
 
@@ -625,37 +825,6 @@ export default function Financial() {
     alert(t("excelImportMessage"));
   };
   
-  // Generate 12-month prediction data
-  const generateMonthlyPrediction = () => {
-    const months = [];
-    const currentDate = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i);
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-      
-      // Calculate total expected (remains constant)
-      const totalExpected = accounts.reduce((sum, acc) => {
-        const amount = acc.isMonthly ? (acc.expectedAmount || 0) : ((acc.expectedAmount || 0) / 12);
-        return sum + amount;
-      }, 0);
-      
-      // Get actual expenses for the month
-      const monthKey = date.toISOString().slice(0, 7);
-      const actualExpenses = monthlyExpenses
-        .filter(exp => `${exp.year}-${String(exp.month).padStart(2, '0')}` === monthKey)
-        .reduce((sum, exp) => sum + exp.amount, 0);
-      
-      months.push({
-        month: monthName,
-        expected: totalExpected,
-        actual: i === 0 ? actualExpenses : 0, // Only show actual for current month, zero for future
-        isCurrentMonth: i === 0
-      });
-    }
-    
-    return months;
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -668,6 +837,30 @@ export default function Financial() {
             <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">{t("financialBudgetManagement")}</h1>
           </div>
         </div>
+
+        {/* API Error Messages */}
+        {(expensesError || annualBudgetError) && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <h3 className="text-red-800 font-semibold mb-2">Loading Errors:</h3>
+            {expensesError && (
+              <p className="text-red-700 text-sm">Expenses: {expensesError}</p>
+            )}
+            {annualBudgetError && (
+              <p className="text-red-700 text-sm">Annual Budget: {annualBudgetError}</p>
+            )}
+          </div>
+        )}
+
+        {/* Loading Indicators */}
+        {(isLoadingExpenses || isLoadingAnnualBudget) && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-700 text-sm">
+              Loading financial data...
+              {isLoadingExpenses && " Expenses"}
+              {isLoadingAnnualBudget && " Annual Budget"}
+            </p>
+          </div>
+        )}
 
         <Tabs defaultValue="budget-management" className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-auto">
@@ -894,16 +1087,11 @@ export default function Financial() {
               </CardHeader>
               <CardContent className="p-2 sm:p-6">
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={accounts.map(account => ({
-                    name: account.name.length > 10 ? account.name.substring(0, 10) + '...' : account.name,
-                    expected: account.expectedAmount || 0,
-                    actual: account.actualAmount || 0,
-                    variance: (account.actualAmount || 0) - (account.expectedAmount || 0)
-                  }))}>
+                  <BarChart data={generateBudgetVsActualData()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+                    <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`} />
                     <Legend />
                     <Bar key="expected" dataKey="expected" fill="#8884d8" name={t("expected")} />
                     <Bar key="actual" dataKey="actual" fill="#82ca9d" name={t("actual")} />
@@ -964,8 +1152,10 @@ export default function Financial() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg sm:text-xl font-bold text-green-600">R$ 250.000,00</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{t("totalApproved")} 2024</p>
+                  <div className="text-lg sm:text-xl font-bold text-green-600">
+                    R$ {getTotalAnnualBudget().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t("totalApproved")} {new Date().getFullYear()}</p>
                 </CardContent>
               </Card>
 
@@ -977,8 +1167,12 @@ export default function Financial() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg sm:text-xl font-bold text-blue-600">R$ 125.430,00</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">50,2% {t("ofBudget")}</p>
+                  <div className="text-lg sm:text-xl font-bold text-blue-600">
+                    R$ {getTotalCurrentExpenses().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {getTotalAnnualBudget() > 0 ? ((getTotalCurrentExpenses() / getTotalAnnualBudget()) * 100).toFixed(1) : 0}% {t("ofBudget")}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -990,8 +1184,12 @@ export default function Financial() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-lg sm:text-xl font-bold text-orange-600">R$ 124.570,00</div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">49,8% {t("available")}</p>
+                  <div className={`text-lg sm:text-xl font-bold ${getRemainingBalance() >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                    R$ {getRemainingBalance().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    {getTotalAnnualBudget() > 0 ? ((getRemainingBalance() / getTotalAnnualBudget()) * 100).toFixed(1) : 0}% {t("available")}
+                  </p>
                 </CardContent>
               </Card>
             </div>
