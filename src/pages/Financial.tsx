@@ -913,6 +913,9 @@ export default function Financial() {
               setEditingCollection={setEditingCollection}
               setShowCollectionDialog={setShowCollectionDialog}
               brazilianData={brazilianData}
+              expensesData={expensesData}
+              annualBudgetData={annualBudgetData}
+              accounts={accounts}
             />
           </TabsContent>
 

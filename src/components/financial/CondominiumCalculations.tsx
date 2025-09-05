@@ -14,6 +14,46 @@ interface CollectionAccount {
   active: boolean;
 }
 
+interface ExpenseData {
+  id: number;
+  building: {
+    id: number;
+    building_name: string;
+    building_type: string;
+    cnpj: string;
+  };
+  category: string;
+  amount: string;
+  reference_month: string;
+  created_at: string;
+}
+
+interface AnnualBudgetData {
+  id: number;
+  building: {
+    id: number;
+    building_name: string;
+    building_type: string;
+    cnpj: string;
+  };
+  category: string;
+  sub_item: string;
+  budgeted_amount: string;
+  year: number;
+  created_at: string;
+}
+
+interface FinancialAccount {
+  id: number;
+  code: string;
+  name: string;
+  type: 'main' | 'sub';
+  expectedAmount: number;
+  actualAmount: number;
+  parentId?: number;
+  subAccounts?: FinancialAccount[];
+}
+
 interface CondominiumCalculationsProps {
   // User permissions
   isMaster: boolean;
@@ -22,6 +62,11 @@ interface CondominiumCalculationsProps {
   collectionAccounts: CollectionAccount[];
   setEditingCollection: (collection: any) => void;
   setShowCollectionDialog: (show: boolean) => void;
+  
+  // Backend data
+  expensesData: ExpenseData[];
+  annualBudgetData: AnnualBudgetData[];
+  accounts: FinancialAccount[];
   
   // Data and functions from parent
   brazilianData: any;
@@ -32,9 +77,116 @@ export function CondominiumCalculations({
   collectionAccounts,
   setEditingCollection,
   setShowCollectionDialog,
+  expensesData,
+  annualBudgetData,
+  accounts,
   brazilianData
 }: CondominiumCalculationsProps) {
   const { t } = useTranslation();
+
+  // Process backend data for charts
+  const processFinancialFlowData = () => {
+    // Ensure expensesData exists and is an array
+    if (!expensesData || !Array.isArray(expensesData)) {
+      return [];
+    }
+
+    // Group expenses by month
+    const expensesByMonth = expensesData.reduce((acc, expense) => {
+      // Ensure expense and reference_month exist
+      if (!expense || !expense.reference_month) {
+        return acc;
+      }
+      
+      const month = expense.reference_month.slice(0, 7); // YYYY-MM format
+      const monthName = new Date(month + '-01').toLocaleDateString('pt-BR', { month: 'short' });
+      
+      if (!acc[monthName]) {
+        acc[monthName] = 0;
+      }
+      acc[monthName] += parseFloat(expense.amount || '0');
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Calculate total monthly collections from collection accounts
+    const totalMonthlyCollections = (collectionAccounts || [])
+      .filter(c => c && c.active)
+      .reduce((sum, c) => sum + (c.monthlyAmount || 0), 0);
+
+    // Generate data for last 6 months
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    return months.map(month => {
+      const expenses = expensesByMonth[month] || 0;
+      const collections = totalMonthlyCollections;
+      const balance = collections - expenses;
+      
+      return {
+        month,
+        expenses,
+        collections,
+        balance
+      };
+    });
+  };
+
+  const processExpenseDistributionData = () => {
+    // Ensure expensesData exists and is an array
+    if (!expensesData || !Array.isArray(expensesData)) {
+      return [];
+    }
+
+    // Group expenses by category
+    const expensesByCategory = expensesData.reduce((acc, expense) => {
+      // Ensure expense and category exist
+      if (!expense || !expense.category) {
+        return acc;
+      }
+      
+      if (!acc[expense.category]) {
+        acc[expense.category] = 0;
+      }
+      acc[expense.category] += parseFloat(expense.amount || '0');
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Convert to array for pie chart
+    return Object.entries(expensesByCategory).map(([category, amount]) => ({
+      name: category,
+      value: amount
+    }));
+  };
+
+  const processUnitComparisonData = () => {
+    // Ensure expensesData exists and is an array
+    if (!expensesData || !Array.isArray(expensesData)) {
+      return [];
+    }
+
+    // Group expenses by category for radar chart
+    const categories = ['Manutenção', 'Limpeza', 'Segurança', 'Administração', 'Elevador', 'Água'];
+    
+    return categories.map(category => {
+      const categoryExpenses = expensesData
+        .filter(expense => expense && expense.category && expense.category.toLowerCase().includes(category.toLowerCase()))
+        .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
+      
+      // Simulate data for 3 units based on area proportion
+      const unit101 = Math.max(85, categoryExpenses * 0.3);
+      const unit102 = Math.max(90, categoryExpenses * 0.35);
+      const unit201 = Math.max(85, categoryExpenses * 0.35);
+      
+      return {
+        subject: category,
+        unit101,
+        unit102,
+        unit201
+      };
+    });
+  };
+
+  const financialFlowData = processFinancialFlowData();
+  const expenseDistributionData = processExpenseDistributionData();
+  const unitComparisonData = processUnitComparisonData();
 
   return (
     <div className="space-y-6">
@@ -138,18 +290,11 @@ export function CondominiumCalculations({
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={[
-              { month: 'Jan', expenses: 45000, collections: 50000, balance: 5000 },
-              { month: 'Fev', expenses: 48000, collections: 50000, balance: 2000 },
-              { month: 'Mar', expenses: 47000, collections: 50000, balance: 3000 },
-              { month: 'Abr', expenses: 46000, collections: 50000, balance: 4000 },
-              { month: 'Mai', expenses: 49000, collections: 50000, balance: 1000 },
-              { month: 'Jun', expenses: 45000, collections: 50000, balance: 5000 }
-            ]}>
+            <BarChart data={financialFlowData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
+              <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`} />
               <Legend />
               <Bar key="expenses" dataKey="expenses" fill="#ef4444" name={t("expenses")} />
               <Bar key="collections" dataKey="collections" fill="#10b981" name={t("collections")} />
@@ -173,17 +318,13 @@ export function CondominiumCalculations({
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <DollarSign className="w-5 h-5" />
-                  {t("costDistributionByUnit")}
+                  {t("expenseDistribution")}
                 </h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      key="unitDistribution"
-                      data={brazilianData.units.slice(0, 6).map((unit: any) => ({
-                        name: `Unidade ${unit.number}`,
-                        value: unit.area * 45, // Simplified calculation
-                        area: unit.area
-                      }))}
+                      key="expenseDistribution"
+                      data={expenseDistributionData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -192,7 +333,7 @@ export function CondominiumCalculations({
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {brazilianData.units.slice(0, 6).map((_: any, index: number) => (
+                      {expenseDistributionData.map((_: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B'][index % 6]} />
                       ))}
                     </Pie>
@@ -205,17 +346,10 @@ export function CondominiumCalculations({
               <div>
                 <h3 className="text-lg font-semibold mb-4">{t("unitComparisonRadar")}</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={[
-                    { subject: 'Manutenção', unit101: 120, unit102: 110, unit201: 130 },
-                    { subject: 'Limpeza', unit101: 98, unit102: 130, unit201: 115 },
-                    { subject: 'Segurança', unit101: 86, unit102: 130, unit201: 125 },
-                    { subject: 'Administração', unit101: 99, unit102: 100, unit201: 105 },
-                    { subject: 'Elevador', unit101: 85, unit102: 90, unit201: 95 },
-                    { subject: 'Água', unit101: 65, unit102: 85, unit201: 75 }
-                  ]}>
+                  <RadarChart data={unitComparisonData}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="subject" />
-                    <PolarRadiusAxis angle={90} domain={[0, 150]} />
+                    <PolarRadiusAxis angle={90} domain={[0, 'dataMax + 50']} />
                     <Radar key="unit101" name="Unit 101" dataKey="unit101" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
                     <Radar key="unit102" name="Unit 102" dataKey="unit102" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
                     <Radar key="unit201" name="Unit 201" dataKey="unit201" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
