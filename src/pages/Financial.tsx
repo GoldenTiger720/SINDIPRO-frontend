@@ -456,25 +456,107 @@ export default function Financial() {
   };
   
   // Handle collection account save
-  const handleSaveCollection = () => {
-    if (editingCollection) {
-      setCollectionAccounts(collectionAccounts.map(col => 
-        col.id === editingCollection.id ? { ...col, ...editingCollection } : col
-      ));
-    } else {
-      const newId = Math.max(...collectionAccounts.map(c => c.id), 0) + 1;
-      setCollectionAccounts([...collectionAccounts, {
-        id: newId,
-        name: editingCollection?.name || '',
-        purpose: editingCollection?.purpose || '',
-        monthlyAmount: editingCollection?.monthlyAmount || 0,
-        startDate: editingCollection?.startDate || new Date().toISOString().split('T')[0],
-        active: true
-      }]);
+  const handleSaveCollection = async () => {
+    if (!editingCollection) {
+      toast({
+        title: "Error",
+        description: "No collection data to save",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    setShowCollectionDialog(false);
-    setEditingCollection(null);
+
+    // Validation
+    if (!editingCollection.name || !editingCollection.purpose || !editingCollection.monthlyAmount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedBuildingId) {
+      toast({
+        title: "Error",
+        description: "Please select a building first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Check if this is an update (existing collection with valid id) or create (new collection)
+      const isExistingCollection = editingCollection.id && 
+                                   editingCollection.id > 0 && 
+                                   collectionAccounts.some(col => col.id === editingCollection.id);
+      
+      if (isExistingCollection) {
+        // Update existing collection (local state only for now)
+        setCollectionAccounts(collectionAccounts.map(col => 
+          col.id === editingCollection.id ? { ...col, ...editingCollection } : col
+        ));
+        toast({
+          title: "Success",
+          description: "Collection updated successfully",
+        });
+      } else {
+        // Create new collection - call backend API
+        const accessToken = getStoredToken('access');
+        const response = await fetch(`${API_BASE_URL}/api/financial/collection`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          },
+          body: JSON.stringify({
+            buildingId: parseInt(selectedBuildingId),
+            name: editingCollection.name,
+            purpose: editingCollection.purpose,
+            monthlyAmount: editingCollection.monthlyAmount,
+            startDate: editingCollection.startDate || new Date().toISOString().split('T')[0],
+            active: editingCollection.active !== undefined ? editingCollection.active : true
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create collection');
+        }
+
+        const data = await response.json();
+        
+        // Add to local state with the returned data
+        const newId = data.id || Math.max(...collectionAccounts.map(c => c.id), 0) + 1;
+        setCollectionAccounts([...collectionAccounts, {
+          id: newId,
+          name: editingCollection.name,
+          purpose: editingCollection.purpose,
+          monthlyAmount: editingCollection.monthlyAmount,
+          startDate: editingCollection.startDate || new Date().toISOString().split('T')[0],
+          active: editingCollection.active !== undefined ? editingCollection.active : true
+        }]);
+
+        toast({
+          title: "Success",
+          description: "Collection created successfully",
+        });
+      }
+      
+      setShowCollectionDialog(false);
+      setEditingCollection(null);
+      
+    } catch (error) {
+      console.error('Error saving collection:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save collection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // Brazilian system state
@@ -1389,7 +1471,7 @@ export default function Financial() {
                     <Button
                       onClick={() => {
                         setEditingCollection({
-                          id: 0,
+                          id: null,
                           name: '',
                           purpose: '',
                           monthlyAmount: 0,
@@ -2311,8 +2393,8 @@ export default function Financial() {
             <Button variant="outline" onClick={() => setShowCollectionDialog(false)}>
               {t("cancel")}
             </Button>
-            <Button onClick={handleSaveCollection}>
-              {editingCollection?.id ? t("save") : t("add")}
+            <Button onClick={handleSaveCollection} disabled={isSubmitting}>
+              {isSubmitting ? t("saving") || "Saving..." : (editingCollection?.id ? t("save") : t("add"))}
             </Button>
           </DialogFooter>
         </DialogContent>
