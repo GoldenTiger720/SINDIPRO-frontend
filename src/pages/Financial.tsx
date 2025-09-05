@@ -355,6 +355,7 @@ export default function Financial() {
   useEffect(() => {
     if (selectedBuildingId) {
       fetchAccounts(parseInt(selectedBuildingId));
+      fetchCollections();
     }
   }, [selectedBuildingId]);
 
@@ -471,7 +472,7 @@ export default function Financial() {
 
     try {
       setIsSubmitting(true);
-      const token = getStoredToken();
+      const token = getStoredToken('access');
       if (!token) {
         toast({
           title: "Error",
@@ -562,7 +563,7 @@ export default function Financial() {
       } else {
         // Create new collection - call backend API
         const accessToken = getStoredToken('access');
-        const response = await fetch(`${API_BASE_URL}/api/financial/collection`, {
+        const response = await fetch(`${API_BASE_URL}/api/financial/collection/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -853,6 +854,34 @@ export default function Financial() {
     } catch (error) {
       console.error('Error fetching annual budget:', error);
       throw error;
+    }
+  };
+
+  // Fetch collections from backend
+  const fetchCollections = async () => {
+    if (!selectedBuildingId) {
+      return;
+    }
+    
+    try {
+      const accessToken = getStoredToken('access');
+      const response = await fetch(`${API_BASE_URL}/api/financial/collection/?building_id=${selectedBuildingId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch collections');
+      }
+
+      const data = await response.json();
+      setCollectionAccounts(data);
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+      // Keep existing mock data if fetch fails
     }
   };
 
