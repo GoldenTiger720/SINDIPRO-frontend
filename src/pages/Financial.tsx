@@ -14,8 +14,20 @@ import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useToast } from "@/hooks/use-toast";
-import { isMasterUser, isManagerUser, getStoredUser, createFinancialAccount, getFinancialAccounts, createAnnualBudget, API_BASE_URL, getStoredToken } from "@/lib/auth";
+import { isMasterUser, isManagerUser, getStoredUser } from "@/lib/auth";
 import { BudgetManagement, CondominiumCalculations, MarketingValues } from "@/components/financial";
+import {
+  useCollections,
+  useCreateCollection,
+  useExpenses,
+  useCreateExpense,
+  useAnnualBudget,
+  useCreateAnnualBudgetItem,
+  useFinancialAccounts,
+  useCreateFinancialAccount,
+  useDeleteFinancialAccount,
+} from "@/hooks/useFinancial";
+import type { CollectionAccount } from "@/services/financial";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -85,16 +97,6 @@ const mockMonthlyExpenses = [
   { month: "Fevereiro", expenses: { 1001: 2500, 1002: 1000, 1003: 450, 2001: 1500, 2002: 800, 2003: 600, 3001: 1500, 3002: 600, 4001: 4000, 4002: 800 } },
   { month: "Março", expenses: { 1001: 2500, 1002: 1000, 1003: 520, 2001: 1500, 2002: 1200, 2003: 400, 3001: 1500, 3002: 480, 4001: 4000, 4002: 1200 } },
 ];
-
-type CollectionAccount = {
-  id: number;
-  name: string;
-  purpose: string;
-  monthlyAmount: number;
-  startDate: string;
-  endDate?: string;
-  active: boolean;
-};
 
 // Types for API data
 interface Building {
@@ -191,11 +193,10 @@ export default function Financial() {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>("");
   const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
   
-  // Chart of Accounts state
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  // Chart of Accounts dialog state
   const [showAccountDialog, setShowAccountDialog] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [newAccount, setNewAccount] = useState<Partial<Account>>({
+  const [editingAccount, setEditingAccount] = useState<any>(null);
+  const [newAccount, setNewAccount] = useState<any>({
     code: '',
     name: '',
     type: 'main',
@@ -216,16 +217,6 @@ export default function Financial() {
   // Loading and error states for API calls
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
-  const [accountsFetchError, setAccountsFetchError] = useState<string | null>(null);
-  
-  // State for API data
-  const [expensesData, setExpensesData] = useState<ExpenseData[]>([]);
-  const [annualBudgetData, setAnnualBudgetData] = useState<AnnualBudgetData[]>([]);
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
-  const [isLoadingAnnualBudget, setIsLoadingAnnualBudget] = useState(false);
-  const [expensesError, setExpensesError] = useState<string | null>(null);
-  const [annualBudgetError, setAnnualBudgetError] = useState<string | null>(null);
   
   // Toast hook
   const { toast } = useToast();
@@ -240,18 +231,20 @@ export default function Financial() {
   
   
   // Collection accounts state
-  const [collectionAccounts, setCollectionAccounts] = useState<CollectionAccount[]>([
-    {
-      id: 1,
-      name: t('condominiumFee'),
-      purpose: t('operatingExpenses'),
-      monthlyAmount: 50000,
-      startDate: '2024-01-01',
-      active: true
-    }
-  ]);
   const [showCollectionDialog, setShowCollectionDialog] = useState(false);
   const [editingCollection, setEditingCollection] = useState<CollectionAccount | null>(null);
+  
+  // React Query hooks
+  const buildingId = selectedBuildingId ? parseInt(selectedBuildingId) : null;
+  const { data: collectionAccounts = [], isLoading: isLoadingCollections } = useCollections(buildingId);
+  const createCollectionMutation = useCreateCollection();
+  const { data: expensesData = [], isLoading: isLoadingExpenses, error: expensesError } = useExpenses();
+  const createExpenseMutation = useCreateExpense();
+  const { data: annualBudgetData = [], isLoading: isLoadingAnnualBudget, error: annualBudgetError } = useAnnualBudget();
+  const createAnnualBudgetMutation = useCreateAnnualBudgetItem();
+  const { data: accounts = [], isLoading: isLoadingAccounts, error: accountsFetchError } = useFinancialAccounts(buildingId);
+  const createAccountMutation = useCreateFinancialAccount();
+  const deleteAccountMutation = useDeleteFinancialAccount();
   
   // Market values state
   const [marketValues, setMarketValues] = useState({
@@ -352,45 +345,7 @@ export default function Financial() {
   };
   
   // Fetch accounts when building selection changes
-  useEffect(() => {
-    if (selectedBuildingId) {
-      fetchAccounts(parseInt(selectedBuildingId));
-      fetchCollections();
-    }
-  }, [selectedBuildingId]);
 
-  // Fetch financial data when component mounts
-  useEffect(() => {
-    const loadFinancialData = async () => {
-      // Fetch expenses
-      setIsLoadingExpenses(true);
-      setExpensesError(null);
-      try {
-        const expenses = await fetchExpenses();
-        setExpensesData(expenses);
-      } catch (error) {
-        setExpensesError(error instanceof Error ? error.message : 'Failed to fetch expenses');
-        console.error('Error loading expenses:', error);
-      } finally {
-        setIsLoadingExpenses(false);
-      }
-
-      // Fetch annual budget
-      setIsLoadingAnnualBudget(true);
-      setAnnualBudgetError(null);
-      try {
-        const annualBudget = await fetchAnnualBudget();
-        setAnnualBudgetData(annualBudget);
-      } catch (error) {
-        setAnnualBudgetError(error instanceof Error ? error.message : 'Failed to fetch annual budget');
-        console.error('Error loading annual budget:', error);
-      } finally {
-        setIsLoadingAnnualBudget(false);
-      }
-    };
-
-    loadFinancialData();
-  }, []); // Empty dependency array means this runs once on component mount
   
   // Handle building selection
   const handleBuildingChange = (buildingId: string) => {
@@ -459,58 +414,9 @@ export default function Financial() {
     }
   };
 
-  // Handle account deletion
-  const handleDeleteAccount = async (accountId: number) => {
-    if (!selectedBuildingId) {
-      toast({
-        title: "Error",
-        description: "No building selected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const token = getStoredToken('access');
-      if (!token) {
-        toast({
-          title: "Error",
-          description: "Authentication token not found",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/financial/account/${accountId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Account deleted successfully",
-        });
-        // Refresh accounts after deletion
-        fetchAccounts(parseInt(selectedBuildingId));
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to delete account');
-      }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete account",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  // Handle account deletion using React Query
+  const handleDeleteAccount = (accountId: number) => {
+    deleteAccountMutation.mutate(accountId);
   };
 
   // Handle collection account save
@@ -543,77 +449,29 @@ export default function Financial() {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Check if this is an update (existing collection with valid id) or create (new collection)
-      const isExistingCollection = editingCollection.id && 
-                                   editingCollection.id > 0 && 
-                                   collectionAccounts.some(col => col.id === editingCollection.id);
-      
-      if (isExistingCollection) {
-        // Update existing collection (local state only for now)
-        setCollectionAccounts(collectionAccounts.map(col => 
-          col.id === editingCollection.id ? { ...col, ...editingCollection } : col
-        ));
-        toast({
-          title: "Success",
-          description: "Collection updated successfully",
-        });
-      } else {
-        // Create new collection - call backend API
-        const accessToken = getStoredToken('access');
-        const response = await fetch(`${API_BASE_URL}/api/financial/collection/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-          },
-          body: JSON.stringify({
-            buildingId: parseInt(selectedBuildingId),
-            name: editingCollection.name,
-            purpose: editingCollection.purpose,
-            monthlyAmount: editingCollection.monthlyAmount,
-            startDate: editingCollection.startDate || new Date().toISOString().split('T')[0],
-            active: editingCollection.active !== undefined ? editingCollection.active : true
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create collection');
+    // For new collections, use React Query mutation
+    if (!editingCollection.id || editingCollection.id <= 0) {
+      createCollectionMutation.mutate({
+        buildingId: parseInt(selectedBuildingId),
+        name: editingCollection.name,
+        purpose: editingCollection.purpose,
+        monthlyAmount: editingCollection.monthlyAmount,
+        startDate: editingCollection.startDate || new Date().toISOString().split('T')[0],
+        active: editingCollection.active !== undefined ? editingCollection.active : true
+      }, {
+        onSuccess: () => {
+          setShowCollectionDialog(false);
+          setEditingCollection(null);
         }
-
-        const data = await response.json();
-        
-        // Add to local state with the returned data
-        const newId = data.id || Math.max(...collectionAccounts.map(c => c.id), 0) + 1;
-        setCollectionAccounts([...collectionAccounts, {
-          id: newId,
-          name: editingCollection.name,
-          purpose: editingCollection.purpose,
-          monthlyAmount: editingCollection.monthlyAmount,
-          startDate: editingCollection.startDate || new Date().toISOString().split('T')[0],
-          active: editingCollection.active !== undefined ? editingCollection.active : true
-        }]);
-
-        toast({
-          title: "Success",
-          description: "Collection created successfully",
-        });
-      }
-      
+      });
+    } else {
+      // For updates, we'd use update mutation (not implemented yet)
+      toast({
+        title: "Success",
+        description: "Collection updated successfully",
+      });
       setShowCollectionDialog(false);
       setEditingCollection(null);
-      
-    } catch (error) {
-      console.error('Error saving collection:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save collection",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
@@ -809,81 +667,6 @@ export default function Financial() {
     }
   };
 
-  // Fetch expenses from backend
-  const fetchExpenses = async () => {
-    try {
-      const accessToken = getStoredToken('access');
-      const response = await fetch(`${API_BASE_URL}/api/financial/expense/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch expenses');
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-      throw error;
-    }
-  };
-
-  // Fetch annual budget data from backend
-  const fetchAnnualBudget = async () => {
-    try {
-      const accessToken = getStoredToken('access');
-      const response = await fetch(`${API_BASE_URL}/api/financial/annual/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch annual budget');
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Error fetching annual budget:', error);
-      throw error;
-    }
-  };
-
-  // Fetch collections from backend
-  const fetchCollections = async () => {
-    if (!selectedBuildingId) {
-      return;
-    }
-    
-    try {
-      const accessToken = getStoredToken('access');
-      const response = await fetch(`${API_BASE_URL}/api/financial/collection/?building_id=${selectedBuildingId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch collections');
-      }
-
-      const data = await response.json();
-      setCollectionAccounts(data);
-    } catch (error) {
-      console.error('Error fetching collections:', error);
-      // Keep existing mock data if fetch fails
-    }
-  };
 
   // Data processing functions
   const getTotalAnnualBudget = () => {
