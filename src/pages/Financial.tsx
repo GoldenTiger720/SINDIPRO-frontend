@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useBuildings } from "@/hooks/useBuildings";
 import { useToast } from "@/hooks/use-toast";
 import { isMasterUser, isManagerUser, getStoredUser, createFinancialAccount, getFinancialAccounts, createAnnualBudget, API_BASE_URL, getStoredToken } from "@/lib/auth";
+import { BudgetManagement, CondominiumCalculations, MarketingValues } from "@/components/financial";
 
 // Mock data for demonstration
 const mockUnits = [
@@ -85,6 +86,16 @@ const mockMonthlyExpenses = [
   { month: "Março", expenses: { 1001: 2500, 1002: 1000, 1003: 520, 2001: 1500, 2002: 1200, 2003: 400, 3001: 1500, 3002: 480, 4001: 4000, 4002: 1200 } },
 ];
 
+type CollectionAccount = {
+  id: number;
+  name: string;
+  purpose: string;
+  monthlyAmount: number;
+  startDate: string;
+  endDate?: string;
+  active: boolean;
+};
+
 // Types for API data
 interface Building {
   id: number;
@@ -143,15 +154,6 @@ type MonthlyExpense = {
   isLocked?: boolean;
 };
 
-type CollectionAccount = {
-  id: number;
-  name: string;
-  purpose: string;
-  monthlyAmount: number;
-  startDate: string;
-  endDate?: string;
-  active: boolean;
-};
 
 export default function Financial() {
   const { t } = useTranslation();
@@ -235,6 +237,7 @@ export default function Financial() {
     budgetedAmount: ''
   });
   const [isSubmittingBudget, setIsSubmittingBudget] = useState(false);
+  
   
   // Collection accounts state
   const [collectionAccounts, setCollectionAccounts] = useState<CollectionAccount[]>([
@@ -454,7 +457,61 @@ export default function Financial() {
       setIsSubmitting(false);
     }
   };
-  
+
+  // Handle account deletion
+  const handleDeleteAccount = async (accountId: number) => {
+    if (!selectedBuildingId) {
+      toast({
+        title: "Error",
+        description: "No building selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = getStoredToken();
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Authentication token not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/financial/account/${accountId}/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Account deleted successfully",
+        });
+        // Refresh accounts after deletion
+        fetchAccounts(parseInt(selectedBuildingId));
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Handle collection account save
   const handleSaveCollection = async () => {
     if (!editingCollection) {
@@ -558,6 +615,7 @@ export default function Financial() {
       setIsSubmitting(false);
     }
   };
+  
   
   // Brazilian system state
   const [brazilianData, setBrazilianData] = useState({
@@ -997,1142 +1055,67 @@ export default function Financial() {
           </TabsList>
 
           <TabsContent value="budget-management" className="space-y-6">
-            {/* Building Selection - Only show for master users */}
-            {isMaster && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5" />
-                    {t("selectBuilding")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Select value={selectedBuildingId} onValueChange={handleBuildingChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("selectBuildingPlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {buildings.map((building) => (
-                        <SelectItem key={building.id} value={building.id.toString()}>
-                          {building.building_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </CardContent>
-              </Card>
-            )}
-            
-            {/* Chart of Accounts */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <span className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    {t("chartOfAccounts")}
-                  </span>
-                  {isMaster && (
-                    <Button 
-                      onClick={() => {
-                        setEditingAccount(null);
-                        setNewAccount({
-                          code: '',
-                          name: '',
-                          type: 'main',
-                          expectedAmount: 0,
-                          actualAmount: 0,
-                          parentId: null
-                        });
-                        setApiError(null);
-                        setShowAccountDialog(true);
-                      }}
-                      size="sm"
-                      className="w-full sm:w-auto"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      {t("addAccount")}
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoadingAccounts ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      {t("loadingAccounts") || "Loading accounts..."}
-                    </div>
-                  </div>
-                ) : accountsFetchError ? (
-                  <div className="py-8 text-center">
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                      <p className="text-sm text-red-600 mb-2">{accountsFetchError}</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => selectedBuildingId && fetchAccounts(parseInt(selectedBuildingId))}
-                      >
-                        {t("retry") || "Retry"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : accounts.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    <p className="mb-2">{t("noAccountsFound") || "No accounts found for this building."}</p>
-                    {isMaster && (
-                      <p className="text-sm">{t("addFirstAccount") || "Click 'Add Account' to create your first account."}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {accounts.map((account) => (
-                    <div key={account.id} className="border rounded-lg p-3 sm:p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
-                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                          <Badge className="flex-shrink-0">{account.code}</Badge>
-                          <h4 className="font-semibold text-sm sm:text-base truncate">{account.name}</h4>
-                        </div>
-                        {isMaster && (
-                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-                              onClick={() => {
-                                setEditingAccount(null);
-                                setNewAccount({
-                                  code: '',
-                                  name: '',
-                                  type: 'sub',
-                                  expectedAmount: 0,
-                                  actualAmount: 0,
-                                  parentId: account.id
-                                });
-                                setApiError(null);
-                                setShowAccountDialog(true);
-                              }}
-                            >
-                              <Plus className="w-3 h-3" />
-                              <span className="hidden sm:inline ml-1">{t("addSub")}</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
-                              onClick={() => {
-                                setEditingAccount(account);
-                                setNewAccount(account);
-                                setApiError(null);
-                                setShowAccountDialog(true);
-                              }}
-                            >
-                              <Edit className="w-3 h-3" />
-                              <span className="hidden sm:inline ml-1">{t("edit")}</span>
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
-                        <div className="flex justify-between sm:block">
-                          <p className="text-muted-foreground">{t("expectedAmount")}</p>
-                          <p className="font-semibold">R$ {account.expectedAmount?.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div className="flex justify-between sm:block">
-                          <p className="text-muted-foreground">{t("actualAmount")}</p>
-                          <p className="font-semibold">R$ {account.actualAmount?.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div className="flex justify-between sm:block">
-                          <p className="text-muted-foreground">{t("variance")}</p>
-                          <p className={`font-semibold ${(account.actualAmount || 0) > (account.expectedAmount || 0) ? 'text-red-600' : 'text-green-600'}`}>
-                            {((account.actualAmount || 0) - (account.expectedAmount || 0) > 0 ? '+' : '')}
-                            R$ {Math.abs((account.actualAmount || 0) - (account.expectedAmount || 0)).toLocaleString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
-                      {account.subAccounts && account.subAccounts.length > 0 && (
-                        <div className="mt-3 ml-0 sm:ml-6 space-y-2">
-                          {account.subAccounts.map((sub) => (
-                            <div key={sub.id} className="p-2 bg-gray-50 rounded">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <Badge variant="outline" className="text-xs flex-shrink-0">{sub.code}</Badge>
-                                  <span className="text-xs sm:text-sm truncate">{sub.name}</span>
-                                </div>
-                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 text-xs sm:text-sm">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 min-w-0">
-                                    <span className="text-muted-foreground whitespace-nowrap">
-                                      {t("expected")}: <span className="font-semibold">R$ {sub.expectedAmount?.toLocaleString('pt-BR')}</span>
-                                    </span>
-                                    <span className="text-muted-foreground whitespace-nowrap">
-                                      {t("actual")}: <span className="font-semibold">R$ {sub.actualAmount?.toLocaleString('pt-BR')}</span>
-                                    </span>
-                                  </div>
-                                  {isMaster && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 w-7 p-0 flex-shrink-0"
-                                      onClick={() => {
-                                        setEditingAccount(sub);
-                                        setNewAccount(sub);
-                                        setApiError(null);
-                                        setShowAccountDialog(true);
-                                      }}
-                                    >
-                                      <Edit className="w-3 h-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Budget vs Actual Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                  <BarChart3 className="w-5 h-5" />
-                  {t("budgetVsActualChart")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2 sm:p-6">
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={generateBudgetVsActualData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString('pt-BR')}`} />
-                    <Legend />
-                    <Bar key="expected" dataKey="expected" fill="#8884d8" name={t("expected")} />
-                    <Bar key="actual" dataKey="actual" fill="#82ca9d" name={t("actual")} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            {/* 12-Month Budget Prediction Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-                  <TrendingUp className="w-5 h-5" />
-                  {t("12MonthBudgetPrediction")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-2 sm:p-6">
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={generateMonthlyPrediction()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
-                    <Legend />
-                    <Line 
-                      key="expected"
-                      type="monotone" 
-                      dataKey="expected" 
-                      stroke="#8884d8" 
-                      strokeWidth={2}
-                      name={t("predictedBudget")}
-                      strokeDasharray="0"
-                    />
-                    <Line 
-                      key="actual"
-                      type="monotone" 
-                      dataKey="actual" 
-                      stroke="#82ca9d" 
-                      strokeWidth={2}
-                      name={t("actualExpenses")}
-                      dot={(props) => {
-                        const { cx, cy, payload, index } = props;
-                        if (payload.actual === 0 && !payload.isCurrentMonth) return null;
-                        return <circle key={`dot-${index}`} cx={cx} cy={cy} r={4} fill="#82ca9d" />;
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                    <DollarSign className="w-5 h-5 text-green-500" />
-                    {t("annualBudget")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-lg sm:text-xl font-bold text-green-600">
-                    R$ {getTotalAnnualBudget().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">{t("totalApproved")} {new Date().getFullYear()}</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-500" />
-                    {t("currentExpense")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-lg sm:text-xl font-bold text-blue-600">
-                    R$ {getTotalCurrentExpenses().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {getTotalAnnualBudget() > 0 ? ((getTotalCurrentExpenses() / getTotalAnnualBudget()) * 100).toFixed(1) : 0}% {t("ofBudget")}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                    <BarChart3 className="w-5 h-5 text-orange-500" />
-                    {t("remainingBalance")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className={`text-lg sm:text-xl font-bold ${getRemainingBalance() >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
-                    R$ {getRemainingBalance().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {getTotalAnnualBudget() > 0 ? ((getRemainingBalance() / getTotalAnnualBudget()) * 100).toFixed(1) : 0}% {t("available")}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {isMaster && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                      <BarChart3 className="w-5 h-5" />
-                      {t("annualBudgetRegistry")}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="account-category" className="text-xs sm:text-sm">{t("accountCategory")}</Label>
-                      <select 
-                        className="w-full p-2 border rounded"
-                        value={annualBudgetForm.accountCategory}
-                        onChange={(e) => handleAnnualBudgetChange('accountCategory', e.target.value)}
-                      >
-                        <option value="">Select category</option>
-                        <option value="maintenance">{t("maintenance")}</option>
-                        <option value="cleaning">{t("cleaning")}</option>
-                        <option value="security">{t("security")}</option>
-                        <option value="administration">{t("administration")}</option>
-                        <option value="electricity">{t("electricity")}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <Label htmlFor="subcategory" className="text-xs sm:text-sm">{t("subItem")}</Label>
-                      <Input 
-                        id="subcategory" 
-                        placeholder={t("subItemPlaceholder")} 
-                        className="text-xs sm:text-sm"
-                        value={annualBudgetForm.subItem}
-                        onChange={(e) => handleAnnualBudgetChange('subItem', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="budget-amount" className="text-xs sm:text-sm">{t("budgetedAmount")}</Label>
-                      <Input 
-                        id="budget-amount" 
-                        type="number" 
-                        placeholder="0,00" 
-                        className="text-xs sm:text-sm"
-                        value={annualBudgetForm.budgetedAmount}
-                        onChange={(e) => handleAnnualBudgetChange('budgetedAmount', e.target.value)}
-                      />
-                    </div>
-                    <Button 
-                      className="w-full text-xs sm:text-sm" 
-                      onClick={handleAddToBudget}
-                      disabled={isSubmittingBudget}
-                    >
-                      {isSubmittingBudget ? "Adding..." : t("addToBudget")}
-                    </Button>
-                  </CardContent>
-                </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                    <FileSpreadsheet className="w-5 h-5" />
-                    {t("monthlyExpenses")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="expense-month" className="text-xs sm:text-sm">{t("referenceMonth")}</Label>
-                    <Input 
-                      id="expense-month" 
-                      type="month" 
-                      value={selectedExpenseMonth}
-                      onChange={(e) => setSelectedExpenseMonth(e.target.value)}
-                      className="text-xs sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="expense-category" className="text-xs sm:text-sm">{t("category")}</Label>
-                    <select 
-                      className="w-full p-2 border rounded"
-                      value={expenseCategory}
-                      onChange={(e) => setExpenseCategory(e.target.value)}
-                    >
-                      <option value="">Select category</option>
-                      <option value="maintenance">{t("maintenance")}</option>
-                      <option value="cleaning">{t("cleaning")}</option>
-                      <option value="security">{t("security")}</option>
-                      <option value="administration">{t("administration")}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="expense-amount" className="text-xs sm:text-sm">{t("expenseAmount")}</Label>
-                    <Input 
-                      id="expense-amount" 
-                      type="number" 
-                      placeholder="0,00" 
-                      className="text-xs sm:text-sm"
-                      value={expenseAmount}
-                      onChange={(e) => setExpenseAmount(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      className="w-full text-xs sm:text-sm"
-                      onClick={handleRegisterExpense}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? t("registering") : t("registerExpense")}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              </div>
-            )}
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-sm sm:text-base lg:text-lg">{t("comparativeAnalysis")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {generateComparativeAnalysisData().map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-semibold text-xs sm:text-sm capitalize">{item.category}</h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          {t("budgeted")}: R$ {item.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | {' '}
-                          {t("spent")}: R$ {item.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-semibold text-xs sm:text-sm ${item.statusColor}`}>
-                          {item.varianceSign}{item.variancePercent.toFixed(1)}%
-                        </div>
-                        <div className="text-xs sm:text-sm text-muted-foreground">{t(item.status)}</div>
-                      </div>
-                    </div>
-                  ))}
-                  {generateComparativeAnalysisData().length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">{t("noDataAvailable")}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <BudgetManagement
+              isMaster={isMaster}
+              user={user}
+              buildings={buildings}
+              selectedBuildingId={selectedBuildingId}
+              selectedBuilding={selectedBuilding}
+              handleBuildingChange={handleBuildingChange}
+              accounts={accounts}
+              editingAccount={editingAccount}
+              newAccount={newAccount}
+              showAccountDialog={showAccountDialog}
+              apiError={apiError}
+              setEditingAccount={setEditingAccount}
+              setNewAccount={setNewAccount}
+              setShowAccountDialog={setShowAccountDialog}
+              setApiError={setApiError}
+              handleSaveAccount={handleSaveAccount}
+              handleDeleteAccount={handleDeleteAccount}
+              selectedExpenseMonth={selectedExpenseMonth}
+              expenseCategory={expenseCategory}
+              expenseAmount={expenseAmount}
+              setSelectedExpenseMonth={setSelectedExpenseMonth}
+              setExpenseCategory={setExpenseCategory}
+              setExpenseAmount={setExpenseAmount}
+              handleRegisterExpense={handleRegisterExpense}
+              isSubmitting={isSubmitting}
+              annualBudgetForm={annualBudgetForm}
+              setAnnualBudgetForm={setAnnualBudgetForm}
+              handleAddToBudget={handleAddToBudget}
+              isSubmittingBudget={isSubmittingBudget}
+              generateBudgetVsActualData={generateBudgetVsActualData}
+              generateMonthlyPrediction={generateMonthlyPrediction}
+              getTotalAnnualBudget={getTotalAnnualBudget}
+              getTotalCurrentExpenses={getTotalCurrentExpenses}
+              getRemainingBalance={getRemainingBalance}
+              generateComparativeAnalysisData={generateComparativeAnalysisData}
+            />
           </TabsContent>
 
           <TabsContent value="condominium-calculations" className="space-y-6">
-            {/* Collection Accounts Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5" />
-                    {t("collectionAccounts")}
-                  </span>
-                  {isMaster && (
-                    <Button
-                      onClick={() => {
-                        setEditingCollection({
-                          id: null,
-                          name: '',
-                          purpose: '',
-                          monthlyAmount: 0,
-                          startDate: new Date().toISOString().split('T')[0],
-                          active: true
-                        });
-                        setShowCollectionDialog(true);
-                      }}
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      {t("addCollection")}
-                    </Button>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {collectionAccounts.map((collection) => (
-                    <div key={collection.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold">{collection.name}</h4>
-                          <p className="text-sm text-muted-foreground">{collection.purpose}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={collection.active ? "default" : "secondary"}>
-                            {collection.active ? t("active") : t("inactive")}
-                          </Badge>
-                          {isMaster && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingCollection(collection);
-                                setShowCollectionDialog(true);
-                              }}
-                            >
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span>{t("monthlyAmount")}: <strong>R$ {collection.monthlyAmount.toLocaleString('pt-BR')}</strong></span>
-                        <span>{t("startDate")}: {new Date(collection.startDate).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Total Collections */}
-                  <div className="mt-4 p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold">{t("totalMonthlyCollections")}:</span>
-                      <span className="font-bold text-lg">
-                        R$ {collectionAccounts.filter(c => c.active).reduce((sum, c) => sum + c.monthlyAmount, 0).toLocaleString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Collection Accounts Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  {t("collectionAccountsChart")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={collectionAccounts.filter(c => c.active).map(collection => ({
-                    name: collection.name.length > 12 ? collection.name.substring(0, 12) + '...' : collection.name,
-                    amount: collection.monthlyAmount
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
-                    <Bar key="amount" dataKey="amount" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            {/* Monthly Expense Trends */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  {t("monthlyExpenseTrends")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={[
-                    { month: 'Jan', expenses: 45000, collections: 50000, balance: 5000 },
-                    { month: 'Fev', expenses: 48000, collections: 50000, balance: 2000 },
-                    { month: 'Mar', expenses: 46000, collections: 52000, balance: 6000 },
-                    { month: 'Abr', expenses: 47000, collections: 52000, balance: 5000 },
-                    { month: 'Mai', expenses: 49000, collections: 52000, balance: 3000 },
-                    { month: 'Jun', expenses: 45000, collections: 52000, balance: 7000 }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => `R$ ${value.toLocaleString('pt-BR')}`} />
-                    <Legend />
-                    <Line key="expenses" type="monotone" dataKey="expenses" stroke="#ef4444" name={t("expenses")} strokeWidth={2} />
-                    <Line key="collections" type="monotone" dataKey="collections" stroke="#10b981" name={t("collections")} strokeWidth={2} />
-                    <Line key="balance" type="monotone" dataKey="balance" stroke="#3b82f6" name={t("balance")} strokeWidth={2} strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            {/* Calculation Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                  <Calculator className="w-5 h-5" />
-                  {t("expenseDistributionCalculator")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="total-expense" className="text-xs sm:text-sm">{t("totalExpenseAmount")}</Label>
-                    <Input
-                      id="total-expense"
-                      type="number"
-                      placeholder="5000.00"
-                      value={calculationData.totalExpense}
-                      onChange={isMaster ? (e) => setCalculationData({...calculationData, totalExpense: e.target.value}) : undefined}
-                      readOnly={!isMaster}
-                      disabled={!isMaster}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="calculation-type" className="text-xs sm:text-sm">{t("calculationMethod")}</Label>
-                    <Select 
-                      value={calculationData.calculationType} 
-                      onValueChange={isMaster ? (value) => setCalculationData({...calculationData, calculationType: value}) : undefined}
-                      disabled={!isMaster}
-                    >
-                      <SelectTrigger disabled={!isMaster}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="area">{t("byUnitArea")}</SelectItem>
-                        <SelectItem value="equal">{t("equalDistribution")}</SelectItem>
-                        <SelectItem value="custom">{t("customPercentage")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Results Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                  <PieChart className="w-5 h-5" />
-                  {t("costDistributionByUnit")}
-                </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  Total: R$ {parseFloat(calculationData.totalExpense || "0").toFixed(2)} | 
-                  {t("method")}: {calculationData.calculationType === "area" ? t("byArea") : calculationData.calculationType === "equal" ? t("equalSplit") : t("custom")}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockUnits.map((unit) => {
-                    const unitShare = calculateUnitShare(unit);
-                    const percentage = calculationData.calculationType === "area" 
-                      ? (unit.area / totalArea) * 100
-                      : calculationData.calculationType === "equal"
-                      ? 100 / mockUnits.length
-                      : parseFloat(calculationData.customPercentages[unit.id]) || 0;
-
-                    return (
-                      <div key={unit.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Home className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-semibold text-xs sm:text-sm">{t("unit")} {unit.number}</span>
-                          </div>
-                          <Badge variant="outline">
-                            {unit.area}m²
-                          </Badge>
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            {unit.owner}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {calculationData.calculationType === "custom" && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                placeholder={t("percentagePlaceholder")}
-                                value={calculationData.customPercentages[unit.id]}
-                                onChange={isMaster ? (e) => handleCustomPercentageChange(unit.id, e.target.value) : undefined}
-                                className="w-20 text-center text-xs"
-                                readOnly={!isMaster}
-                                disabled={!isMaster}
-                              />
-                              <span className="text-xs sm:text-sm">%</span>
-                            </div>
-                          )}
-                          <div className="text-right">
-                            <div className="font-semibold text-sm sm:text-base">
-                              R$ {unitShare.toFixed(2)}
-                            </div>
-                            <div className="text-xs sm:text-sm text-muted-foreground">
-                              {percentage.toFixed(1)}%
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold text-xs sm:text-sm">{t("totalDistributed")}:</span>
-                    <span className="font-bold text-sm sm:text-base">
-                      R$ {mockUnits.reduce((sum, unit) => sum + calculateUnitShare(unit), 0).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions - Only for master users */}
-            {isMaster && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm sm:text-base">{t("quickActions")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                      {t("exportExcel")}
-                    </Button>
-                    <Button variant="outline" className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                      {t("generateInvoices")}
-                    </Button>
-                    <Button className="flex-1 text-xs sm:text-sm px-2 py-1.5">
-                      {t("sendToUnits")}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <CondominiumCalculations
+              isMaster={isMaster}
+              collectionAccounts={collectionAccounts}
+              setEditingCollection={setEditingCollection}
+              setShowCollectionDialog={setShowCollectionDialog}
+              brazilianData={brazilianData}
+            />
           </TabsContent>
 
           <TabsContent value="marketing-values" className="space-y-6">
-            {/* Building and Location Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5" />
-                  {t("buildingInformation")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedBuilding ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <p><strong>{t("building")}:</strong> {selectedBuilding.building_name}</p>
-                      {selectedBuilding.address && (
-                        <>
-                          <p><strong>{t("neighborhood")}:</strong> {selectedBuilding.address.neighborhood}</p>
-                          <p><strong>{t("city")}:</strong> {selectedBuilding.address.city}</p>
-                        </>
-                      )}
-                    </div>
-                    <div>
-                      <Label>{t("calculationMethod")}</Label>
-                      <Select 
-                        value={marketCalculationType} 
-                        onValueChange={(value) => setMarketCalculationType(value as 'sale' | 'rental' | 'condominium')}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sale">{t("saleValue")}</SelectItem>
-                          <SelectItem value="rental">{t("rentalValue")}</SelectItem>
-                          <SelectItem value="condominium">{t("condominiumValue")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">{t("selectBuildingFirst")}</p>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Market Values */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  {t("marketValueRanges")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-3">{t("saleValuePerM2")}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label>{t("minimum")}</Label>
-                        <Input
-                          placeholder="R$ 10.000,00"
-                          value={marketValues.saleMin}
-                          onChange={isMaster ? (e) => setMarketValues({...marketValues, saleMin: e.target.value}) : undefined}
-                          readOnly={!isMaster}
-                          disabled={!isMaster}
-                        />
-                      </div>
-                      <div>
-                        <Label>{t("maximum")}</Label>
-                        <Input
-                          placeholder="R$ 14.000,00"
-                          value={marketValues.saleMax}
-                          onChange={isMaster ? (e) => setMarketValues({...marketValues, saleMax: e.target.value}) : undefined}
-                          readOnly={!isMaster}
-                          disabled={!isMaster}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-3">{t("rentalValuePerM2")}</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label>{t("minimum")}</Label>
-                        <Input
-                          placeholder="R$ 45,00"
-                          value={marketValues.rentalMin}
-                          onChange={isMaster ? (e) => setMarketValues({...marketValues, rentalMin: e.target.value}) : undefined}
-                          readOnly={!isMaster}
-                          disabled={!isMaster}
-                        />
-                      </div>
-                      <div>
-                        <Label>{t("maximum")}</Label>
-                        <Input
-                          placeholder="R$ 65,00"
-                          value={marketValues.rentalMax}
-                          onChange={isMaster ? (e) => setMarketValues({...marketValues, rentalMax: e.target.value}) : undefined}
-                          readOnly={!isMaster}
-                          disabled={!isMaster}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    {t("marketValueNote")}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Units Market Values */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
-                  <Home className="w-5 h-5" />
-                  {marketCalculationType === 'sale' ? t("saleValuesSpreadsheet") : 
-                   marketCalculationType === 'rental' ? t("rentalValuesSpreadsheet") : 
-                   t("condominiumValuesSpreadsheet")}
-                </CardTitle>
-                <div className="text-sm text-muted-foreground">
-                  {marketCalculationType === 'sale' ? t("totalMarketValueSale") : 
-                   marketCalculationType === 'rental' ? t("totalMarketValueRental") : 
-                   t("totalMarketValueCondominium")}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <h4 className="font-semibold text-xs sm:text-sm">{t("currentAnnualBudget")}: R$ {getTotalAnnualBudget().toLocaleString()}</h4>
-                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                      <Button variant="outline" onClick={importFromExcel} className="text-xs sm:text-sm px-3 py-2">
-                        <Upload className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t("importExcel")}</span>
-                      </Button>
-                      <Button variant="outline" onClick={exportToExcel} className="text-xs sm:text-sm px-3 py-2">
-                        <Download className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t("exportExcelBrazilian")}</span>
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="min-w-[60px]">{t("unit")}</TableHead>
-                          <TableHead className="min-w-[60px]">{t("area")} (m²)</TableHead>
-                          <TableHead className="min-w-[100px]">
-                            {marketCalculationType === 'sale' ? t("salePerM2") : 
-                             marketCalculationType === 'rental' ? t("rentalPerM2") : 
-                             t("condominiumPerM2")}
-                          </TableHead>
-                          <TableHead className="min-w-[100px]">
-                            {marketCalculationType === 'sale' ? t("totalSaleValue") : 
-                             marketCalculationType === 'rental' ? t("totalRentalValue") : 
-                             t("monthlyCondominiumValue")}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {brazilianData.units.map((unit) => {
-                          const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
-                          const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
-                            (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                             parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                          const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
-                            (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                             parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
-                          
-                          const customValues = unitCustomValues[unit.id] || {};
-                          const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
-                          const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
-                          const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
-                          
-                          const getCurrentPerM2 = () => {
-                            switch (marketCalculationType) {
-                              case 'sale': return salePerM2;
-                              case 'rental': return rentalPerM2;
-                              case 'condominium': return condoPerM2;
-                              default: return 0;
-                            }
-                          };
-                          
-                          const currentPerM2 = getCurrentPerM2();
-                          
-                          return (
-                            <TableRow key={unit.id}>
-                              <TableCell className="font-medium text-xs sm:text-sm">{unit.number}</TableCell>
-                              <TableCell className="text-xs sm:text-sm">{unit.area.toFixed(1)}</TableCell>
-                              <TableCell className="text-xs sm:text-sm p-1">
-                                <div className="flex items-center gap-1">
-                                  <span>R$</span>
-                                  <Input
-                                    type="text"
-                                    value={
-                                      marketCalculationType === 'sale' 
-                                        ? (customValues.salePerM2?.toLocaleString('pt-BR') || salePerM2.toLocaleString('pt-BR'))
-                                        : marketCalculationType === 'rental'
-                                        ? (customValues.rentalPerM2?.toFixed(2) || rentalPerM2.toFixed(2))
-                                        : (customValues.condominiumPerM2?.toFixed(2) || condoPerM2.toFixed(2))
-                                    }
-                                    onChange={(e) => handleUnitValueChange(
-                                      unit.id,
-                                      marketCalculationType === 'sale' ? 'salePerM2' : 
-                                      marketCalculationType === 'rental' ? 'rentalPerM2' : 'condominiumPerM2',
-                                      e.target.value
-                                    )}
-                                    className="w-24 h-8 text-xs"
-                                    disabled={!isMaster}
-                                  />
-                                </div>
-                              </TableCell>
-                              <TableCell className={`font-semibold text-xs sm:text-sm ${
-                                marketCalculationType === 'sale' ? 'text-green-600' : 
-                                marketCalculationType === 'rental' ? 'text-blue-600' : 
-                                'text-orange-600'
-                              }`}>
-                                R$ {(unit.area * currentPerM2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div className={`p-4 rounded-lg ${
-                      marketCalculationType === 'sale' ? 'bg-green-50' : 
-                      marketCalculationType === 'rental' ? 'bg-blue-50' : 
-                      'bg-orange-50'
-                    }`}>
-                      <h4 className={`font-semibold mb-2 ${
-                        marketCalculationType === 'sale' ? 'text-green-900' : 
-                        marketCalculationType === 'rental' ? 'text-blue-900' : 
-                        'text-orange-900'
-                      }`}>{t("marketAnalysis")}</h4>
-                      <p className={`text-sm ${
-                        marketCalculationType === 'sale' ? 'text-green-800' : 
-                        marketCalculationType === 'rental' ? 'text-blue-800' : 
-                        'text-orange-800'
-                      }`}>
-                        {marketCalculationType === 'sale' ? t("totalBuildingValue") : 
-                         marketCalculationType === 'rental' ? t("totalMonthlyRentalValue") : 
-                         t("totalMonthlyCondominiumValue")}: 
-                        <strong className={`${
-                          marketCalculationType === 'sale' ? 'text-green-600' : 
-                          marketCalculationType === 'rental' ? 'text-blue-600' : 
-                          'text-orange-600'
-                        }`}>
-                          R$ {brazilianData.units.reduce((sum, unit) => {
-                            const customValues = unitCustomValues[unit.id] || {};
-                            
-                            if (marketCalculationType === 'sale') {
-                              const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
-                                (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                                 parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
-                              const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
-                              return sum + (unit.area * salePerM2);
-                            } else if (marketCalculationType === 'rental') {
-                              const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
-                                (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                                 parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                              const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
-                              return sum + (unit.area * rentalPerM2);
-                            } else {
-                              const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
-                              const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
-                              return sum + (unit.area * condoPerM2);
-                            }
-                          }, 0).toLocaleString('pt-BR')}
-                        </strong>
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-semibold text-blue-900 mb-2">{t("exportOptions")}</h4>
-                      <Button variant="outline" className="w-full" onClick={exportToExcel}>
-                        <Download className="w-4 h-4 mr-2" />
-                        {t("exportMarketAnalysis")}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            {/* Market Values Comparison Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  {t("marketValuesComparison")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={brazilianData.units.slice(0, 8).map(unit => {
-                    const customValues = unitCustomValues[unit.id] || {};
-                    
-                    const defaultRentalPerM2 = marketValues.rentalMin && marketValues.rentalMax ? 
-                      (parseFloat(marketValues.rentalMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                       parseFloat(marketValues.rentalMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 55;
-                    const defaultSalePerM2 = marketValues.saleMin && marketValues.saleMax ? 
-                      (parseFloat(marketValues.saleMin.replace(/[^0-9,]/g, '').replace(',', '.')) + 
-                       parseFloat(marketValues.saleMax.replace(/[^0-9,]/g, '').replace(',', '.'))) / 2 : 12000;
-                    
-                    const rentalPerM2 = customValues.rentalPerM2 ?? defaultRentalPerM2;
-                    const salePerM2 = customValues.salePerM2 ?? defaultSalePerM2;
-                    const condominiumPerM2 = calculateUnitMonthlyFee(unit) / unit.area;
-                    const condoPerM2 = customValues.condominiumPerM2 ?? condominiumPerM2;
-                    
-                    return {
-                      unit: unit.number,
-                      rental: unit.area * rentalPerM2,
-                      saleValue: unit.area * salePerM2 / 1000, // Divide by 1000 to show in thousands
-                      condoFee: unit.area * condoPerM2
-                    };
-                  })}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="unit" />
-                    <YAxis yAxisId="left" orientation="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip formatter={(value, name) => {
-                      if (name === t("monthlyRental") || name === t("condoFee")) return `R$ ${value.toLocaleString('pt-BR')}`;
-                      return `R$ ${(value * 1000).toLocaleString('pt-BR')}`;
-                    }} />
-                    <Legend />
-                    <Bar key="rental" yAxisId="left" dataKey="rental" fill="#8884d8" name={t("monthlyRental")} />
-                    <Bar key="condoFee" yAxisId="left" dataKey="condoFee" fill="#ff7300" name={t("condoFee")} />
-                    <Bar key="saleValue" yAxisId="right" dataKey="saleValue" fill="#82ca9d" name={t("saleValueThousands")} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            {/* Unit Characteristics Radar Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  {t("unitCharacteristics")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={[
-                    { subject: t("area"), unit101: 85, unit102: 90, unit201: 85, fullMark: 100 },
-                    { subject: t("location"), unit101: 90, unit102: 85, unit201: 88, fullMark: 100 },
-                    { subject: t("condition"), unit101: 86, unit102: 95, unit201: 80, fullMark: 100 },
-                    { subject: t("amenities"), unit101: 80, unit102: 88, unit201: 85, fullMark: 100 },
-                    { subject: t("view"), unit101: 85, unit102: 90, unit201: 75, fullMark: 100 },
-                    { subject: t("parking"), unit101: 100, unit102: 100, unit201: 100, fullMark: 100 },
-                  ]}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="subject" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar key="unit101" name="Unit 101" dataKey="unit101" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-                    <Radar key="unit102" name="Unit 102" dataKey="unit102" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.3} />
-                    <Radar key="unit201" name="Unit 201" dataKey="unit201" stroke="#ffc658" fill="#ffc658" fillOpacity={0.3} />
-                    <Legend />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            {/* Price Trends Over Time */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  {t("marketTrends")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={[
-                    { month: 'Jan 2024', salePrice: 11500, rentalPrice: 52, condoFee: 15 },
-                    { month: 'Fev 2024', salePrice: 11800, rentalPrice: 53, condoFee: 15 },
-                    { month: 'Mar 2024', salePrice: 12000, rentalPrice: 54, condoFee: 16 },
-                    { month: 'Abr 2024', salePrice: 12200, rentalPrice: 55, condoFee: 16 },
-                    { month: 'Mai 2024', salePrice: 12400, rentalPrice: 56, condoFee: 16 },
-                    { month: 'Jun 2024', salePrice: 12500, rentalPrice: 57, condoFee: 17 }
-                  ]}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip formatter={(value, name) => {
-                      if (name.includes('Price')) return `R$ ${value.toLocaleString('pt-BR')}/m²`;
-                      return `R$ ${value}/m²`;
-                    }} />
-                    <Legend />
-                    <Line key="salePrice" yAxisId="left" type="monotone" dataKey="salePrice" stroke="#8884d8" name={t("salePrice")} strokeWidth={2} />
-                    <Line key="rentalPrice" yAxisId="right" type="monotone" dataKey="rentalPrice" stroke="#82ca9d" name={t("rentalPrice")} strokeWidth={2} />
-                    <Line key="condoFee" yAxisId="right" type="monotone" dataKey="condoFee" stroke="#ff7300" name={t("condoFeePerM2")} strokeWidth={2} strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <MarketingValues
+              selectedBuilding={selectedBuilding}
+              marketCalculationType={marketCalculationType}
+              setMarketCalculationType={setMarketCalculationType}
+              marketValues={marketValues}
+              setMarketValues={setMarketValues}
+              unitCustomValues={unitCustomValues}
+              setUnitCustomValues={setUnitCustomValues}
+              brazilianData={brazilianData}
+              exportToExcel={exportToExcel}
+            />
 
           </TabsContent>
         </Tabs>
@@ -2399,6 +1382,7 @@ export default function Financial() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
     </div>
   );
 }
